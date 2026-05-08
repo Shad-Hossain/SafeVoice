@@ -1,4 +1,4 @@
-/* ===== AUTH SECTION ===== */
+
 .auth-section {
     min-height: calc(100vh - 70px);
     display: flex;
@@ -19,7 +19,7 @@
     padding: 40px;
 }
 
-/* ===== AUTH HEADER ===== */
+\\ header
 .auth-header {
     text-align: center;
     margin-bottom: 35px;
@@ -42,7 +42,7 @@
     font-size: 15px;
 }
 
-/* ===== FORM ===== */
+\\ Form
 .form-group {
     margin-bottom: 20px;
 }
@@ -96,7 +96,7 @@
     color: #a0b4cc !important;
 }
 
-/* ===== FORM OPTIONS ===== */
+\\Form options
 .form-options {
     display: flex;
     justify-content: space-between;
@@ -129,7 +129,7 @@
     color: #2d7dd2;
 }
 
-/* ===== BUTTON ===== */
+\\button 
 .btn-auth {
     width: 100%;
     background: #4f9eff;
@@ -151,7 +151,7 @@
     background: #2d7dd2;
 }
 
-/* ===== DIVIDER ===== */
+\\divider
 .auth-divider {
     text-align: center;
     margin: 20px 0;
@@ -176,7 +176,7 @@
     position: relative;
 }
 
-/* ===== SWITCH ===== */
+\\switch 
 .auth-switch {
     text-align: center;
     color: #a0b4cc;
@@ -193,7 +193,7 @@
     color: #2d7dd2;
 }
 
-/* ===== REGISTER EXTRA ===== */
+\\register
 .form-row {
     display: flex;
     gap: 15px;
@@ -203,7 +203,7 @@
     flex: 1;
 }
 
-/* ===== UPLOAD BOX ===== */
+\\upload box
 .upload-box {
     background: #0a0f1e;
     border: 2px dashed #1e2d4a;
@@ -245,7 +245,7 @@
     opacity: 0;
     cursor: pointer;
 }
-/* ===== MODAL ===== */
+\\terms modal
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -285,7 +285,7 @@
     transform: translateY(0);
 }
 
-/* ===== MODAL HEADER ===== */
+\\modal header
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -318,7 +318,7 @@
     color: #ffffff;
 }
 
-/* ===== MODAL BODY ===== */
+\\ modal body
 .modal-body {
     padding: 25px;
     overflow-y: auto;
@@ -343,7 +343,7 @@
     line-height: 1.7;
 }
 
-/* ===== MODAL FOOTER ===== */
+\\modal footer
 .modal-footer {
     display: flex;
     justify-content: flex-end;

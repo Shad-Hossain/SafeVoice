@@ -224,7 +224,7 @@
     background: #e6394620;
 }
 
-/* ===== COMPLAINTS TABLE ===== */
+\\complain table
 .complaints-table {
     background: #0d1526;
     border: 1px solid #1e2d4a;
@@ -266,7 +266,7 @@
     background: #1e2d4a30;
 }
 
-/* ===== STATUS BADGES ===== */
+\\ status badger
 .status {
     padding: 5px 12px;
     border-radius: 20px;
@@ -289,7 +289,7 @@
     color: #4f9eff;
 }
 
-/* ===== VIEW BUTTON ===== */
+\\view button 
 .btn-view {
     background: #4f9eff20;
     color: #4f9eff;
