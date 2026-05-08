@@ -8,15 +8,16 @@
     <link rel="stylesheet" href="../css/auth.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
+<script src="../js/main.js"></script>
 <body>
 
-    <!-- NAVBAR -->
+   
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo">
+           <a href="../index.html" class="logo">
     <i class="fas fa-shield-alt"></i>
     <span>SafeVoice</span>
-</div>
+</a>
             <ul class="nav-links">
                 <li><a href="../index.html">Home</a></li>
                 <li><a href="#">Track Complaint</a></li>
@@ -27,7 +28,7 @@
         </div>
     </nav>
 
-    <!-- REGISTER SECTION -->
+   
     <section class="auth-section">
         <div class="auth-container" style="max-width: 550px;">
             <div class="auth-card">
@@ -130,7 +131,7 @@
         </div>
     </section>
 
-    <!-- TERMS MODAL -->
+   
     <div class="modal-overlay" id="termsModal">
         <div class="modal-box">
             <div class="modal-header">
@@ -170,7 +171,7 @@
     </div>
 
     <script>
-        // Open modal
+     
         document.getElementById('termsLink').addEventListener('click', function(e) {
             e.preventDefault();
             document.getElementById('termsModal').classList.add('active');
@@ -192,6 +193,6 @@
             if(e.target === this) closeModal();
         });
     </script>
-
+<script src="../js/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — SafeVoice</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <span>SafeVoice</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="#">Track Complaint</a></li>
+                <li><a href="#">Leaderboard</a></li>
+                <li class="user-menu">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span>Shad Hossain</span>
+                    <i class="fas fa-chevron-down"></i>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <ul class="sidebar-menu">
+                <li class="active">
+                    <a href="#"><i class="fas fa-home"></i> Dashboard</a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-file-alt"></i> New Complaint</a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-list"></i> My Complaints</a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-search"></i> Track Complaint</a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-gavel"></i> Legal Help</a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-trophy"></i> Leaderboard</a>
+                </li>
+                <li class="sidebar-divider"></li>
+                <li>
+                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                </li>
+                <li>
+                    <a href="login.html"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- WELCOME -->
+            <div class="welcome-bar">
+                <div>
+                    <h1>Welcome back, Shad! 👋</h1>
+                    <p>Here's what's happening with your complaints</p>
+                </div>
+                <a href="#" class="btn-new-complaint">
+                    <i class="fas fa-plus"></i> New Complaint
+                </a>
+            </div>
+
+            <!-- SUMMARY CARDS -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-icon blue">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>12</h3>
+                        <p>Total Complaints</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon green">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>8</h3>
+                        <p>Resolved</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon orange">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>3</h3>
+                        <p>Pending</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon red">
+                        <i class="fas fa-hands-helping"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>5</h3>
+                        <p>SOS Responses</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK ACTIONS -->
+            <div class="section-title">Quick Actions</div>
+            <div class="quick-actions">
+                <a href="#" class="action-card">
+                    <i class="fas fa-file-alt"></i>
+                    <span>New Complaint</span>
+                </a>
+                <a href="#" class="action-card sos">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Emergency SOS</span>
+                </a>
+                <a href="#" class="action-card">
+                    <i class="fas fa-search"></i>
+                    <span>Track Complaint</span>
+                </a>
+                <a href="#" class="action-card">
+                    <i class="fas fa-gavel"></i>
+                    <span>Legal Help</span>
+                </a>
+            </div>
+
+            <!-- RECENT COMPLAINTS -->
+            <div class="section-title">Recent Complaints</div>
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Complaint ID</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#SV-2024-001</td>
+                            <td>Harassment</td>
+                            <td>May 01, 2026</td>
+                            <td><span class="status resolved">Resolved</span></td>
+                            <td><a href="#" class="btn-view">View</a></td>
+                        </tr>
+                        <tr>
+                            <td>#SV-2024-002</td>
+                            <td>Fare Overcharge</td>
+                            <td>May 03, 2026</td>
+                            <td><span class="status pending">Pending</span></td>
+                            <td><a href="#" class="btn-view">View</a></td>
+                        </tr>
+                        <tr>
+                            <td>#SV-2024-003</td>
+                            <td>Crime</td>
+                            <td>May 05, 2026</td>
+                            <td><span class="status review">Under Review</span></td>
+                            <td><a href="#" class="btn-view">View</a></td>
+                        </tr>
+                        <tr>
+                            <td>#SV-2024-004</td>
+                            <td>Other</td>
+                            <td>May 07, 2026</td>
+                            <td><span class="status resolved">Resolved</span></td>
+                            <td><a href="#" class="btn-view">View</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>
