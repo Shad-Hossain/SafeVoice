@@ -19,7 +19,7 @@
     padding: 40px;
 }
 
-\\ header
+/* header */
 .auth-header {
     text-align: center;
     margin-bottom: 35px;
@@ -42,7 +42,7 @@
     font-size: 15px;
 }
 
-\\ Form
+/* Form */
 .form-group {
     margin-bottom: 20px;
 }
@@ -96,7 +96,7 @@
     color: #a0b4cc !important;
 }
 
-\\Form options
+/* Form Options */
 .form-options {
     display: flex;
     justify-content: space-between;
@@ -129,7 +129,7 @@
     color: #2d7dd2;
 }
 
-\\button 
+
 .btn-auth {
     width: 100%;
     background: #4f9eff;
@@ -151,7 +151,7 @@
     background: #2d7dd2;
 }
 
-\\divider
+
 .auth-divider {
     text-align: center;
     margin: 20px 0;
@@ -176,7 +176,7 @@
     position: relative;
 }
 
-\\switch 
+/* Switch */
 .auth-switch {
     text-align: center;
     color: #a0b4cc;
@@ -193,7 +193,7 @@
     color: #2d7dd2;
 }
 
-\\register
+/* Register */
 .form-row {
     display: flex;
     gap: 15px;
@@ -203,7 +203,7 @@
     flex: 1;
 }
 
-\\upload box
+/* Upload box */
 .upload-box {
     background: #0a0f1e;
     border: 2px dashed #1e2d4a;
@@ -245,7 +245,7 @@
     opacity: 0;
     cursor: pointer;
 }
-\\terms modal
+/* Terms modal */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -285,7 +285,7 @@
     transform: translateY(0);
 }
 
-\\modal header
+/* Moadal header */
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -318,7 +318,7 @@
     color: #ffffff;
 }
 
-\\ modal body
+/* Modal body */
 .modal-body {
     padding: 25px;
     overflow-y: auto;
@@ -343,7 +343,7 @@
     line-height: 1.7;
 }
 
-\\modal footer
+/* Modal footer */
 .modal-footer {
     display: flex;
     justify-content: flex-end;

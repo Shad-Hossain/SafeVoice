@@ -16,7 +16,7 @@ a {
     color: inherit;
 }
 
-\\navbar 
+/* navbar */
 
 .navbar {
     background-color: #0d1526;
@@ -93,7 +93,7 @@ a {
     background: #2d7dd2 !important;
 }
 
-\\hero 
+/* hero */
 .hero {
     max-width: 1200px;
     margin: 0 auto;
@@ -190,7 +190,7 @@ a {
     color: #a0b4cc;
 }
 
-\\ stats
+/* status */
 .stats {
     background: #0d1526;
     padding: 60px 20px;
@@ -223,7 +223,7 @@ a {
     margin-top: 8px;
 }
 
-\\ how it works
+/* how it works */
 .how-it-works {
     max-width: 1200px;
     margin: 0 auto;
@@ -291,7 +291,7 @@ a {
     font-size: 20px;
 }
 
-\\ top responders
+/* TOP RESPONDER */
 .responders {
     background: #0d1526;
     padding: 80px 20px;
@@ -380,7 +380,7 @@ a {
     border-radius: 20px;
 }
 
-\\Footer
+/* Footer */
 .footer {
     background: #060b16;
     padding: 60px 20px 20px;
