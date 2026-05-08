@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Incident — SafeVoice</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/complaint.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <span>SafeVoice</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="complaint-track.html">Track Complaint</a></li>
+                <li><a href="leaderboard.html">Leaderboard</a></li>
+                <li class="user-menu">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span>Shad Hossain</span>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="complaint-layout">
+        <div class="complaint-container">
+
+            <div class="complaint-header">
+                <h1><i class="fas fa-file-alt"></i> Report an Incident</h1>
+                <p>Your identity is protected. Report safely and anonymously.</p>
+            </div>
+
+            <!-- PROGRESS BAR -->
+            <div class="progress-bar">
+                <div class="progress-step active" id="step1">
+                    <div class="step-circle">1</div>
+                    <span>Incident Info</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" id="step2">
+                    <div class="step-circle">2</div>
+                    <span>Details</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" id="step3">
+                    <div class="step-circle">3</div>
+                    <span>Submit</span>
+                </div>
+            </div>
+
+            <!-- FORM -->
+            <div class="complaint-form">
+
+                <!-- STEP 1 -->
+                <div class="form-step active" id="formStep1">
+                    <div class="form-group">
+                        <label><i class="fas fa-tag"></i> Incident Type</label>
+                        <select class="form-select" id="incidentType">
+                            <option value="">Select incident type...</option>
+                            <option value="harassment">Harassment</option>
+                            <option value="fare_overcharge">Fare Overcharge</option>
+                            <option value="crime">Crime</option>
+                            <option value="corruption">Corruption</option>
+                            <option value="abuse">Abuse</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-alt"></i> Date & Time of Incident</label>
+                        <input type="datetime-local" class="form-input" id="incidentDate" />
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-map-marker-alt"></i> Location</label>
+                        <div class="location-input">
+                            <input type="text" class="form-input" id="incidentLocation" placeholder="Auto-detect or enter manually" />
+                            <button class="btn-locate" onclick="detectLocation()">
+                                <i class="fas fa-crosshairs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="anonymous-toggle">
+                        <div class="toggle-info">
+                            <i class="fas fa-user-secret"></i>
+                            <div>
+                                <h4>Anonymous Report</h4>
+                                <p>Your name will be hidden from the report</p>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="anonymousToggle" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <button class="btn-next" onclick="nextStep(2)">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="form-step" id="formStep2">
+                    <div class="form-group">
+                        <label><i class="fas fa-align-left"></i> Description</label>
+                        <textarea class="form-textarea" id="description" placeholder="Describe the incident in detail..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-paperclip"></i> Evidence <span style="color: #a0b4cc; font-weight: 400;">(Optional)</span></label>
+                        <div class="upload-box">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Upload photos or PDF</p>
+                            <span>JPG, PNG, PDF up to 10MB</span>
+                            <input type="file" accept="image/*, .pdf" multiple />
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn-back" onclick="nextStep(1)">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn-next" onclick="nextStep(3)">
+                            Next <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="form-step" id="formStep3">
+                    <div class="review-box">
+                        <h3><i class="fas fa-clipboard-check"></i> Review Your Report</h3>
+
+                        <div class="review-item">
+                            <span class="review-label">Incident Type</span>
+                            <span class="review-value" id="reviewType">—</span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label">Date & Time</span>
+                            <span class="review-value" id="reviewDate">—</span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label">Location</span>
+                            <span class="review-value" id="reviewLocation">—</span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label">Anonymous</span>
+                            <span class="review-value" id="reviewAnon">No</span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label">Description</span>
+                            <span class="review-value" id="reviewDesc">—</span>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn-back" onclick="nextStep(2)">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn-submit" onclick="submitComplaint()">
+                            <i class="fas fa-paper-plane"></i> Submit Report
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS MODAL -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-box success-modal">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Report Submitted!</h2>
+            <p>Your complaint has been successfully submitted.</p>
+            <div class="complaint-id-box">
+                <span>Complaint ID</span>
+                <h3 id="complaintId">SV-2026-0042</h3>
+                <p>Save this ID to track your complaint</p>
+            </div>
+            <div class="modal-footer" style="border: none; justify-content: center; gap: 15px;">
+                <a href="dashboard.html" class="btn-accept">Go to Dashboard</a>
+                <a href="complaint-track.html" class="btn-decline">Track Complaint</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Step navigation
+        function nextStep(step) {
+            document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.progress-step').forEach(s => s.classList.remove('active'));
+
+            document.getElementById('formStep' + step).classList.add('active');
+
+            for (let i = 1; i <= step; i++) {
+                document.getElementById('step' + i).classList.add('active');
+            }
+
+            if (step === 3) {
+                document.getElementById('reviewType').textContent = document.getElementById('incidentType').value || '—';
+                document.getElementById('reviewDate').textContent = document.getElementById('incidentDate').value || '—';
+                document.getElementById('reviewLocation').textContent = document.getElementById('incidentLocation').value || '—';
+                document.getElementById('reviewAnon').textContent = document.getElementById('anonymousToggle').checked ? 'Yes' : 'No';
+                document.getElementById('reviewDesc').textContent = document.getElementById('description').value || '—';
+            }
+        }
+
+        // Location detect
+        function detectLocation() {
+            const input = document.getElementById('incidentLocation');
+            input.placeholder = 'Detecting...';
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+                    .then(r => r.json())
+                    .then(data => {
+                        input.value = data.display_name;
+                    });
+            });
+        }
+
+        // Submit
+        function submitComplaint() {
+            const id = 'SV-2026-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('complaintId').textContent = id;
+            document.getElementById('successModal').classList.add('active');
+        }
+    </script>
+
+</body>
+</html>
