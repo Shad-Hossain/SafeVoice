@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ===== TOGGLE PASSWORD =====
+
     document.querySelectorAll('.toggle-password').forEach(function (eye) {
         // location icon skip করবে
         if (eye.classList.contains('fa-crosshairs')) return;
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ===== LOCATION AUTO DETECT =====
+   
     const locationInput = document.querySelector('input[placeholder="Auto-detect or enter manually"]');
     const locationIcon = document.querySelector('.fa-crosshairs');
 
@@ -53,12 +53,12 @@ document.addEventListener('DOMContentLoaded', function () {
         );
     }
 
-    // Icon click এ location নেবে
+   
     if (locationIcon && locationInput) {
         locationIcon.addEventListener('click', getLocation);
     }
 
-    // ===== LOGIN =====
+
     const authBtn = document.querySelector('.btn-auth');
 
     if (authBtn && window.location.href.includes('login')) {
@@ -76,8 +76,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ===== REGISTER =====
-   // ===== REGISTER =====
+
+
     if (authBtn && window.location.href.includes('register')) {
         authBtn.addEventListener('click', function () {
             const nameInput = document.querySelector('input[placeholder="Enter your name"]');
