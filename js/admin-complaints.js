@@ -11,13 +11,13 @@ let complaints = [
 
 let activeId = null;
 
-// ── INIT ──
+// INIT
 document.addEventListener('DOMContentLoaded', () => {
     renderTable(complaints);
     updateCounts(complaints);
 });
 
-// ── RENDER TABLE ──
+// RENDER TABLE 
 function renderTable(data) {
     const tbody = document.getElementById('complaintsBody');
     const empty = document.getElementById('emptyState');
@@ -57,7 +57,7 @@ function renderTable(data) {
     }).join('');
 }
 
-// ── COUNTS ──
+// COUNTS 
 function updateCounts(data) {
     document.getElementById('totalCount').textContent   = data.length;
     document.getElementById('pendingCount').textContent = data.filter(c => c.status === 'pending').length;
@@ -65,7 +65,7 @@ function updateCounts(data) {
     document.getElementById('resolvedCount').textContent= data.filter(c => c.status === 'resolved').length;
 }
 
-// ── FILTERS ──
+// FILTERS
 function applyFilters() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const status = document.getElementById('statusFilter').value;
@@ -95,7 +95,7 @@ function resetFilters() {
     updateCounts(complaints);
 }
 
-// ── MODAL OPEN ──
+// MODAL OPEN
 function openModal(id) {
     const c = complaints.find(x => x.id === id);
     if (!c) return;
@@ -116,7 +116,7 @@ function openModal(id) {
     document.getElementById('detailModal').classList.add('active');
 }
 
-// ── SAVE CHANGES ──
+// SAVE CHANGES 
 function saveChanges() {
     const c = complaints.find(x => x.id === activeId);
     if (!c) return;
@@ -131,7 +131,7 @@ function saveChanges() {
     showToast();
 }
 
-// ── MODAL CLOSE ──
+// MODAL CLOSE 
 function closeModal() {
     document.getElementById('detailModal').classList.remove('active');
     activeId = null;
@@ -142,7 +142,7 @@ document.getElementById('detailModal').addEventListener('click', function (e) {
     if (e.target === this) closeModal();
 });
 
-// ── TOAST ──
+// TOAST
 function showToast() {
     const t = document.getElementById('toast');
     t.classList.add('show');
