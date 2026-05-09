@@ -1,0 +1,416 @@
+/* ── LAYOUT ── */
+.lb-layout {
+    min-height: calc(100vh - 70px);
+    padding: 50px 20px;
+}
+
+.lb-container {
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+/* ── HEADER ── */
+.lb-header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.lb-header i {
+    font-size: 52px;
+    color: #FFD700;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.lb-header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.lb-header p {
+    color: #a0b4cc;
+    font-size: 15px;
+    margin-bottom: 15px;
+}
+
+.lb-reset-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #4f9eff15;
+    border: 1px solid #4f9eff40;
+    color: #4f9eff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 20px;
+}
+
+/* ── MY RANK BAR ── */
+.my-rank-bar {
+    background: linear-gradient(135deg, #1e2d4a, #0d1526);
+    border: 1px solid #4f9eff40;
+    border-radius: 14px;
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    gap: 15px;
+}
+
+.my-rank-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.my-avatar {
+    width: 46px;
+    height: 46px;
+    background: #4f9eff20;
+    border: 2px solid #4f9eff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #4f9eff;
+    flex-shrink: 0;
+}
+
+.my-rank-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.you-tag {
+    background: #4f9eff;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.my-rank-sub {
+    font-size: 13px;
+    color: #a0b4cc;
+}
+
+.my-rank-right {
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.my-rank-num {
+    display: block;
+    font-size: 30px;
+    font-weight: 800;
+    color: #4f9eff;
+    line-height: 1;
+}
+
+.my-rank-label {
+    font-size: 12px;
+    color: #a0b4cc;
+    font-weight: 600;
+}
+
+/* ── PODIUM ── */
+.podium-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 15px;
+    margin-bottom: 40px;
+}
+
+.podium-card {
+    background: #0d1526;
+    border: 1px solid #1e2d4a;
+    border-radius: 18px;
+    padding: 25px 20px 0;
+    width: 220px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s;
+}
+
+.podium-card:hover { transform: translateY(-5px); }
+
+.podium-card.gold  { border-color: #FFD70050; }
+.podium-card.silver{ border-color: #C0C0C050; }
+.podium-card.bronze{ border-color: #CD7F3250; }
+
+.podium-crown {
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    color: #FFD700;
+}
+
+.podium-rank {
+    font-size: 13px;
+    font-weight: 700;
+    color: #a0b4cc;
+    margin-bottom: 12px;
+    margin-top: 10px;
+}
+
+.gold  .podium-rank { color: #FFD700; }
+.silver.podium-rank { color: #C0C0C0; }
+.bronze .podium-rank{ color: #CD7F32; }
+
+.podium-avatar {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 26px;
+}
+
+.gold   .podium-avatar { background: #FFD70020; color: #FFD700; border: 2px solid #FFD700; }
+.silver .podium-avatar { background: #C0C0C020; color: #C0C0C0; border: 2px solid #C0C0C0; }
+.bronze .podium-avatar { background: #CD7F3220; color: #CD7F32; border: 2px solid #CD7F32; }
+
+.podium-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.podium-card p {
+    font-size: 13px;
+    color: #a0b4cc;
+    margin-bottom: 10px;
+}
+
+.podium-badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.gold   .podium-badge { background: #FFD70020; color: #FFD700; }
+.silver .podium-badge { background: #C0C0C020; color: #C0C0C0; }
+.bronze .podium-badge { background: #CD7F3220; color: #CD7F32; }
+
+.podium-bar {
+    border-top: 2px solid;
+    border-radius: 0 0 14px 14px;
+    margin: 0 -20px;
+}
+
+/* ── REWARDS ── */
+.rewards-section {
+    background: #0d1526;
+    border: 1px solid #1e2d4a;
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.rewards-section h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: #fff;
+}
+
+.rewards-section h3 i {
+    color: #4f9eff;
+    margin-right: 8px;
+}
+
+.rewards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.reward-card {
+    background: #0a0f1e;
+    border: 1px solid #1e2d4a;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+}
+
+.reward-rank {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.gold-text   { color: #FFD700; }
+.silver-text { color: #C0C0C0; }
+.bronze-text { color: #CD7F32; }
+
+.reward-card p {
+    font-size: 13px;
+    color: #a0b4cc;
+}
+
+/* ── FULL TABLE ── */
+.lb-table-section {
+    background: #0d1526;
+    border: 1px solid #1e2d4a;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.lb-table-section h3 {
+    font-size: 16px;
+    font-weight: 700;
+    padding: 20px 25px 0;
+    color: #fff;
+}
+
+.lb-table-section h3 i {
+    color: #4f9eff;
+    margin-right: 8px;
+}
+
+.lb-table {
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+.lb-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.lb-table thead {
+    background: #1e2d4a;
+}
+
+.lb-table th {
+    padding: 13px 20px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #a0b4cc;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lb-table td {
+    padding: 14px 20px;
+    font-size: 14px;
+    color: #fff;
+    border-bottom: 1px solid #1e2d4a;
+}
+
+.lb-table tr:last-child td { border-bottom: none; }
+.lb-table tr:hover td { background: #1e2d4a30; }
+
+/* rank number style */
+.rank-num {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #1e2d4a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: #a0b4cc;
+}
+
+.rank-num.gold-bg   { background: #FFD70020; color: #FFD700; border: 1px solid #FFD700; }
+.rank-num.silver-bg { background: #C0C0C020; color: #C0C0C0; border: 1px solid #C0C0C0; }
+.rank-num.bronze-bg { background: #CD7F3220; color: #CD7F32; border: 1px solid #CD7F32; }
+.rank-num.you-bg    { background: #4f9eff20; color: #4f9eff;  border: 1px solid #4f9eff; }
+
+.responder-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mini-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #1e2d4a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #4f9eff;
+    flex-shrink: 0;
+}
+
+.streak-badge {
+    background: #e6394620;
+    color: #e63946;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #4f9eff20;
+    color: #4f9eff;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+    .lb-layout { padding: 30px 15px; }
+
+    .podium-section {
+        gap: 8px;
+    }
+
+    .podium-card {
+        width: 100%;
+        max-width: 160px;
+        padding: 20px 12px 0;
+    }
+
+    .podium-card h3 { font-size: 13px; }
+
+    .rewards-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .my-rank-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .lb-table table { min-width: 500px; }
+}
+
+@media (max-width: 480px) {
+    .podium-section { gap: 5px; }
+    .podium-card { max-width: 110px; }
+    .podium-avatar { width: 48px; height: 48px; font-size: 20px; }
+    .lb-header h1 { font-size: 26px; }
+}
