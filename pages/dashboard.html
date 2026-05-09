@@ -6,197 +6,188 @@
     <title>Dashboard — SafeVoice</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="../css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
-    <!-- Navbar section-->
-    <nav class="navbar">
-        <div class="hamburger" id="hamburger">
-    <span></span>
-    <span></span>
-    <span></span>
-</div>
-<div class="nav-overlay" id="navOverlay"></div>
-        <div class="nav-container">
-            <a href="../index.html" class="logo">
-                <i class="fas fa-shield-alt"></i>
-                <span>SafeVoice</span>
-            </a>
-            <ul class="nav-links">
-                <li><a href="../index.html">Home</a></li>
-                <li><a href="#">Track Complaint</a></li>
-                <li><a href="#">Leaderboard</a></li>
-                <li class="user-menu">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <span>Shad Hossain</span>
-                    <i class="fas fa-chevron-down"></i>
-                </li>
-            </ul>
-        </div>
-    </nav>
-
-    <div class="dashboard-layout">
-
-        <!-- sidebar section-->
-        <aside class="sidebar">
-            <ul class="sidebar-menu">
-                <li class="active">
-                    <a href="#"><i class="fas fa-home"></i> Dashboard</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-file-alt"></i> New Complaint</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-list"></i> My Complaints</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-search"></i> Track Complaint</a>
-                </li>
-                <li>
-                    <a href="legal-help.html"><i class="fas fa-gavel"></i> Legal Help</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-trophy"></i> Leaderboard</a>
-                </li>
-                <li class="sidebar-divider"></li>
-                <li>
-                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
-                </li>
-                <li>
-                    <a href="login.html"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                </li>
-            </ul>
-        </aside>
-
-        <!-- Main content section-->
-        <main class="main-content">
-
-            <!-- WELCOME -->
-            <div class="welcome-bar">
-                <div>
-                    <h1>Welcome back, Shad! 👋</h1>
-                    <p>Here's what's happening with your complaints</p>
-                </div>
-                <!-- WELCOME -->
-<a href="complaint.html" class="btn-new-complaint">
-    <i class="fas fa-plus"></i> New Complaint
-</a>
-            </div>
-
-           <!-- Summary Card section-->
-            <div class="summary-cards">
-                <div class="summary-card">
-                    <div class="card-icon blue">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div class="card-info">
-                        <h3>12</h3>
-                        <p>Total Complaints</p>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="card-icon green">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="card-info">
-                        <h3>8</h3>
-                        <p>Resolved</p>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="card-icon orange">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="card-info">
-                        <h3>3</h3>
-                        <p>Pending</p>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="card-icon red">
-                        <i class="fas fa-hands-helping"></i>
-                    </div>
-                    <div class="card-info">
-                        <h3>5</h3>
-                        <p>SOS Responses</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Action section-->
-            <div class="section-title">Quick Actions</div>
-            <div class="quick-actions">
-                <!-- Quick Actions -->
-<a href="complaint.html" class="action-card">
-    <i class="fas fa-file-alt"></i>
-    <span>New Complaint</span>
-</a>
-                <a href="#" class="action-card sos">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Emergency SOS</span>
-                </a>
-                <a href="#" class="action-card">
-                    <i class="fas fa-search"></i>
-                    <span>Track Complaint</span>
-                </a>
-                <a href="legal-help.html" class="action-card">
-                 <i class="fas fa-gavel"></i>
-                     <span>Legal Help</span>
-                            </a>
-            </div>
-
-            <!-- Recent complain section-->
-            <div class="section-title">Recent Complaints</div>
-            <div class="complaints-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Complaint ID</th>
-                            <th>Type</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>#SV-2024-001</td>
-                            <td>Harassment</td>
-                            <td>May 01, 2026</td>
-                            <td><span class="status resolved">Resolved</span></td>
-                            <td><a href="#" class="btn-view">View</a></td>
-                        </tr>
-                        <tr>
-                            <td>#SV-2024-002</td>
-                            <td>Fare Overcharge</td>
-                            <td>May 03, 2026</td>
-                            <td><span class="status pending">Pending</span></td>
-                            <td><a href="#" class="btn-view">View</a></td>
-                        </tr>
-                        <tr>
-                            <td>#SV-2024-003</td>
-                            <td>Crime</td>
-                            <td>May 05, 2026</td>
-                            <td><span class="status review">Under Review</span></td>
-                            <td><a href="#" class="btn-view">View</a></td>
-                        </tr>
-                        <tr>
-                            <td>#SV-2024-004</td>
-                            <td>Other</td>
-                            <td>May 07, 2026</td>
-                            <td><span class="status resolved">Resolved</span></td>
-                            <td><a href="#" class="btn-view">View</a></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-        </main>
+<nav class="navbar">
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+    <div class="nav-overlay" id="navOverlay"></div>
+    <div class="nav-container">
+        <a href="../index.html" class="logo">
+            <i class="fas fa-shield-alt"></i><span>SafeVoice</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="complaint-track.html">Track Complaint</a></li>
+            <li><a href="leaderboard.html">Leaderboard</a></li>
+            <li class="user-menu">
+                <div class="user-avatar"><i class="fas fa-user"></i></div>
+                <span>Shad Hossain</span>
+                <i class="fas fa-chevron-down"></i>
+            </li>
+        </ul>
     </div>
+</nav>
 
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <ul class="sidebar-menu">
+            <li class="active"><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="complaint.html"><i class="fas fa-file-alt"></i> New Complaint</a></li>
+            <li><a href="my-complaints.html" onclick="showMyComplaints(event)"><i class="fas fa-list"></i> My Complaints</a></li>
+            <li><a href="complaint-track.html"><i class="fas fa-search"></i> Track Complaint</a></li>
+            <li><a href="legal-help.html"><i class="fas fa-gavel"></i> Legal Help</a></li>
+            <li><a href="leaderboard.html"><i class="fas fa-trophy"></i> Leaderboard</a></li>
+            <li><a href="sos.html"><i class="fas fa-exclamation-triangle" style="color:#e63946"></i> Emergency SOS</a></li>
+            <li class="sidebar-divider"></li>
+            <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Settings</a></li>
+            <li><a href="login.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <div class="welcome-bar">
+            <div>
+                <h1>Welcome back, Shad! 👋</h1>
+                <p>Here's what's happening with your complaints</p>
+            </div>
+            <a href="complaint.html" class="btn-new-complaint">
+                <i class="fas fa-plus"></i> New Complaint
+            </a>
+        </div>
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="card-icon blue"><i class="fas fa-file-alt"></i></div>
+                <div class="card-info"><h3>12</h3><p>Total Complaints</p></div>
+            </div>
+            <div class="summary-card">
+                <div class="card-icon green"><i class="fas fa-check-circle"></i></div>
+                <div class="card-info"><h3>8</h3><p>Resolved</p></div>
+            </div>
+            <div class="summary-card">
+                <div class="card-icon orange"><i class="fas fa-clock"></i></div>
+                <div class="card-info"><h3>3</h3><p>Pending</p></div>
+            </div>
+            <div class="summary-card">
+                <div class="card-icon red"><i class="fas fa-hands-helping"></i></div>
+                <div class="card-info"><h3>5</h3><p>SOS Responses</p></div>
+            </div>
+        </div>
+
+        <div class="section-title">Quick Actions</div>
+        <div class="quick-actions">
+            <a href="complaint.html" class="action-card">
+                <i class="fas fa-file-alt"></i><span>New Complaint</span>
+            </a>
+            <a href="sos.html" class="action-card sos">
+                <i class="fas fa-exclamation-triangle"></i><span>Emergency SOS</span>
+            </a>
+            <a href="complaint-track.html" class="action-card">
+                <i class="fas fa-search"></i><span>Track Complaint</span>
+            </a>
+            <a href="legal-help.html" class="action-card">
+                <i class="fas fa-gavel"></i><span>Legal Help</span>
+            </a>
+        </div>
+
+        <div class="section-title">Recent Complaints</div>
+        <div class="complaints-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Complaint ID</th><th>Type</th><th>Date</th><th>Status</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#SV-2026-1001</td><td>Harassment</td><td>May 01, 2026</td>
+                        <td><span class="status resolved">Resolved</span></td>
+                        <td><a href="complaint-track.html" class="btn-view">View</a></td>
+                    </tr>
+                    <tr>
+                        <td>#SV-2026-2002</td><td>Fare Overcharge</td><td>May 03, 2026</td>
+                        <td><span class="status pending">Pending</span></td>
+                        <td><a href="complaint-track.html" class="btn-view">View</a></td>
+                    </tr>
+                    <tr>
+                        <td>#SV-2026-3003</td><td>Crime</td><td>May 05, 2026</td>
+                        <td><span class="status review">Under Review</span></td>
+                        <td><a href="complaint-track.html" class="btn-view">View</a></td>
+                    </tr>
+                    <tr>
+                        <td>#SV-2024-004</td><td>Other</td><td>May 07, 2026</td>
+                        <td><span class="status resolved">Resolved</span></td>
+                        <td><a href="complaint-track.html" class="btn-view">View</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal" style="display:none;">
+    <div class="modal-box" style="max-width:480px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-cog"></i> Settings</h3>
+            <i class="fas fa-times modal-close" onclick="closeSettings()"></i>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom:20px;">
+                <h4 style="color:#4f9eff;margin-bottom:12px;">Profile</h4>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Full Name</label>
+                    <input type="text" value="Shad Hossain" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;">
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Email</label>
+                    <input type="email" value="shad@example.com" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;">
+                </div>
+                <div class="form-group">
+                    <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Phone</label>
+                    <input type="tel" value="+880 1700-000000" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;">
+                </div>
+            </div>
+            <div>
+                <h4 style="color:#4f9eff;margin-bottom:12px;">Notifications</h4>
+                <label style="display:flex;align-items:center;gap:10px;color:#a0b4cc;font-size:14px;margin-bottom:10px;cursor:pointer;">
+                    <input type="checkbox" checked style="accent-color:#4f9eff;width:16px;height:16px;"> Email notifications
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;color:#a0b4cc;font-size:14px;cursor:pointer;">
+                    <input type="checkbox" checked style="accent-color:#4f9eff;width:16px;height:16px;"> SOS alerts
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-decline" onclick="closeSettings()">Cancel</button>
+            <button class="btn-accept" onclick="saveSettings()"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openSettings() {
+    document.getElementById('settingsModal').style.display = 'flex';
+}
+function closeSettings() {
+    document.getElementById('settingsModal').style.display = 'none';
+}
+function saveSettings() {
+    closeSettings();
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:30px;right:30px;background:#2ecc71;color:#fff;padding:14px 22px;border-radius:10px;font-size:14px;font-weight:600;z-index:99999;display:flex;align-items:center;gap:10px;';
+    toast.innerHTML = '<i class="fas fa-check-circle"></i> Settings saved!';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+function showMyComplaints(e) {
+    e.preventDefault();
+    window.location.href = 'complaint-track.html';
+}
+</script>
+<script src="../js/main.js"></script>
 </body>
 </html>
