@@ -11,157 +11,119 @@
 </head>
 <body class="sos-body">
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
-        <div class="nav-overlay" id="navOverlay"></div>
-        <div class="nav-container">
-            <a href="../index.html" class="logo">
-                <i class="fas fa-shield-alt"></i>
-                <span>SafeVoice</span>
+<nav class="navbar">
+    <div class="nav-overlay" id="navOverlay"></div>
+    <div class="nav-container">
+        <a href="../index.html" class="logo">
+            <i class="fas fa-shield-alt"></i><span>SafeVoice</span>
+        </a>
+        <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li class="user-menu">
+                <div class="user-avatar"><i class="fas fa-user"></i></div>
+                <span>Shad Hossain</span>
+                <i class="fas fa-chevron-down"></i>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="sos-layout">
+    <div class="sos-panel">
+        <div class="sos-status-bar" id="statusBar">
+            <span class="status-dot"></span>
+            <span id="statusText">Ready to send alert</span>
+        </div>
+        <div class="sos-heading">
+            <h1>Emergency <span>SOS</span></h1>
+            <p>Press and hold the button to send an emergency alert to nearby responders</p>
+        </div>
+        <div class="sos-btn-wrapper" id="sosBtnWrapper">
+            <div class="sos-ring sos-ring-1"></div>
+            <div class="sos-ring sos-ring-2"></div>
+            <div class="sos-ring sos-ring-3"></div>
+            <button class="sos-btn" id="sosBtn"
+                onmousedown="startHold()" onmouseup="cancelHold()" onmouseleave="cancelHold()"
+                ontouchstart="startHold()" ontouchend="cancelHold()">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>SOS</span>
+                <small>Hold to activate</small>
+            </button>
+            <svg class="hold-progress" id="holdProgress" viewBox="0 0 160 160">
+                <circle class="hold-track" cx="80" cy="80" r="72"/>
+                <circle class="hold-fill" cx="80" cy="80" r="72" id="holdFill"/>
+            </svg>
+        </div>
+        <div class="sos-location-bar" id="locationBar">
+            <i class="fas fa-map-marker-alt"></i>
+            <span id="locationText">Detecting your location...</span>
+        </div>
+        <div class="sos-quick-actions">
+            <a href="tel:999" class="quick-action-btn police">
+                <i class="fas fa-shield-alt"></i><span>Police</span><small>999</small>
             </a>
-            <div class="hamburger" id="hamburger">
-                <span></span><span></span><span></span>
-            </div>
-            <ul class="nav-links">
-                <li><a href="../index.html">Home</a></li>
-                <li><a href="dashboard.html">Dashboard</a></li>
-                <li class="user-menu">
-                    <div class="user-avatar"><i class="fas fa-user"></i></div>
-                    <span>Shad Hossain</span>
-                </li>
-            </ul>
-        </div>
-    </nav>
-
-    <!-- MAIN -->
-    <div class="sos-layout">
-
-        <!-- LEFT — SOS PANEL -->
-        <div class="sos-panel">
-
-            <!-- STATUS BAR -->
-            <div class="sos-status-bar" id="statusBar">
-                <span class="status-dot"></span>
-                <span id="statusText">Ready to send alert</span>
-            </div>
-
-            <!-- TITLE -->
-            <div class="sos-heading">
-                <h1>Emergency <span>SOS</span></h1>
-                <p>Press and hold the button to send an emergency alert to nearby responders</p>
-            </div>
-
-            <!-- BIG SOS BUTTON -->
-            <div class="sos-btn-wrapper" id="sosBtnWrapper">
-                <div class="sos-ring sos-ring-1"></div>
-                <div class="sos-ring sos-ring-2"></div>
-                <div class="sos-ring sos-ring-3"></div>
-                <button class="sos-btn" id="sosBtn"
-                    onmousedown="startHold()" onmouseup="cancelHold()" onmouseleave="cancelHold()"
-                    ontouchstart="startHold()" ontouchend="cancelHold()">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>SOS</span>
-                    <small>Hold to activate</small>
-                </button>
-                <!-- Hold progress ring -->
-                <svg class="hold-progress" id="holdProgress" viewBox="0 0 160 160">
-                    <circle class="hold-track" cx="80" cy="80" r="72"/>
-                    <circle class="hold-fill"  cx="80" cy="80" r="72" id="holdFill"/>
-                </svg>
-            </div>
-
-            <!-- LOCATION -->
-            <div class="sos-location-bar" id="locationBar">
-                <i class="fas fa-map-marker-alt"></i>
-                <span id="locationText">Detecting your location...</span>
-            </div>
-
-            <!-- QUICK ACTIONS -->
-            <div class="sos-quick-actions">
-                <a href="tel:999" class="quick-action-btn police">
-                    <i class="fas fa-shield-alt"></i>
-                    <span>Police</span>
-                    <small>999</small>
-                </a>
-                <a href="tel:199" class="quick-action-btn fire">
-                    <i class="fas fa-fire-extinguisher"></i>
-                    <span>Fire Service</span>
-                    <small>199</small>
-                </a>
-                <a href="tel:16430" class="quick-action-btn ambulance">
-                    <i class="fas fa-ambulance"></i>
-                    <span>Ambulance</span>
-                    <small>16430</small>
-                </a>
-            </div>
-
-        </div>
-
-        <!-- RIGHT — RESPONDERS PANEL -->
-        <div class="responders-panel">
-
-            <!-- NEARBY COUNT -->
-            <div class="nearby-header">
-                <div class="nearby-count-box">
-                    <span id="nearbyCount">0</span>
-                    <p>Nearby Responders</p>
-                </div>
-                <div class="scan-indicator" id="scanIndicator">
-                    <div class="scan-dot"></div>
-                    <span>Scanning area...</span>
-                </div>
-            </div>
-
-            <!-- RESPONDER LIST -->
-            <div class="responder-list" id="responderList">
-                <div class="scanning-placeholder" id="scanPlaceholder">
-                    <div class="radar-anim">
-                        <div class="radar-ring"></div>
-                        <div class="radar-ring"></div>
-                        <div class="radar-ring"></div>
-                        <i class="fas fa-wifi"></i>
-                    </div>
-                    <p>Scanning for nearby responders...</p>
-                    <small>Active users within 200m will appear here</small>
-                </div>
-            </div>
-
-            <!-- ALERT LOG -->
-            <div class="alert-log" id="alertLog" style="display:none;">
-                <h4><i class="fas fa-bell"></i> Alert Log</h4>
-                <div class="log-list" id="logList"></div>
-            </div>
-
+            <a href="tel:199" class="quick-action-btn fire">
+                <i class="fas fa-fire-extinguisher"></i><span>Fire Service</span><small>199</small>
+            </a>
+            <a href="tel:16430" class="quick-action-btn ambulance">
+                <i class="fas fa-ambulance"></i><span>Ambulance</span><small>16430</small>
+            </a>
         </div>
     </div>
 
-    <!-- ACTIVATED OVERLAY -->
-    <div class="sos-activated-overlay" id="activatedOverlay">
-        <div class="activated-box">
-            <div class="activated-icon">
-                <div class="pulse-ring"></div>
-                <div class="pulse-ring delay1"></div>
-                <i class="fas fa-broadcast-tower"></i>
+    <div class="responders-panel">
+        <div class="nearby-header">
+            <div class="nearby-count-box">
+                <span id="nearbyCount">0</span><p>Nearby Responders</p>
             </div>
-            <h2>SOS Alert Sent!</h2>
-            <p>Your emergency alert has been broadcast to <strong id="alertedCount">0</strong> nearby responders.</p>
-            <div class="activated-location">
-                <i class="fas fa-map-marker-alt"></i>
-                <span id="activatedLocation">—</span>
+            <div class="scan-indicator" id="scanIndicator">
+                <div class="scan-dot"></div><span>Scanning area...</span>
             </div>
-            <div class="activated-actions">
-                <button class="btn-cancel-sos" onclick="cancelSOS()">
-                    <i class="fas fa-times"></i> Cancel Alert
-                </button>
-                <a href="tel:999" class="btn-call-police">
-                    <i class="fas fa-phone"></i> Call Police
-                </a>
+        </div>
+        <div class="responder-list" id="responderList">
+            <div class="scanning-placeholder" id="scanPlaceholder">
+                <div class="radar-anim">
+                    <div class="radar-ring"></div><div class="radar-ring"></div><div class="radar-ring"></div>
+                    <i class="fas fa-wifi"></i>
+                </div>
+                <p>Scanning for nearby responders...</p>
+                <small>Active users within 200m will appear here</small>
             </div>
-            <p class="activated-note">Stay calm. Help is on the way. Keep your phone with you.</p>
+        </div>
+        <div class="alert-log" id="alertLog" style="display:none;">
+            <h4><i class="fas fa-bell"></i> Alert Log</h4>
+            <div class="log-list" id="logList"></div>
         </div>
     </div>
+</div>
 
-    <script src="../js/main.js"></script>
-    <script src="../js/sos.js"></script>
+<div class="sos-activated-overlay" id="activatedOverlay">
+    <div class="activated-box">
+        <div class="activated-icon">
+            <div class="pulse-ring"></div><div class="pulse-ring delay1"></div>
+            <i class="fas fa-broadcast-tower"></i>
+        </div>
+        <h2>SOS Alert Sent!</h2>
+        <p>Your emergency alert has been broadcast to <strong id="alertedCount">0</strong> nearby responders.</p>
+        <div class="activated-location">
+            <i class="fas fa-map-marker-alt"></i>
+            <span id="activatedLocation">Detecting...</span>
+        </div>
+        <div class="activated-actions">
+            <button class="btn-cancel-sos" onclick="cancelSOS()">
+                <i class="fas fa-times"></i> Cancel Alert
+            </button>
+            <a href="tel:999" class="btn-call-police">
+                <i class="fas fa-phone"></i> Call Police
+            </a>
+        </div>
+        <p class="activated-note">Stay calm. Help is on the way. Keep your phone with you.</p>
+    </div>
+</div>
+
+<script src="../js/main.js"></script>
+<script src="../js/sos.js"></script>
 </body>
 </html>
