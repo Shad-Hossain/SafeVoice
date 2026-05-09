@@ -1,4 +1,4 @@
-/* ── LAYOUT ── */
+/* LAYOUT  */
 .lb-layout {
     min-height: calc(100vh - 70px);
     padding: 50px 20px;
@@ -9,7 +9,7 @@
     margin: 0 auto;
 }
 
-/* ── HEADER ── */
+/* HEADER  */
 .lb-header {
     text-align: center;
     margin-bottom: 35px;
@@ -47,7 +47,7 @@
     border-radius: 20px;
 }
 
-/* ── MY RANK BAR ── */
+/* MY RANK BAR  */
 .my-rank-bar {
     background: linear-gradient(135deg, #1e2d4a, #0d1526);
     border: 1px solid #4f9eff40;
@@ -123,7 +123,7 @@
     font-weight: 600;
 }
 
-/* ── PODIUM ── */
+/*  PODIUM  */
 .podium-section {
     display: flex;
     justify-content: center;
@@ -217,7 +217,7 @@
     margin: 0 -20px;
 }
 
-/* ── REWARDS ── */
+/* REWARDS  */
 .rewards-section {
     background: #0d1526;
     border: 1px solid #1e2d4a;
@@ -268,7 +268,7 @@
     color: #a0b4cc;
 }
 
-/* ── FULL TABLE ── */
+/* FULL TABLE  */
 .lb-table-section {
     background: #0d1526;
     border: 1px solid #1e2d4a;
@@ -378,7 +378,7 @@
     color: #4f9eff;
 }
 
-/* ── RESPONSIVE ── */
+/* RESPONSIVE  */
 @media (max-width: 768px) {
     .lb-layout { padding: 30px 15px; }
 
