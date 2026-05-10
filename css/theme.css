@@ -1,0 +1,349 @@
+/* ===== SAFEVOICE THEME SYSTEM ===== */
+/* Dark mode = default (original design) */
+/* Light mode = toggled via .light-mode on body */
+
+:root {
+    --bg-primary: #0a0f1e;
+    --bg-secondary: #0d1526;
+    --bg-card: #0a0f1e;
+    --border-color: #1e2d4a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0b4cc;
+    --text-muted: #4a5568;
+    --accent: #4f9eff;
+    --accent-hover: #2d7dd2;
+    --accent-glow: #4f9eff20;
+    --success: #2ecc71;
+    --danger: #e63946;
+    --input-bg: #0a0f1e;
+    --navbar-bg: #0d1526;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --toggle-bg: #1e2d4a;
+}
+
+body.light-mode {
+    --bg-primary: #f0f4f8;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --border-color: #d1dce8;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-glow: #2563eb18;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --input-bg: #f8fafc;
+    --navbar-bg: #ffffff;
+    --shadow: 0 4px 24px rgba(0,0,0,0.10);
+    --toggle-bg: #e2e8f0;
+}
+
+/* ===== THEME TOGGLE BUTTON ===== */
+.theme-toggle {
+    background: var(--toggle-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.theme-toggle i {
+    font-size: 14px;
+    transition: transform 0.4s ease;
+}
+
+.theme-toggle:hover i {
+    transform: rotate(20deg);
+}
+
+.theme-toggle .toggle-label {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ===== GLOBAL BODY OVERRIDES FOR LIGHT MODE ===== */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Navbar */
+body.light-mode .navbar {
+    background-color: var(--navbar-bg);
+    border-bottom-color: var(--border-color);
+    box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+}
+
+body.light-mode .nav-links a {
+    color: var(--text-secondary);
+}
+
+body.light-mode .nav-links a:hover {
+    color: var(--text-primary);
+}
+
+/* Cards & Panels */
+body.light-mode .hero-card,
+body.light-mode .step,
+body.light-mode .responder-card,
+body.light-mode .stat-card,
+body.light-mode .complaint-form,
+body.light-mode .review-box,
+body.light-mode .anonymous-toggle,
+body.light-mode .upload-box,
+body.light-mode .complaint-id-box,
+body.light-mode .modal-box,
+body.light-mode .dashboard-card,
+body.light-mode .sidebar,
+body.light-mode .sidebar-link,
+body.light-mode .track-card,
+body.light-mode .legal-card,
+body.light-mode .leader-card,
+body.light-mode .admin-panel,
+body.light-mode .complaint-row,
+body.light-mode .sos-card,
+body.light-mode .auth-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body.light-mode .stats,
+body.light-mode .responders,
+body.light-mode .footer {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+/* Inputs */
+body.light-mode .form-select,
+body.light-mode .form-input,
+body.light-mode .form-textarea {
+    background: var(--input-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body.light-mode .form-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+body.light-mode .form-select:focus,
+body.light-mode .form-input:focus,
+body.light-mode .form-textarea:focus {
+    border-color: var(--accent);
+}
+
+body.light-mode .form-select::placeholder,
+body.light-mode .form-input::placeholder,
+body.light-mode .form-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+body.light-mode .form-group label {
+    color: var(--text-secondary);
+}
+
+body.light-mode .form-group label i {
+    color: var(--accent);
+}
+
+/* Text overrides */
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4 {
+    color: var(--text-primary);
+}
+
+body.light-mode p {
+    color: var(--text-secondary);
+}
+
+body.light-mode .complaint-header p,
+body.light-mode .hero-content p,
+body.light-mode .stat-card p,
+body.light-mode .step p,
+body.light-mode .toggle-info p {
+    color: var(--text-secondary);
+}
+
+/* Progress bar */
+body.light-mode .step-circle {
+    background: var(--border-color);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+body.light-mode .progress-step.active .step-circle {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+body.light-mode .progress-line {
+    background: var(--border-color);
+}
+
+body.light-mode .progress-step span {
+    color: var(--text-secondary);
+}
+
+body.light-mode .progress-step.active span {
+    color: var(--accent);
+}
+
+/* Review items */
+body.light-mode .review-item {
+    border-bottom-color: var(--border-color);
+}
+
+body.light-mode .review-label {
+    color: var(--text-secondary);
+}
+
+body.light-mode .review-value {
+    color: var(--text-primary);
+}
+
+body.light-mode .review-box h3 {
+    color: var(--accent);
+}
+
+/* Buttons */
+body.light-mode .btn-back {
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+    background: transparent;
+}
+
+body.light-mode .btn-back:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+body.light-mode .btn-locate {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Footer */
+body.light-mode .footer {
+    background: #f8fafc;
+}
+
+body.light-mode .footer-brand p,
+body.light-mode .footer-links ul li a,
+body.light-mode .footer-contact p,
+body.light-mode .footer-bottom {
+    color: var(--text-secondary);
+}
+
+body.light-mode .footer-links h4,
+body.light-mode .footer-contact h4 {
+    color: var(--text-primary);
+}
+
+/* Slider (toggle switch) */
+body.light-mode .slider {
+    background: var(--border-color);
+}
+
+/* Modal overlay */
+body.light-mode .modal-overlay {
+    background: rgba(0,0,0,0.5);
+}
+
+/* Dashboard & admin specific */
+body.light-mode .dashboard-layout {
+    background: var(--bg-primary);
+}
+
+body.light-mode .sidebar {
+    background: var(--bg-secondary);
+    border-right-color: var(--border-color);
+}
+
+body.light-mode .sidebar-link {
+    color: var(--text-secondary);
+}
+
+body.light-mode .sidebar-link:hover,
+body.light-mode .sidebar-link.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+/* Complaint header accent */
+body.light-mode .complaint-header h1 i {
+    color: var(--accent);
+}
+
+/* Logo keeps accent color */
+body.light-mode .logo {
+    color: var(--accent);
+}
+
+body.light-mode .btn-login {
+    border-color: var(--accent);
+    color: var(--accent) !important;
+}
+
+body.light-mode .btn-register {
+    background: var(--accent);
+}
+
+/* User avatar */
+body.light-mode .user-avatar {
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-color: var(--border-color);
+}
+
+/* Dropdown */
+body.light-mode .user-dropdown {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+body.light-mode .user-dropdown a {
+    color: var(--text-secondary);
+}
+
+body.light-mode .user-dropdown a:hover {
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+body.light-mode .dropdown-divider {
+    border-color: var(--border-color);
+}
+
+/* Hamburger lines */
+body.light-mode .hamburger span {
+    background: var(--text-primary);
+}
+
+/* Smooth transition on all common elements */
+*, *::before, *::after {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease;
+}
