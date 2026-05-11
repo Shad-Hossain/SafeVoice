@@ -1,0 +1,164 @@
+body{
+    background: #0b1220;
+    color: #e5e7eb;
+}
+
+/* NAVBAR */
+.navbar{
+    background: #0f1a2e;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* SIDEBAR */
+.sidebar{
+    background: #0f1a2e;
+    width: 240px;
+}
+
+.sidebar-menu li a{
+    color: #cbd5e1;
+    display: block;
+    padding: 12px 18px;
+    border-radius: 10px;
+    transition: 0.3s;
+}
+
+.sidebar-menu li a:hover{
+    background: #1e3a8a;
+    color: white;
+}
+
+.sidebar-menu li.active a{
+    background: #2563eb;
+    color: white;
+}
+
+/* MAIN AREA */
+.main-content{
+    padding: 25px;
+}
+
+/* WELCOME BAR */
+.welcome-bar{
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    padding: 25px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    color: white;
+}
+
+/* SUMMARY CARDS */
+.summary-cards{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.summary-card{
+    background: #111c33;
+    padding: 20px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: 0.3s;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.summary-card:hover{
+    transform: translateY(-5px);
+    background: #14213d;
+}
+
+.card-icon{
+    width: 55px;
+    height: 55px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+}
+
+/* ICON COLORS */
+.card-icon.blue{
+    background: #2563eb;
+}
+
+.card-icon.orange{
+    background: #f59e0b;
+}
+
+.card-icon.green{
+    background: #10b981;
+}
+
+.card-icon.red{
+    background: #ef4444;
+}
+
+/* TABLE */
+.complaints-table{
+    background: #111c33;
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+table{
+    width: 100%;
+    border-collapse: collapse;
+    color: #e5e7eb;
+}
+
+table th{
+    text-align: left;
+    padding: 14px;
+    background: #0f1a2e;
+    color: #93c5fd;
+}
+
+table td{
+    padding: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* STATUS */
+.status{
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status.pending{
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.status.resolved{
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.status.review{
+    background: rgba(37, 99, 235, 0.2);
+    color: #60a5fa;
+}
+
+/* BUTTON */
+.btn-view{
+    background: #2563eb;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 13px;
+    transition: 0.3s;
+}
+
+.btn-view:hover{
+    background: #1d4ed8;
+}

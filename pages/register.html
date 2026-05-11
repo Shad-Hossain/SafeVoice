@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — SafeVoice</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+    <div class="nav-overlay" id="navOverlay"></div>
+    <div class="nav-container">
+        <a href="../index.html" class="logo"><i class="fas fa-shield-alt"></i><span>SafeVoice</span></a>
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="complaint-track.html">Track Complaint</a></li>
+            <li><a href="leaderboard.html">Leaderboard</a></li>
+            <li><a href="login.html" class="btn-login">Login</a></li>
+            <li><a href="register.html" class="btn-register">Register</a></li>
+        </ul>
+    </div>
+</nav>
+
+<section class="auth-section">
+    <div class="auth-container" style="max-width:550px;">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fas fa-user-plus"></i>
+                <h2>Create Account</h2>
+                <p>Join SafeVoice and make your voice heard</p>
+            </div>
+            <div class="auth-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="regName" placeholder="Enter your name" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-phone"></i>
+                            <input type="tel" placeholder="+880 1700-000000" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="regEmail" placeholder="Enter your email" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password1" placeholder="Create password" />
+                            <i class="fas fa-eye toggle-password"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password2" placeholder="Confirm password" />
+                            <i class="fas fa-eye toggle-password"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input type="text" placeholder="Auto-detect or enter manually" />
+                        <i class="fas fa-crosshairs toggle-password" style="color:#4f9eff;cursor:pointer;"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Profile Photo <span style="color:#a0b4cc;font-weight:400;">(Optional)</span></label>
+                    <div class="upload-box">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click to upload photo</p><span>JPG, PNG up to 2MB</span>
+                        <input type="file" accept="image/*" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="remember-me">
+                        <input type="checkbox" id="termsCheckbox" />
+                        <span>I agree to the <a href="#" id="termsLink" style="color:#4f9eff;">Terms &amp; Conditions</a></span>
+                    </label>
+                </div>
+                <button class="btn-auth" id="registerBtn">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+                <div class="auth-divider"><span>or</span></div>
+                <p class="auth-switch">Already have an account? <a href="login.html">Login here</a></p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Terms Modal -->
+<div class="modal-overlay" id="termsModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-contract"></i> Terms &amp; Conditions</h3>
+            <i class="fas fa-times modal-close" onclick="closeModal()"></i>
+        </div>
+        <div class="modal-body">
+            <h4>1. Acceptance of Terms</h4>
+            <p>By registering on SafeVoice, you agree to these terms and conditions.</p>
+            <h4>2. User Responsibilities</h4>
+            <p>You are responsible for providing accurate information when submitting complaints.</p>
+            <h4>3. Anonymous Complaints</h4>
+            <p>SafeVoice allows anonymous reporting. Misuse for harassment is strictly prohibited.</p>
+            <h4>4. Privacy Policy</h4>
+            <p>Your personal data is protected and will never be shared with third parties.</p>
+            <h4>5. Emergency SOS</h4>
+            <p>The SOS feature is for genuine emergencies only.</p>
+            <h4>6. Content Policy</h4>
+            <p>Users must not upload offensive, illegal, or misleading content.</p>
+            <h4>7. Account Security</h4>
+            <p>You are responsible for maintaining the confidentiality of your account credentials.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-decline" onclick="closeModal()">Decline</button>
+            <button class="btn-accept" onclick="acceptTerms()">Accept</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('registerBtn').addEventListener('click', function() {
+    const name     = document.getElementById('regName').value;
+    const email    = document.getElementById('regEmail').value;
+    const password = document.getElementById('password1').value;
+    const confirm  = document.getElementById('password2').value;
+    const terms    = document.getElementById('termsCheckbox');
+    if (!name || !email || !password) { alert('Please fill in all fields!'); return; }
+    if (password !== confirm) { alert('Passwords do not match!'); return; }
+    if (!terms.checked) { alert('Please accept the Terms & Conditions!'); return; }
+    localStorage.setItem('isLoggedIn', 'true');
+    window.location.href = 'dashboard.html';
+});
+document.getElementById('termsLink').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('termsModal').classList.add('active');
+});
+function closeModal() { document.getElementById('termsModal').classList.remove('active'); }
+function acceptTerms() { document.getElementById('termsCheckbox').checked = true; closeModal(); }
+document.getElementById('termsModal').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
+</script>
+<script src="../js/main.js"></script>
+</body>
+</html>

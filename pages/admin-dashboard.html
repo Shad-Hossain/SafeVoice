@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — SafeVoice</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<script>
+    if (localStorage.getItem('isAdminLoggedIn') !== 'true') window.location.href = 'admin-login.html';
+</script>
+
+<nav class="navbar">
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+    <div class="nav-overlay" id="navOverlay"></div>
+    <div class="nav-container">
+        <a href="../index.html" class="logo">
+            <i class="fas fa-user-shield"></i><span>SafeVoice Admin</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="admin-dashboard.html">Dashboard</a></li>
+            <li><a href="#" onclick="logout()">Logout</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <ul class="sidebar-menu">
+            <li class="active"><a href="admin-dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="admin-complaint.html"><i class="fas fa-file-alt"></i> Complaints</a></li>
+            <li><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Users</a></li>
+            <li><a href="#" onclick="showSection('sos')"><i class="fas fa-exclamation-triangle"></i> SOS Alerts</a></li>
+            
+        </ul>
+    </aside>
+
+    <main class="main-content" id="mainContent">
+
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard">
+            <div class="welcome-bar">
+                <h1>Welcome Admin 👋</h1>
+                <p>Manage SafeVoice system</p>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card" style="cursor:pointer" onclick="window.location.href='admin-complaints.html'">
+                    <div class="card-icon blue"><i class="fas fa-file-alt"></i></div>
+                    <div class="card-info"><h3>154</h3><p>Total Complaints</p></div>
+                </div>
+                <div class="summary-card" style="cursor:pointer" onclick="window.location.href='admin-complaints.html'">
+                    <div class="card-icon orange"><i class="fas fa-clock"></i></div>
+                    <div class="card-info"><h3>23</h3><p>Pending</p></div>
+                </div>
+                <div class="summary-card" style="cursor:pointer" onclick="window.location.href='admin-complaints.html'">
+                    <div class="card-icon green"><i class="fas fa-check"></i></div>
+                    <div class="card-info"><h3>97</h3><p>Resolved</p></div>
+                </div>
+                <div class="summary-card" style="cursor:pointer" onclick="showSection('sos')">
+                    <div class="card-icon red"><i class="fas fa-bolt"></i></div>
+                    <div class="card-info"><h3>11</h3><p>SOS Alerts</p></div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:15px;">Recent Activity</div>
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr><th>Complaint ID</th><th>Type</th><th>Date</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong style="color:#4f9eff">SV-2026-1001</strong></td>
+                            <td>Harassment</td><td>May 01, 2026</td>
+                            <td><span class="status resolved">Resolved</span></td>
+                            <td><a href="admin-complaint.html" class="btn-view">View</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color:#4f9eff">SV-2026-2002</strong></td>
+                            <td>Fare Overcharge</td><td>May 03, 2026</td>
+                            <td><span class="status pending">Pending</span></td>
+                            <td><a href="admin-complaint.html" class="btn-view">View</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color:#4f9eff">SV-2026-3003</strong></td>
+                            <td>Corruption</td><td>May 05, 2026</td>
+                            <td><span class="status review">Under Review</span></td>
+                            <td><a href="admin-complaint.html" class="btn-view">View</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- USERS VIEW -->
+        <div id="view-users" style="display:none">
+            <div class="welcome-bar"><h1>User Management</h1><p>Manage all registered users</p></div>
+            <div class="complaints-table">
+                <table>
+                    <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Joined</th><th>Complaints</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td>1</td><td>Shad Hossain</td><td>shad@example.com</td><td>Jan 10, 2026</td><td>12</td><td><span class="status resolved">Active</span></td><td><button class="btn-view" onclick="alert('User details: Shad Hossain')">View</button></td></tr>
+                        <tr><td>2</td><td>Tania Begum</td><td>tania@example.com</td><td>Feb 05, 2026</td><td>7</td><td><span class="status resolved">Active</span></td><td><button class="btn-view" onclick="alert('User details: Tania Begum')">View</button></td></tr>
+                        <tr><td>3</td><td>Arif Hossain</td><td>arif@example.com</td><td>Mar 12, 2026</td><td>5</td><td><span class="status resolved">Active</span></td><td><button class="btn-view" onclick="alert('User details: Arif Hossain')">View</button></td></tr>
+                        <tr><td>4</td><td>Nadia Islam</td><td>nadia@example.com</td><td>Apr 01, 2026</td><td>3</td><td><span class="status pending">Suspended</span></td><td><button class="btn-view" onclick="alert('User details: Nadia Islam')">View</button></td></tr>
+                        <tr><td>5</td><td>Rakib Hassan</td><td>rakib@example.com</td><td>Apr 20, 2026</td><td>8</td><td><span class="status resolved">Active</span></td><td><button class="btn-view" onclick="alert('User details: Rakib Hassan')">View</button></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SOS VIEW -->
+        <div id="view-sos" style="display:none">
+            <div class="welcome-bar"><h1>SOS Alerts</h1><p>All emergency SOS signals</p></div>
+            <div class="complaints-table">
+                <table>
+                    <thead><tr><th>Alert ID</th><th>User</th><th>Location</th><th>Time</th><th>Responders</th><th>Status</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong style="color:#e63946">SOS-001</strong></td><td>Tania Begum</td><td>Mirpur, Dhaka</td><td>May 07, 09:14 AM</td><td>3</td><td><span class="status resolved">Resolved</span></td></tr>
+                        <tr><td><strong style="color:#e63946">SOS-002</strong></td><td>Anonymous</td><td>Gulshan, Dhaka</td><td>May 08, 11:30 PM</td><td>1</td><td><span class="status review">Active</span></td></tr>
+                        <tr><td><strong style="color:#e63946">SOS-003</strong></td><td>Arif Hossain</td><td>Uttara, Dhaka</td><td>May 09, 01:22 AM</td><td>5</td><td><span class="status resolved">Resolved</span></td></tr>
+                        <tr><td><strong style="color:#e63946">SOS-004</strong></td><td>Unknown</td><td>Rampura, Dhaka</td><td>May 09, 08:55 AM</td><td>0</td><td><span class="status pending">Pending</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SETTINGS VIEW -->
+        <div id="view-settings" style="display:none">
+            <div class="welcome-bar"><h1>System Settings</h1><p>Configure SafeVoice admin settings</p></div>
+            <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:30px;max-width:600px;">
+                <h3 style="color:#4f9eff;margin-bottom:20px;font-size:16px;"><i class="fas fa-user-shield"></i> Admin Account</h3>
+                <div style="margin-bottom:16px;">
+                    <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Admin Email</label>
+                    <input type="email" value="admin@safevoice.com" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:11px 14px;color:#fff;font-size:14px;outline:none;">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Current Password</label>
+                    <input type="password" placeholder="Enter current password" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:11px 14px;color:#fff;font-size:14px;outline:none;">
+                </div>
+                <div style="margin-bottom:24px;">
+                    <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">New Password</label>
+                    <input type="password" placeholder="Enter new password" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:11px 14px;color:#fff;font-size:14px;outline:none;">
+                </div>
+                <h3 style="color:#4f9eff;margin-bottom:16px;font-size:16px;"><i class="fas fa-bell"></i> Notifications</h3>
+                <label style="display:flex;align-items:center;gap:10px;color:#a0b4cc;font-size:14px;margin-bottom:12px;cursor:pointer;">
+                    <input type="checkbox" checked style="accent-color:#4f9eff;width:16px;height:16px;"> Email alerts for new complaints
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;color:#a0b4cc;font-size:14px;margin-bottom:24px;cursor:pointer;">
+                    <input type="checkbox" checked style="accent-color:#4f9eff;width:16px;height:16px;"> SOS emergency notifications
+                </label>
+                <button class="btn-view" style="padding:12px 28px;font-size:14px;" onclick="adminSaveSettings()">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+function logout() {
+    localStorage.removeItem('isAdminLoggedIn');
+    window.location.href = 'admin-login.html';
+}
+function showSection(section) {
+    ['dashboard','users','sos','settings'].forEach(s => {
+        document.getElementById('view-' + s).style.display = 'none';
+    });
+    document.getElementById('view-' + section).style.display = 'block';
+    // update active sidebar
+    document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+}
+function adminSaveSettings() {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:30px;right:30px;background:#2ecc71;color:#fff;padding:14px 22px;border-radius:10px;font-size:14px;font-weight:600;z-index:99999;';
+    t.innerHTML = '<i class="fas fa-check-circle"></i> Settings saved!';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+</script>
+<script src="../js/main.js"></script>
+</body>
+</html>
