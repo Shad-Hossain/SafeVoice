@@ -96,7 +96,7 @@ if ($method === 'POST') {
     $id     = trim($data['complaint_id'] ?? '');
     $status = trim($data['status']       ?? '');
 
-    $allowed = ['Submitted', 'Under Review', 'Resolved', 'Rejected'];
+    $allowed = ['Submitted', 'Under Review', 'Officer Assigned', 'Resolved', 'Rejected'];
     if (empty($id) || !in_array($status, $allowed)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid complaint_id or status']);

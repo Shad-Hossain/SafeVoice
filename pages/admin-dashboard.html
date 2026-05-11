@@ -461,10 +461,11 @@ async function loadComplaints() {
                 <td style="text-align:center">${c.is_anonymous ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:var(--text-secondary)"></i>'}</td>
                 <td>
                     <select class="status-select ${statusClass(c.status)}" onchange="updateStatus('${c.complaint_id}', this)">
-                        <option ${c.status==='Submitted'    ? 'selected':''}>Submitted</option>
-                        <option ${c.status==='Under Review' ? 'selected':''}>Under Review</option>
-                        <option ${c.status==='Resolved'     ? 'selected':''}>Resolved</option>
-                        <option ${c.status==='Rejected'     ? 'selected':''}>Rejected</option>
+                        <option ${c.status==='Submitted'         ? 'selected':''}>Submitted</option>
+                        <option ${c.status==='Under Review'      ? 'selected':''}>Under Review</option>
+                        <option ${c.status==='Officer Assigned'  ? 'selected':''}>Officer Assigned</option>
+                        <option ${c.status==='Resolved'          ? 'selected':''}>Resolved</option>
+                        <option ${c.status==='Rejected'          ? 'selected':''}>Rejected</option>
                     </select>
                 </td>
                 <td><button class="btn-view" onclick="viewComplaint(${JSON.stringify(c).replace(/"/g,'&quot;')})">
