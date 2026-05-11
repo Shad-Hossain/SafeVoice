@@ -10,6 +10,7 @@ const steps = [
 const statusStepMap = {
     'Submitted':    1,
     'Under Review': 2,
+    'Officer Assigned': 3,
     'Resolved':     5,
     'Rejected':     5
 };
