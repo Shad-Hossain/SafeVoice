@@ -1,4 +1,4 @@
-// ── Progress steps ────────────────────────────
+//   Progress steps
 const steps = [
     { label: 'Submitted',        desc: 'Complaint received by SafeVoice' },
     { label: 'Under Review',     desc: 'Being reviewed by the admin team' },
@@ -15,7 +15,7 @@ const statusStepMap = {
     'Rejected':     5
 };
 
-// ── Tab switch ────────────────────────────────
+// Tab switch
 function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
