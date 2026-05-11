@@ -201,3 +201,72 @@ body, .navbar, .sidebar, .footer, input, select, textarea,
 .lb-table th, .lb-table td {
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease !important;
 }
+
+
+
+body.light-mode .complaints-table,
+body.light-mode .lb-table,
+body.light-mode table {
+    background: #ffffff !important;
+}
+
+body.light-mode .complaints-table td,
+body.light-mode .lb-table td,
+body.light-mode table td {
+    background: #ffffff !important;
+    color: #111827 !important;
+}
+
+body.light-mode .complaints-table th,
+body.light-mode .lb-table th,
+body.light-mode table th {
+    color: #111827 !important;
+    background: #f3f4f6 !important;
+}
+
+body.light-mode .complaints-table tr:nth-child(even) td,
+body.light-mode .lb-table tr:nth-child(even) td {
+    background: #f9fafb !important;
+}
+
+body.light-mode .dashboard-card,
+body.light-mode .recent-complaints,
+body.light-mode .summary-card,
+body.light-mode .card {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
+}
+
+
+
+.status-badge,
+.track-btn {
+    white-space: nowrap;
+    min-width: 110px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+.user-avatar,
+.avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+* {
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease;
+}
