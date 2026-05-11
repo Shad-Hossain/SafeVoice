@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="../css/responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-<body>
+
+
 <nav class="navbar">
     <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
     <div class="nav-overlay" id="navOverlay"></div>
@@ -23,6 +24,10 @@
             <li><a href="register.html" class="btn-register">Register</a></li>
         </ul>
     </div>
+    <body>
+    <button class="theme-toggle" id="themeToggle">
+    🌙 Dark
+</button>
 </nav>
 
 <section class="auth-section">
@@ -159,5 +164,6 @@ function acceptTerms() { document.getElementById('termsCheckbox').checked = true
 document.getElementById('termsModal').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
 </script>
 <script src="../js/main.js"></script>
+<script src="../js/theme.js"></script>
 </body>
 </html>
