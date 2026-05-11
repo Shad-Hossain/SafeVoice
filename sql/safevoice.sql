@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS complaints (
     is_anonymous TINYINT(1) DEFAULT 0,
     status      ENUM('Submitted', 'Under Review', 'Resolved', 'Rejected') DEFAULT 'Submitted',
     submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP 
 );
 
 -- Sample data (optional - for testing)
