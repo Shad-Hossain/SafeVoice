@@ -107,7 +107,10 @@ function formatType(t) {
 
 function formatDate(d) {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-BD', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const fixed = d.replace(' ', 'T');
+    const date  = new Date(fixed);
+    if (isNaN(date)) return d;
+    return date.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
 function statusClass(s) {

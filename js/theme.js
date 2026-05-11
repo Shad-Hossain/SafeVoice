@@ -1,3 +1,4 @@
+// ===== SAFEVOICE THEME MANAGER =====
 // Handles dark/light mode toggle across all pages
 
 (function () {

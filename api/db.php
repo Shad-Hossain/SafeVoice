@@ -1,5 +1,7 @@
 <?php
-
+// =============================================
+// SafeVoice — Database Connection
+// =============================================
 
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');       // XAMPP default

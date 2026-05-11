@@ -1,4 +1,10 @@
 <?php
+// =============================================
+// SafeVoice — Complaints API (Admin)
+// GET  /api/complaints.php              → list all
+// GET  /api/complaints.php?id=SV-xxx   → single complaint
+// POST /api/complaints.php             → update status
+// =============================================
 
 require_once 'db.php';
 

@@ -1,5 +1,8 @@
 <?php
-
+// =============================================
+// SafeVoice — Submit Complaint API
+// POST /api/submit_complaint.php
+// =============================================
 
 require_once 'db.php';
 

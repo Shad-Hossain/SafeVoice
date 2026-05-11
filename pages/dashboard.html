@@ -279,7 +279,10 @@ function formatType(t) {
 }
 function formatDate(d) {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-BD', { day:'2-digit', month:'short', year:'numeric' });
+    const fixed = d.replace(' ', 'T');
+    const date  = new Date(fixed);
+    if (isNaN(date)) return d;
+    return date.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
 }
 function statusBadge(s) {
     const map = { 'Submitted':'<span class="status review">Submitted</span>', 'Under Review':'<span class="status pending">Under Review</span>', 'Resolved':'<span class="status resolved">Resolved</span>', 'Rejected':'<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>' };

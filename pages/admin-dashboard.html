@@ -268,15 +268,17 @@
 
         <!-- ── USERS (static) ── -->
         <div id="view-users" style="display:none">
-            <div class="welcome-bar"><h1>User Management</h1><p>Manage all registered users</p></div>
+            <div class="welcome-bar">
+                <h1><i class="fas fa-users" style="font-size:22px;margin-right:10px"></i>User Management</h1>
+                <p>Ban, suspend, or manage user accounts</p>
+            </div>
             <div class="complaints-table">
                 <table>
-                    <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Joined</th><th>Complaints</th><th>Status</th></tr></thead>
-                    <tbody>
-                        <tr><td>1</td><td>Shad Hossain</td><td>shad@example.com</td><td>Jan 10, 2026</td><td>12</td><td><span class="status resolved">Active</span></td></tr>
-                        <tr><td>2</td><td>Tania Begum</td><td>tania@example.com</td><td>Feb 05, 2026</td><td>7</td><td><span class="status resolved">Active</span></td></tr>
-                        <tr><td>3</td><td>Arif Hossain</td><td>arif@example.com</td><td>Mar 12, 2026</td><td>5</td><td><span class="status resolved">Active</span></td></tr>
-                        <tr><td>4</td><td>Nadia Islam</td><td>nadia@example.com</td><td>Apr 01, 2026</td><td>3</td><td><span class="status pending">Suspended</span></td></tr>
+                    <thead>
+                        <tr><th>#</th><th>Name</th><th>Email</th><th>Joined</th><th>Complaints</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -328,6 +330,64 @@ function showSection(section, preFilter) {
         if (preFilter) document.getElementById('filterStatus').value = preFilter;
         loadComplaints();
     }
+    if (section === 'users') loadUsers();
+}
+
+// ── LOAD USERS ─────────────────────────────────────────
+async function loadUsers() {
+    const tbody = document.getElementById('users-tbody');
+    tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    try {
+        const res  = await fetch('../api/manage_user.php');
+        const data = await res.json();
+        if (!data.success) throw new Error();
+
+        tbody.innerHTML = data.users.map((u, i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td><strong>${u.name}</strong></td>
+                <td style="color:#a0b4cc;font-size:13px">${u.email}</td>
+                <td style="color:#a0b4cc;font-size:13px">${formatDate(u.joined_at)}</td>
+                <td style="text-align:center">${u.complaints_count}</td>
+                <td>${userStatusBadge(u.status)}</td>
+                <td>
+                    <select class="status-select" onchange="updateUserStatus(${u.id}, this)" style="font-size:12px;padding:4px 8px">
+                        <option ${u.status==='Active'     ? 'selected':''} value="Active">✅ Active</option>
+                        <option ${u.status==='Probation'  ? 'selected':''} value="Probation">⚠️ Probation</option>
+                        <option ${u.status==='Suspended'  ? 'selected':''} value="Suspended">🚫 Suspended</option>
+                        <option ${u.status==='Banned'     ? 'selected':''} value="Banned">❌ Banned</option>
+                    </select>
+                </td>
+            </tr>`).join('');
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="7" class="table-state">Could not load users.</td></tr>';
+    }
+}
+
+async function updateUserStatus(id, selectEl) {
+    const status = selectEl.value;
+    try {
+        const res  = await fetch('../api/manage_user.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, status })
+        });
+        const data = await res.json();
+        if (data.success) showToast('<i class="fas fa-check-circle"></i> User status → ' + status);
+        else throw new Error();
+    } catch(e) {
+        showToast('<i class="fas fa-times-circle"></i> Failed to update', true);
+    }
+}
+
+function userStatusBadge(s) {
+    const map = {
+        'Active':    '<span class="status resolved">Active</span>',
+        'Probation': '<span class="status review">Probation</span>',
+        'Suspended': '<span class="status pending">Suspended</span>',
+        'Banned':    '<span class="status" style="background:#ef444415;color:#f87171">Banned</span>'
+    };
+    return map[s] || `<span class="status">${s}</span>`;
 }
 
 // ── LOAD DASHBOARD ─────────────────────────────────────
@@ -468,7 +528,11 @@ function formatType(t) {
 
 function formatDate(d) {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-BD', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    // Fix MySQL datetime string for Safari/Firefox compatibility
+    const fixed = d.replace(' ', 'T');
+    const date  = new Date(fixed);
+    if (isNaN(date)) return d;
+    return date.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
 function statusBadge(s) {
