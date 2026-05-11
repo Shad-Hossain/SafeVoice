@@ -354,3 +354,41 @@ th {
     font-size: 13px;
     font-weight: 600;
 }
+.nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.theme-toggle {
+    margin-left: auto;
+    white-space: nowrap;
+}
+.status-badge,
+.track-btn,
+.action-btn {
+    white-space: nowrap !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+td:last-child {
+    min-width: 130px;
+}
+body.light-mode .leaderboard-card,
+body.light-mode .top-user-card,
+body.light-mode .winner-card,
+body.light-mode .leaderboard-item {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .leaderboard-card *,
+body.light-mode .top-user-card *,
+body.light-mode .winner-card *,
+body.light-mode .leaderboard-item * {
+    color: #0f172a !important;
+}
+
