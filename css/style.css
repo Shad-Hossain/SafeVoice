@@ -458,3 +458,65 @@ a {
     color: #a0b4cc;
     font-size: 13px;
 }
+
+
+.nav-container{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.nav-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.hamburger{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:4px;
+    cursor:pointer;
+}
+
+
+
+.leaderboard-card *,
+.top-user-card *,
+.winner-card *,
+.leaderboard-item *,
+.podium-card *,
+.rank-card *{
+    color:white !important;
+}
+
+/* GOLD */
+.rank-1 *,
+.first-place *{
+    color:#ffd700 !important;
+}
+
+/* SILVER */
+.rank-2 *,
+.second-place *{
+    color:#e5e7eb !important;
+}
+
+/* BRONZE */
+.rank-3 *,
+.third-place *{
+    color:#fdba74 !important;
+}
+
+.leaderboard-card p,
+.leaderboard-card span,
+.leaderboard-card small{
+    opacity:1 !important;
+}
