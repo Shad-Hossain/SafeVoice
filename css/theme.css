@@ -1,7 +1,3 @@
-
-/* Dark mode = default (original design) */
-/* Light mode = toggled via .light-mode on body */
-
 :root {
     --bg-primary: #0a0f1e;
     --bg-secondary: #0d1526;
