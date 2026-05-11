@@ -6,6 +6,7 @@
     <title>Dashboard — SafeVoice</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/theme.css">
     <link rel="stylesheet" href="../css/responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -15,16 +16,14 @@
     <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
     <div class="nav-overlay" id="navOverlay"></div>
     <div class="nav-container">
-        <a href="../index.html" class="logo">
-            <i class="fas fa-shield-alt"></i><span>SafeVoice</span>
-        </a>
+        <a href="../index.html" class="logo"><i class="fas fa-shield-alt"></i><span>SafeVoice</span></a>
         <ul class="nav-links">
             <li><a href="../index.html">Home</a></li>
             <li><a href="complaint-track.html">Track Complaint</a></li>
             <li><a href="leaderboard.html">Leaderboard</a></li>
             <li class="user-menu">
                 <div class="user-avatar"><i class="fas fa-user"></i></div>
-                <span>Shad Hossain</span>
+                <span id="navUsername">User</span>
                 <i class="fas fa-chevron-down"></i>
             </li>
         </ul>
@@ -34,9 +33,9 @@
 <div class="dashboard-layout">
     <aside class="sidebar">
         <ul class="sidebar-menu">
-            <li class="active"><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li id="nav-overview" class="active"><a href="#" onclick="showSection('overview')"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="complaint.html"><i class="fas fa-file-alt"></i> New Complaint</a></li>
-            <li><a href="my-complaints.html" onclick="showMyComplaints(event)"><i class="fas fa-list"></i> My Complaints</a></li>
+            <li id="nav-mycomplaints"><a href="#" onclick="showSection('mycomplaints')"><i class="fas fa-list"></i> My Complaints</a></li>
             <li><a href="complaint-track.html"><i class="fas fa-search"></i> Track Complaint</a></li>
             <li><a href="legal-help.html"><i class="fas fa-gavel"></i> Legal Help</a></li>
             <li><a href="leaderboard.html"><i class="fas fa-trophy"></i> Leaderboard</a></li>
@@ -48,83 +47,75 @@
     </aside>
 
     <main class="main-content">
-        <div class="welcome-bar">
-            <div>
-                <h1>Welcome back, Shad! 👋</h1>
-                <p>Here's what's happening with your complaints</p>
+
+        <!-- ── OVERVIEW ── -->
+        <div id="view-overview">
+            <div class="welcome-bar">
+                <div>
+                    <h1>Welcome back, <span id="welcomeName">User</span>! 👋</h1>
+                    <p>Here's what's happening with your complaints</p>
+                </div>
+                <a href="complaint.html" class="btn-new-complaint"><i class="fas fa-plus"></i> New Complaint</a>
             </div>
-            <a href="complaint.html" class="btn-new-complaint">
-                <i class="fas fa-plus"></i> New Complaint
-            </a>
+
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-icon blue"><i class="fas fa-file-alt"></i></div>
+                    <div class="card-info"><h3 id="stat-total">—</h3><p>Total Complaints</p></div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon green"><i class="fas fa-check-circle"></i></div>
+                    <div class="card-info"><h3 id="stat-resolved">—</h3><p>Resolved</p></div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon orange"><i class="fas fa-clock"></i></div>
+                    <div class="card-info"><h3 id="stat-pending">—</h3><p>Under Review</p></div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon blue"><i class="fas fa-paper-plane"></i></div>
+                    <div class="card-info"><h3 id="stat-submitted">—</h3><p>Submitted</p></div>
+                </div>
+            </div>
+
+            <div class="quick-actions" style="margin-bottom:30px">
+                <a href="complaint.html" class="action-card"><i class="fas fa-file-alt"></i><span>New Complaint</span></a>
+                <a href="sos.html" class="action-card sos"><i class="fas fa-exclamation-triangle"></i><span>Emergency SOS</span></a>
+                <a href="complaint-track.html" class="action-card"><i class="fas fa-search"></i><span>Track Complaint</span></a>
+                <a href="legal-help.html" class="action-card"><i class="fas fa-gavel"></i><span>Legal Help</span></a>
+            </div>
+
+            <div class="section-title">Recent Complaints</div>
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr><th>Complaint ID</th><th>Type</th><th>Date</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="recent-tbody">
+                        <tr><td colspan="5" style="text-align:center;padding:30px;color:#a0b4cc"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="summary-cards">
-            <div class="summary-card">
-                <div class="card-icon blue"><i class="fas fa-file-alt"></i></div>
-                <div class="card-info"><h3>12</h3><p>Total Complaints</p></div>
+        <!-- ── MY COMPLAINTS ── -->
+        <div id="view-mycomplaints" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-list" style="font-size:22px;margin-right:10px"></i>My Complaints</h1>
+                <a href="complaint.html" class="btn-new-complaint"><i class="fas fa-plus"></i> New Complaint</a>
             </div>
-            <div class="summary-card">
-                <div class="card-icon green"><i class="fas fa-check-circle"></i></div>
-                <div class="card-info"><h3>8</h3><p>Resolved</p></div>
-            </div>
-            <div class="summary-card">
-                <div class="card-icon orange"><i class="fas fa-clock"></i></div>
-                <div class="card-info"><h3>3</h3><p>Pending</p></div>
-            </div>
-            <div class="summary-card">
-                <div class="card-icon red"><i class="fas fa-hands-helping"></i></div>
-                <div class="card-info"><h3>5</h3><p>SOS Responses</p></div>
+
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr><th>Complaint ID</th><th>Type</th><th>Location</th><th>Date</th><th>Anonymous</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="all-tbody">
+                        <tr><td colspan="7" style="text-align:center;padding:30px;color:#a0b4cc"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="section-title">Quick Actions</div>
-        <div class="quick-actions">
-            <a href="complaint.html" class="action-card">
-                <i class="fas fa-file-alt"></i><span>New Complaint</span>
-            </a>
-            <a href="sos.html" class="action-card sos">
-                <i class="fas fa-exclamation-triangle"></i><span>Emergency SOS</span>
-            </a>
-            <a href="complaint-track.html" class="action-card">
-                <i class="fas fa-search"></i><span>Track Complaint</span>
-            </a>
-            <a href="legal-help.html" class="action-card">
-                <i class="fas fa-gavel"></i><span>Legal Help</span>
-            </a>
-        </div>
-
-        <div class="section-title">Recent Complaints</div>
-        <div class="complaints-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Complaint ID</th><th>Type</th><th>Date</th><th>Status</th><th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>#SV-2026-1001</td><td>Harassment</td><td>May 01, 2026</td>
-                        <td><span class="status resolved">Resolved</span></td>
-                        <td><a href="complaint-track.html" class="btn-view">View</a></td>
-                    </tr>
-                    <tr>
-                        <td>#SV-2026-2002</td><td>Fare Overcharge</td><td>May 03, 2026</td>
-                        <td><span class="status pending">Pending</span></td>
-                        <td><a href="complaint-track.html" class="btn-view">View</a></td>
-                    </tr>
-                    <tr>
-                        <td>#SV-2026-3003</td><td>Crime</td><td>May 05, 2026</td>
-                        <td><span class="status review">Under Review</span></td>
-                        <td><a href="complaint-track.html" class="btn-view">View</a></td>
-                    </tr>
-                    <tr>
-                        <td>#SV-2024-004</td><td>Other</td><td>May 07, 2026</td>
-                        <td><span class="status resolved">Resolved</span></td>
-                        <td><a href="complaint-track.html" class="btn-view">View</a></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
     </main>
 </div>
 
@@ -140,24 +131,24 @@
                 <h4 style="color:#4f9eff;margin-bottom:12px;">Profile</h4>
                 <div class="form-group" style="margin-bottom:14px;">
                     <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Full Name</label>
-                    <input type="text" value="Shad Hossain" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;">
+                    <input type="text" id="settingName" style="width:100%;background:var(--input-bg,#0a0f1e);border:1px solid var(--border-color,#1e2d4a);border-radius:8px;padding:10px 14px;color:var(--text-primary,#fff);font-size:14px;outline:none;">
                 </div>
                 <div class="form-group" style="margin-bottom:14px;">
                     <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Email</label>
-                    <input type="email" value="shad@example.com" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;">
+                    <input type="email" id="settingEmail" style="width:100%;background:var(--input-bg,#0a0f1e);border:1px solid var(--border-color,#1e2d4a);border-radius:8px;padding:10px 14px;color:var(--text-primary,#fff);font-size:14px;outline:none;">
                 </div>
                 <div class="form-group">
                     <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Phone</label>
-                    <input type="tel" value="+880 1700-000000" style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;">
+                    <input type="tel" id="settingPhone" style="width:100%;background:var(--input-bg,#0a0f1e);border:1px solid var(--border-color,#1e2d4a);border-radius:8px;padding:10px 14px;color:var(--text-primary,#fff);font-size:14px;outline:none;">
                 </div>
             </div>
             <div>
                 <h4 style="color:#4f9eff;margin-bottom:12px;">Notifications</h4>
                 <label style="display:flex;align-items:center;gap:10px;color:#a0b4cc;font-size:14px;margin-bottom:10px;cursor:pointer;">
-                    <input type="checkbox" checked style="accent-color:#4f9eff;width:16px;height:16px;"> Email notifications
+                    <input type="checkbox" id="notifEmail" checked style="accent-color:#4f9eff;width:16px;height:16px;"> Email notifications
                 </label>
                 <label style="display:flex;align-items:center;gap:10px;color:#a0b4cc;font-size:14px;cursor:pointer;">
-                    <input type="checkbox" checked style="accent-color:#4f9eff;width:16px;height:16px;"> SOS alerts
+                    <input type="checkbox" id="notifSos" checked style="accent-color:#4f9eff;width:16px;height:16px;"> SOS alerts
                 </label>
             </div>
         </div>
@@ -168,26 +159,141 @@
     </div>
 </div>
 
+<script src="../js/main.js"></script>
+<script src="../js/theme.js"></script>
 <script>
+// ── Load user profile from localStorage ────────
+function loadProfile() {
+    const profile = JSON.parse(localStorage.getItem('sv-profile') || '{}');
+    const name    = profile.name  || 'User';
+    const email   = profile.email || '';
+    const phone   = profile.phone || '';
+
+    document.getElementById('welcomeName').textContent = name;
+    document.getElementById('navUsername').textContent = name;
+    document.getElementById('settingName').value  = name;
+    document.getElementById('settingEmail').value = email;
+    document.getElementById('settingPhone').value = phone;
+}
+
+// ── Section navigation ─────────────────────────
+function showSection(section) {
+    document.getElementById('view-overview').style.display     = section === 'overview'     ? 'block' : 'none';
+    document.getElementById('view-mycomplaints').style.display = section === 'mycomplaints' ? 'block' : 'none';
+    document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+    const navEl = document.getElementById('nav-' + section);
+    if (navEl) navEl.classList.add('active');
+    if (section === 'mycomplaints') loadAllComplaints();
+}
+
+// ── Load complaints from DB ────────────────────
+async function loadComplaints() {
+    try {
+        const res  = await fetch('../api/get_user_complaints.php?limit=5');
+        const data = await res.json();
+        if (!data.success) throw new Error();
+
+        const stats = data.stats || {};
+        document.getElementById('stat-total').textContent    = data.total || 0;
+        document.getElementById('stat-resolved').textContent = stats['Resolved']     || 0;
+        document.getElementById('stat-pending').textContent  = stats['Under Review'] || 0;
+        document.getElementById('stat-submitted').textContent= stats['Submitted']    || 0;
+
+        const tbody = document.getElementById('recent-tbody');
+        if (!data.complaints.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#a0b4cc">No complaints yet. <a href="complaint.html" style="color:#4f9eff">Submit one!</a></td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.complaints.map(c => `
+            <tr>
+                <td><strong style="color:#4f9eff">${c.complaint_id}</strong></td>
+                <td>${formatType(c.type)}</td>
+                <td style="color:#a0b4cc;font-size:13px">${formatDate(c.submitted_at)}</td>
+                <td>${statusBadge(c.status)}</td>
+                <td><a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
+            </tr>`).join('');
+    } catch(e) {
+        document.getElementById('recent-tbody').innerHTML =
+            '<tr><td colspan="5" style="text-align:center;padding:30px;color:#a0b4cc">Could not load — make sure XAMPP is running.</td></tr>';
+    }
+}
+
+async function loadAllComplaints() {
+    try {
+        const res  = await fetch('../api/get_user_complaints.php');
+        const data = await res.json();
+        const tbody = document.getElementById('all-tbody');
+
+        if (!data.complaints || !data.complaints.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#a0b4cc">No complaints yet. <a href="complaint.html" style="color:#4f9eff">Submit one!</a></td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.complaints.map(c => `
+            <tr>
+                <td><strong style="color:#4f9eff">${c.complaint_id}</strong></td>
+                <td>${formatType(c.type)}</td>
+                <td style="font-size:12px;color:#a0b4cc">${c.location || '—'}</td>
+                <td style="font-size:12px;color:#a0b4cc">${formatDate(c.submitted_at)}</td>
+                <td style="text-align:center">${c.is_anonymous == 1 ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:#a0b4cc"></i>'}</td>
+                <td>${statusBadge(c.status)}</td>
+                <td><a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> Track</a></td>
+            </tr>`).join('');
+    } catch(e) {
+        document.getElementById('all-tbody').innerHTML =
+            '<tr><td colspan="7" style="text-align:center;padding:30px;color:#a0b4cc">Could not load complaints.</td></tr>';
+    }
+}
+
+// ── Settings ───────────────────────────────────
 function openSettings() {
+    loadProfile();
     document.getElementById('settingsModal').style.display = 'flex';
 }
 function closeSettings() {
     document.getElementById('settingsModal').style.display = 'none';
 }
 function saveSettings() {
+    const profile = {
+        name:  document.getElementById('settingName').value.trim()  || 'User',
+        email: document.getElementById('settingEmail').value.trim(),
+        phone: document.getElementById('settingPhone').value.trim()
+    };
+    localStorage.setItem('sv-profile', JSON.stringify(profile));
     closeSettings();
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:30px;right:30px;background:#2ecc71;color:#fff;padding:14px 22px;border-radius:10px;font-size:14px;font-weight:600;z-index:99999;display:flex;align-items:center;gap:10px;';
-    toast.innerHTML = '<i class="fas fa-check-circle"></i> Settings saved!';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    loadProfile();
+    showToast('<i class="fas fa-check-circle"></i> Settings saved!');
 }
-function showMyComplaints(e) {
-    e.preventDefault();
-    window.location.href = 'complaint-track.html';
+
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:30px;right:30px;background:#2ecc71;color:#fff;padding:14px 22px;border-radius:10px;font-size:14px;font-weight:600;z-index:99999;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+    t.innerHTML = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
 }
+
+// ── Helpers ────────────────────────────────────
+function formatType(t) {
+    const map = { harassment:'Harassment', fare_overcharge:'Fare Overcharge', crime:'Crime', corruption:'Corruption', abuse:'Abuse', other:'Other' };
+    return map[t] || t;
+}
+function formatDate(d) {
+    if (!d) return '—';
+    const fixed = d.replace(' ', 'T');
+    const date  = new Date(fixed);
+    if (isNaN(date)) return d;
+    return date.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function statusBadge(s) {
+    const map = { 'Submitted':'<span class="status review">Submitted</span>', 'Under Review':'<span class="status pending">Under Review</span>', 'Resolved':'<span class="status resolved">Resolved</span>', 'Rejected':'<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>' };
+    return map[s] || `<span class="status">${s}</span>`;
+}
+
+// ── Init ───────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadProfile();
+    loadComplaints();
+});
 </script>
-<script src="../js/main.js"></script>
 </body>
 </html>
