@@ -202,7 +202,7 @@
 
             <div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:15px;">
                 Recent Complaints
-                <span id="dashboard-loading" style="font-size:13px;color:#a0b4cc;font-weight:400;margin-left:10px;"></span>
+                <span id="dashboard-loading" style="font-size:13px;color:var(--text-secondary);font-weight:400;margin-left:10px;"></span>
             </div>
             <div class="complaints-table">
                 <table>
@@ -243,7 +243,7 @@
                 <button class="btn-refresh" onclick="loadComplaints()">
                     <i class="fas fa-sync-alt"></i> Refresh
                 </button>
-                <span id="complaints-count" style="color:#a0b4cc;font-size:13px;margin-left:auto"></span>
+                <span id="complaints-count" style="color:var(--text-secondary);font-size:13px;margin-left:auto"></span>
             </div>
 
             <div class="complaints-table">
@@ -346,8 +346,8 @@ async function loadUsers() {
             <tr>
                 <td>${i+1}</td>
                 <td><strong>${u.name}</strong></td>
-                <td style="color:#a0b4cc;font-size:13px">${u.email}</td>
-                <td style="color:#a0b4cc;font-size:13px">${formatDate(u.joined_at)}</td>
+                <td style="color:var(--text-secondary);font-size:13px">${u.email}</td>
+                <td style="color:var(--text-secondary);font-size:13px">${formatDate(u.joined_at)}</td>
                 <td style="text-align:center">${u.complaints_count}</td>
                 <td>${userStatusBadge(u.status)}</td>
                 <td>
@@ -456,9 +456,9 @@ async function loadComplaints() {
             <tr id="row-${c.complaint_id}">
                 <td><strong style="color:#4f9eff">${c.complaint_id}</strong></td>
                 <td>${formatType(c.type)}</td>
-                <td style="font-size:12px;color:#a0b4cc">${c.location || '—'}</td>
-                <td style="font-size:12px;color:#a0b4cc">${formatDate(c.submitted_at)}</td>
-                <td style="text-align:center">${c.is_anonymous ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:#a0b4cc"></i>'}</td>
+                <td style="font-size:12px;color:var(--text-secondary)">${c.location || '—'}</td>
+                <td style="font-size:12px;color:var(--text-secondary)">${formatDate(c.submitted_at)}</td>
+                <td style="text-align:center">${c.is_anonymous ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:var(--text-secondary)"></i>'}</td>
                 <td>
                     <select class="status-select ${statusClass(c.status)}" onchange="updateStatus('${c.complaint_id}', this)">
                         <option ${c.status==='Submitted'    ? 'selected':''}>Submitted</option>

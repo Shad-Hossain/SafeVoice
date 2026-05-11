@@ -324,3 +324,33 @@ body.light-mode .action-card span { color: var(--text-primary) !important; }
 }
 
 .theme-toggle i { font-size: 13px; }
+
+table,
+thead,
+tbody,
+tr,
+td,
+th {
+    background: transparent !important;
+}
+
+.complaints-table,
+.lb-table {
+    background: var(--bg-secondary) !important;
+}
+
+.complaints-table td,
+.lb-table td {
+    color: var(--text-primary) !important;
+}
+
+.complaints-table th,
+.lb-table th {
+    color: var(--text-secondary) !important;
+}
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
