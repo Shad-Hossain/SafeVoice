@@ -1,4 +1,4 @@
-//   Progress steps
+// ── Progress steps 
 const steps = [
     { label: 'Submitted',        desc: 'Complaint received by SafeVoice' },
     { label: 'Under Review',     desc: 'Being reviewed by the admin team' },
@@ -8,14 +8,15 @@ const steps = [
 ];
 
 const statusStepMap = {
-    'Submitted':    1,
-    'Under Review': 2,
+    'Submitted':        1,
+    'Under Review':     2,
     'Officer Assigned': 3,
-    'Resolved':     5,
-    'Rejected':     5
+    'Investigation':    4,
+    'Resolved':         5,
+    'Rejected':         5
 };
 
-// Tab switch
+// ── Tab switch 
 function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -25,7 +26,7 @@ function switchTab(tab) {
     hideError();
 }
 
-// ── Track complaint — real API ─────────────────
+// ── Track complaint 
 async function trackComplaint() {
     hideResult();
     hideError();
@@ -36,7 +37,6 @@ async function trackComplaint() {
         return;
     }
 
-    // Show loading
     const btn = document.querySelector('.btn-search');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
     btn.disabled  = true;
@@ -70,12 +70,10 @@ function renderResult(c) {
     document.getElementById('rOfficer').textContent  = 'Admin Team';
     document.getElementById('adminMsgText').textContent = getStatusMessage(c.status);
 
-    // Status badge
-    const statusEl     = document.getElementById('rStatus');
+    const statusEl       = document.getElementById('rStatus');
     statusEl.textContent = c.status;
     statusEl.className   = 'status ' + statusClass(c.status);
 
-    // Progress tracker
     const currentStep  = statusStepMap[c.status] || 1;
     const container    = document.getElementById('trackerSteps');
     container.innerHTML = '';
@@ -115,16 +113,25 @@ function formatDate(d) {
 }
 
 function statusClass(s) {
-    const map = { 'Submitted':'review', 'Under Review':'pending', 'Resolved':'resolved', 'Rejected':'rejected' };
+    const map = {
+        'Submitted':        'review',
+        'Under Review':     'pending',
+        'Officer Assigned': 'pending',
+        'Investigation':    'pending',
+        'Resolved':         'resolved',
+        'Rejected':         'rejected'
+    };
     return map[s] || 'review';
 }
 
 function getStatusMessage(s) {
     const map = {
-        'Submitted':    'Your complaint has been received. It will be reviewed by our team shortly.',
-        'Under Review': 'Your complaint is currently being reviewed by our admin team.',
-        'Resolved':     'Your complaint has been resolved. Thank you for reporting.',
-        'Rejected':     'Your complaint could not be processed. Please contact support for details.'
+        'Submitted':        'Your complaint has been received. It will be reviewed by our team shortly.',
+        'Under Review':     'Your complaint is currently being reviewed by our admin team.',
+        'Officer Assigned': 'An officer has been assigned to your case by the system and will begin investigation soon.',
+        'Investigation':    'Your case is currently under active investigation.',
+        'Resolved':         'Your complaint has been resolved. Thank you for reporting.',
+        'Rejected':         'Your complaint could not be processed. Please contact support for details.'
     };
     return map[s] || 'Status update pending.';
 }
@@ -137,12 +144,11 @@ function showError(msg) {
 function hideError()  { document.getElementById('errorMsg').classList.remove('visible'); }
 function hideResult() { document.getElementById('resultCard').classList.remove('visible'); }
 
-// ── Enter key support ─────────────────────────
+// ── Enter key support 
 document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('complaintIdInput');
     if (el) el.addEventListener('keypress', e => { if (e.key === 'Enter') trackComplaint(); });
 
-    // Auto-fill from URL param (e.g. from dashboard View button)
     const params = new URLSearchParams(window.location.search);
     const id     = params.get('id');
     if (id) {
