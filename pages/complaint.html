@@ -108,9 +108,34 @@
                     <label><i class="fas fa-map-marker-alt"></i> Location</label>
                     <div class="location-input">
                         <input type="text" class="form-input" id="incidentLocation" placeholder="Auto-detect or enter manually" />
-                        <button class="btn-locate" onclick="detectLocation()"><i class="fas fa-crosshairs"></i></button>
+                        <button class="btn-locate" title="Detect my location" onclick="detectLocation()"><i class="fas fa-crosshairs"></i></button>
+                        <button class="btn-locate btn-map-pick" title="Pick on map" onclick="openMapPicker()" style="margin-left:6px;background:linear-gradient(135deg,#1a6f4a,#2ecc71);"><i class="fas fa-map"></i></button>
                     </div>
                 </div>
+
+                <!-- Map Picker Modal -->
+                <div id="mapPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;align-items:center;justify-content:center;">
+                    <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:20px;width:min(700px,95vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
+                        <div style="padding:18px 22px;border-bottom:1px solid #1e2d4a;display:flex;align-items:center;justify-content:space-between;">
+                            <h3 style="margin:0;color:#4f9eff;font-size:16px;"><i class="fas fa-map-marker-alt"></i> Pick Location on Map</h3>
+                            <button onclick="closeMapPicker()" style="background:transparent;border:none;color:#a0b4cc;font-size:20px;cursor:pointer;">&times;</button>
+                        </div>
+                        <div style="padding:12px 22px;background:#0a0f1e;display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="mapSearchInput" placeholder="Search a place..." onkeydown="if(event.key==='Enter')searchMapPlace()" style="flex:1;background:#111c33;border:1px solid #1e2d4a;color:#fff;padding:9px 14px;border-radius:8px;font-size:14px;outline:none;">
+                            <button onclick="searchMapPlace()" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;"><i class="fas fa-search"></i></button>
+                        </div>
+                        <div id="mapContainer" style="flex:1;min-height:380px;position:relative;">
+                            <div id="leafletMap" style="width:100%;height:380px;"></div>
+                        </div>
+                        <div style="padding:12px 22px;background:#0a0f1e;border-top:1px solid #1e2d4a;display:flex;align-items:center;gap:12px;">
+                            <i class="fas fa-map-pin" style="color:#e63946;"></i>
+                            <span id="mapSelectedAddr" style="color:#a0b4cc;font-size:13px;flex:1;">Click anywhere on the map to select a location</span>
+                            <button onclick="confirmMapLocation()" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;"><i class="fas fa-check"></i> Confirm</button>
+                        </div>
+                    </div>
+                </div>
+                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
                 <div class="anonymous-toggle">
                     <div class="toggle-info">
                         <i class="fas fa-user-secret"></i>
@@ -354,6 +379,73 @@ function copyId() {
 }
 
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Map Picker ──────────────────────────────────
+let mapInstance = null;
+let mapMarker   = null;
+let mapSelectedLatLng = null;
+
+function openMapPicker() {
+    const modal = document.getElementById('mapPickerModal');
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        if (!mapInstance) {
+            mapInstance = L.map('leafletMap').setView([23.8103, 90.4125], 12); // Default: Dhaka
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(mapInstance);
+            mapInstance.on('click', function(e) {
+                placeMapMarker(e.latlng.lat, e.latlng.lng);
+            });
+        }
+        mapInstance.invalidateSize();
+        // Pre-center on existing location text if any
+        const existing = document.getElementById('incidentLocation').value;
+        if (existing && !mapMarker) {
+            fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(existing) + '&format=json&limit=1')
+                .then(r => r.json()).then(d => {
+                    if (d.length) { mapInstance.setView([d[0].lat, d[0].lon], 15); placeMapMarker(d[0].lat, d[0].lon, d[0].display_name); }
+                }).catch(() => {});
+        }
+    }, 100);
+}
+
+function closeMapPicker() {
+    document.getElementById('mapPickerModal').style.display = 'none';
+}
+
+function placeMapMarker(lat, lng, label) {
+    mapSelectedLatLng = { lat, lng };
+    if (mapMarker) mapInstance.removeLayer(mapMarker);
+    mapMarker = L.marker([lat, lng]).addTo(mapInstance);
+    if (label) {
+        document.getElementById('mapSelectedAddr').textContent = label;
+    } else {
+        document.getElementById('mapSelectedAddr').textContent = 'Fetching address...';
+        fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json')
+            .then(r => r.json())
+            .then(d => { document.getElementById('mapSelectedAddr').textContent = d.display_name || (lat.toFixed(5) + ', ' + lng.toFixed(5)); mapSelectedLatLng.address = d.display_name; })
+            .catch(() => { document.getElementById('mapSelectedAddr').textContent = lat.toFixed(5) + ', ' + lng.toFixed(5); });
+    }
+}
+
+function searchMapPlace() {
+    const q = document.getElementById('mapSearchInput').value.trim();
+    if (!q) return;
+    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1')
+        .then(r => r.json()).then(d => {
+            if (!d.length) { alert('Place not found. Try a different search.'); return; }
+            mapInstance.setView([d[0].lat, d[0].lon], 15);
+            placeMapMarker(parseFloat(d[0].lat), parseFloat(d[0].lon), d[0].display_name);
+        }).catch(() => alert('Search failed. Check your connection.'));
+}
+
+function confirmMapLocation() {
+    if (!mapSelectedLatLng) { alert('Please click on the map to select a location first.'); return; }
+    const addr = mapSelectedLatLng.address || document.getElementById('mapSelectedAddr').textContent;
+    document.getElementById('incidentLocation').value = addr;
+    closeMapPicker();
+}
 </script>
 </body>
 </html>

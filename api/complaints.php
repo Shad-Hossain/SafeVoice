@@ -89,7 +89,7 @@ if ($method === 'POST') {
     $id     = trim($data['complaint_id'] ?? '');
     $status = trim($data['status']       ?? '');
 
-    $allowed = ['Submitted', 'Under Review', 'Officer Assigned', 'Investigation', 'Resolved', 'Rejected'];
+    $allowed = ['Submitted', 'Under Review', 'Private Investigator Assigned', 'Investigation', 'Resolved', 'Rejected'];
     if (empty($id) || !in_array($status, $allowed)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid complaint_id or status']);
@@ -97,7 +97,7 @@ if ($method === 'POST') {
     }
 
     // ── Blind officer assignment 
-    if ($status === 'Officer Assigned') {
+    if ($status === 'Private Investigator Assigned') {
 
         $offStmt = $db->prepare(
             'SELECT officer_code FROM officers WHERE is_active = 1 ORDER BY assigned_cases ASC LIMIT 1'
@@ -128,7 +128,7 @@ if ($method === 'POST') {
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Status updated to Officer Assigned. System has notified the assigned officer.'
+                'message' => 'Status updated to Private Investigator Assigned. Payment notification sent to user.'
             ]);
         } else {
             http_response_code(404);
