@@ -1,48 +1,80 @@
-.auth-header i{
-    font-size: 60px;
-    color: #2563eb;
-    margin-bottom: 15px;
+body {
+
+    margin: 0;
+    padding: 0;
+    background: #07111f;
+    height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-family: Arial, sans-serif;
 }
 
-.auth-card{
-    border-top: 5px solid #2563eb;
+.login-container {
+
+    width: 360px;
+
+    background: #111c2d;
+
+    padding: 40px;
+
+    border-radius: 20px;
+
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
 }
 
-.btn-auth{
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 10px;
-    background: #2563eb;
+.login-container h1 {
+
     color: white;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.3s;
+
+    text-align: center;
+
+    margin-bottom: 30px;
 }
 
-.btn-auth:hover{
-    background: #1d4ed8;
-    transform: translateY(-2px);
-}
+.login-container input {
 
-.input-wrapper{
-    position: relative;
-}
-
-.input-wrapper input{
     width: 100%;
-    padding: 14px 45px;
-    border: 1px solid #dcdcdc;
+
+    padding: 14px;
+
+    margin-bottom: 20px;
+
+    border: none;
+
     border-radius: 10px;
-    outline: none;
+
+    background: #1a2940;
+
+    color: white;
+
     font-size: 15px;
 }
 
-.input-wrapper i{
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #777;
+.login-container button {
+
+    width: 100%;
+
+    padding: 14px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #00b894;
+
+    color: white;
+
+    cursor: pointer;
+
+    font-size: 16px;
+
+    transition: 0.3s;
+}
+
+.login-container button:hover {
+
+    background: #00d2a8;
 }
