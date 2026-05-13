@@ -111,10 +111,10 @@ async function doLogin() {
         const data = await res.json();
 
         if (data.success) {
-            sessionStorage.setItem('sa_username', username);
-            sessionStorage.setItem('sa_password', password);
-            sessionStorage.setItem('sa_logged_in', '1');
-            window.location.href = 'super-admin-dashboard.html';
+            localStorage.setItem('isSuperAdminLoggedIn', 'true');
+localStorage.setItem('sa_username', username);
+localStorage.setItem('sa_password', password);
+window.location.href = 'super-admin-dashboard.html';
         } else {
             errBox.textContent   = data.message || 'Invalid credentials';
             errBox.style.display = 'block';
@@ -124,10 +124,10 @@ async function doLogin() {
     } catch (err) {
         // Demo fallback
         if (username === 'superadmin' && password === 'SafeVoice@SA2026') {
-            sessionStorage.setItem('sa_username', username);
-            sessionStorage.setItem('sa_password', password);
-            sessionStorage.setItem('sa_logged_in', '1');
-            window.location.href = 'super-admin-dashboard.html';
+            localStorage.setItem('isSuperAdminLoggedIn', 'true');
+localStorage.setItem('sa_username', username);
+localStorage.setItem('sa_password', password);
+window.location.href = 'super-admin-dashboard.html';
         } else {
             errBox.textContent   = 'Authentication failed. Check credentials.';
             errBox.style.display = 'block';
