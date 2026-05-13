@@ -43,7 +43,7 @@ if($result->num_rows === 1) {
 
     $admin = $result->fetch_assoc();
 
-    if(password_verify($password, $admin['password'])) {
+    if(password_verify($password, $admin['password_hash']))  {
 
         $_SESSION['super_admin_logged_in'] = true;
         $_SESSION['super_admin_id'] = $admin['id'];
