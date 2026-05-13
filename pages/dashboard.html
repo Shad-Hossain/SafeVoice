@@ -313,14 +313,30 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── PI Notification System ─────────────────────
 let currentPIComplaintId = null;
 
-function checkPINotifications() {
-    const notifications = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
-    const pending = notifications.find(n => n.status === 'pending_payment');
-    if (pending) {
-        currentPIComplaintId = pending.complaint_id;
-        document.getElementById('piNotifyComplaintId').textContent = pending.complaint_id;
+async function checkPINotifications() {
+    // 1. localStorage check (same device / demo mode)
+    const lsNotifs  = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
+    const lsPending = lsNotifs.find(n => n.status === 'pending_payment');
+    if (lsPending) {
+        currentPIComplaintId = lsPending.complaint_id;
+        document.getElementById('piNotifyComplaintId').textContent = lsPending.complaint_id;
         document.getElementById('piUserModal').style.display = 'flex';
+        return;
     }
+    // 2. DB poll — works across devices
+    try {
+        const res  = await fetch('../api/get_user_complaints.php');
+        const data = await res.json();
+        const complaints = data.complaints || [];
+        for (const c of complaints) {
+            if (c.status === 'PI Notification Sent') {
+                currentPIComplaintId = c.complaint_id;
+                document.getElementById('piNotifyComplaintId').textContent = c.complaint_id;
+                document.getElementById('piUserModal').style.display = 'flex';
+                return;
+            }
+        }
+    } catch(e) { /* backend offline — demo mode */ }
 }
 
 function rejectPINotify() {

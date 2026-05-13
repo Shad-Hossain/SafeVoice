@@ -242,8 +242,9 @@
                     <option value="">All Statuses</option>
                     <option value="Submitted">Submitted</option>
                     <option value="Under Review">Under Review</option>
-                    <option value="Private Investigator Assigned">Private Investigator Assigned</option>
-                    <option value="Investigation">Investigation</option>
+                    <option value="PI Notification Sent">PI Notification Sent</option>
+                    <option value="PI Payment Confirmed">PI Payment Confirmed</option>
+                    <option value="Private Investigator Assigned">PI Assigned</option>
                     <option value="Resolved">Resolved</option>
                     <option value="Rejected">Rejected</option>
                 </select>
@@ -483,8 +484,9 @@ async function loadComplaints() {
                     <select class="status-select ${statusClass(c.status)}" onchange="updateStatus('${c.complaint_id}', this)">
                         <option ${c.status==='Submitted'        ? 'selected':''}>Submitted</option>
                         <option ${c.status==='Under Review'     ? 'selected':''}>Under Review</option>
-                        <option ${c.status==='Private Investigator Assigned' ? 'selected':''}>Private Investigator Assigned</option>
-                        <option ${c.status==='Investigation'    ? 'selected':''}>Investigation</option>
+                        <option ${c.status==='PI Notification Sent'          ? 'selected':''}>PI Notification Sent</option>
+                        <option ${c.status==='PI Payment Confirmed'           ? 'selected':''}>PI Payment Confirmed</option>
+                        <option ${c.status==='Private Investigator Assigned'  ? 'selected':''}>Private Investigator Assigned</option>
                         <option ${c.status==='Resolved'         ? 'selected':''}>Resolved</option>
                         <option ${c.status==='Rejected'         ? 'selected':''}>Rejected</option>
                     </select>
@@ -619,7 +621,8 @@ function statusClass(s) {
         'Submitted':        's-submitted',
         'Under Review':     's-under-review',
         'Private Investigator Assigned': 's-officer-assigned',
-        'Investigation':    's-investigation',
+        'PI Notification Sent':         's-under-review',
+        'PI Payment Confirmed':         's-under-review',
         'Resolved':         's-resolved',
         'Rejected':         's-rejected'
     };
