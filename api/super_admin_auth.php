@@ -1,38 +1,72 @@
 <?php
 
-require_once 'db.php';
-$db     = getDB();
-$method = $_SERVER['REQUEST_METHOD'];
+session_start();
 
-if ($method === 'POST') {
-    $data     = json_decode(file_get_contents('php://input'), true);
-    $username = trim($data['username'] ?? '');
-    $password = trim($data['password'] ?? '');
+header("Content-Type: application/json");
 
-    if (empty($username) || empty($password)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Username and password required']);
-        exit;
-    }
+$conn = new mysqli("localhost", "root", "", "safevoice");
 
-    $stmt = $db->prepare('SELECT id, username, password_hash FROM super_admins WHERE username = ?');
-    $stmt->bind_param('s', $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $admin  = $result->fetch_assoc();
-    $stmt->close();
+if ($conn->connect_error) {
 
-    if ($admin && password_verify($password, $admin['password_hash'])) {
-        echo json_encode([
-            'success'  => true,
-            'message'  => 'Super admin authenticated',
-            'username' => $admin['username'],
-            'id'       => $admin['id']
-        ]);
-    } else {
-        http_response_code(401);
-        echo json_encode(['success' => false, 'message' => 'Invalid credentials']);
-    }
+    echo json_encode([
+        "success" => false,
+        "message" => "Database connection failed"
+    ]);
+
+    exit;
 }
 
-$db->close();
+$data = json_decode(file_get_contents("php://input"), true);
+
+$username = trim($data['username'] ?? '');
+$password = trim($data['password'] ?? '');
+
+if(empty($username) || empty($password)) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "All fields are required"
+    ]);
+
+    exit;
+}
+
+$stmt = $conn->prepare("SELECT * FROM super_admins WHERE username = ?");
+
+$stmt->bind_param("s", $username);
+
+$stmt->execute();
+
+$result = $stmt->get_result();
+
+if($result->num_rows === 1) {
+
+    $admin = $result->fetch_assoc();
+
+    if(password_verify($password, $admin['password'])) {
+
+        $_SESSION['super_admin_logged_in'] = true;
+        $_SESSION['super_admin_id'] = $admin['id'];
+        $_SESSION['super_admin_username'] = $admin['username'];
+
+        echo json_encode([
+            "success" => true,
+            "message" => "Login successful"
+        ]);
+
+    } else {
+
+        echo json_encode([
+            "success" => false,
+            "message" => "Invalid credentials"
+        ]);
+    }
+
+} else {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Invalid credentials"
+    ]);
+}
+?>
