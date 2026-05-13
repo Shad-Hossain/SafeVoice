@@ -184,6 +184,11 @@
             <li id="nav-users"><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Users</a></li>
             <li id="nav-sos"><a href="#" onclick="showSection('sos')"><i class="fas fa-exclamation-triangle"></i> SOS Alerts</a></li>
         </ul>
+        <div style="padding:14px 16px;border-top:1px solid #1e2d4a;margin-top:20px">
+            <a href="super-admin-login.html" style="display:flex;align-items:center;gap:8px;color:#fbbf24;font-size:12px;font-weight:600;text-decoration:none;background:#fbbf2410;border:1px solid #fbbf2430;border-radius:8px;padding:9px 12px">
+                <i class="fas fa-crown"></i> Super Admin Portal
+            </a>
+        </div>
     </aside>
 
     <main class="main-content" id="mainContent">
@@ -326,12 +331,16 @@
     <div class="pi-modal">
         <div class="pi-modal-icon"><i class="fas fa-user-secret"></i></div>
         <h3>Send Private Investigator Notification</h3>
-        <p>After reviewing this case, you've determined it requires a Private Investigator. The user will receive a notification to accept or decline the service.</p>
+        <p>You've marked this complaint as <strong style="color:#fbbf24">Private Investigator Assigned</strong>. The user will receive a notification asking them to accept or decline the PI service.</p>
         <div class="pi-fee-box">
-            <div class="fee-label">Service Fee</div>
+            <div class="fee-label">Service Fee (Paid by User)</div>
             <div class="fee-amount">৳1,000</div>
-            <div class="fee-note">One-time fee per case — paid by user via bKash</div>
+            <div class="fee-note">One-time fee · bKash / Nagad / Rocket / Bank</div>
         </div>
+        <p style="font-size:12px;color:#a0b4cc;text-align:center;margin-bottom:18px">
+            <i class="fas fa-shield-alt" style="color:#a855f7"></i>
+            The system will auto-assign the PI with lowest workload. PI identity stays hidden from normal admin.
+        </p>
         <div class="pi-modal-btns">
             <button class="btn-cancel" onclick="cancelPINotify()">Cancel</button>
             <button class="btn-send" onclick="confirmSendPINotify()"><i class="fas fa-paper-plane"></i> Send Notification to User</button>
@@ -536,12 +545,33 @@ function cancelPINotify() {
 
 async function confirmSendPINotify() {
     document.getElementById('piNotifyModal').classList.remove('active');
-    // Store pending PI notification in localStorage (user dashboard will pick it up)
+
+    // 1. Store in localStorage so user dashboard sees it immediately
     const pending = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
-    pending.push({ complaint_id: piPendingComplaintId, timestamp: Date.now(), status: 'pending_payment' });
-    localStorage.setItem('sv-pi-notifications', JSON.stringify(pending));
+    // Remove any old notification for same complaint
+    const updated = pending.filter(n => n.complaint_id !== piPendingComplaintId);
+    updated.push({ complaint_id: piPendingComplaintId, timestamp: Date.now(), status: 'pending_payment' });
+    localStorage.setItem('sv-pi-notifications', JSON.stringify(updated));
+
+    // 2. Also update DB via API
+    try {
+        await fetch('../api/pi_notification.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ complaint_id: piPendingComplaintId })
+        });
+    } catch(e) { /* backend optional */ }
+
+    // 3. Update status dropdown visually
+    if (piPendingSelectEl) {
+        piPendingSelectEl.value = 'PI Notification Sent';
+        piPendingSelectEl.className = 'status-select s-under-review';
+        piPendingSelectEl.dataset.prev = 'PI Notification Sent';
+    }
+
     showToast('<i class="fas fa-paper-plane"></i> PI notification sent to user for ' + piPendingComplaintId);
     piPendingComplaintId = piPendingSelectEl = piPendingOldStatus = null;
+    loadComplaints();
 }
 
 function viewComplaint(c) {

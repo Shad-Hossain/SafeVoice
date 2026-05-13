@@ -353,34 +353,48 @@ function selectBkashMethod(m) {
     });
 }
 
-function processBkashPayment() {
+async function processBkashPayment() {
     const number = document.getElementById('bkashNumber').value.trim();
     const pin    = document.getElementById('bkashPin').value.trim();
     if (number.length < 11) { alert('Please enter a valid 11-digit mobile number.'); return; }
     if (pin.length < 4)     { alert('Please enter your PIN.'); return; }
 
-    // Simulate processing
-    const btn = document.querySelector('#bkashModal button[onclick="processBkashPayment()"]');
+    const txnId  = 'TXN' + Date.now().toString().slice(-8).toUpperCase();
+    const method = selectedPaymentMethod || 'bkash';
+    const btn    = document.querySelector('#bkashModal button[onclick="processBkashPayment()"]');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    btn.disabled = true;
+    btn.disabled  = true;
 
-    setTimeout(() => {
-        // Remove PI notification
-        const notifications = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
-        const updated = notifications.filter(n => n.complaint_id !== currentPIComplaintId);
-        localStorage.setItem('sv-pi-notifications', JSON.stringify(updated));
+    try {
+        // Call PI auto-assignment engine — picks lowest workload PI, sends email
+        const res  = await fetch('../api/pi_assign.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+                complaint_id:   currentPIComplaintId,
+                txn_id:         txnId,
+                payment_method: method,
+                sender_number:  number
+            })
+        });
+        const data = await res.json();
+        if (!data.success) console.warn('PI assign:', data.message);
+    } catch(e) {
+        console.log('PI assign (demo mode):', e.message);
+    }
 
-        // Generate transaction ID
-        const txnId = 'TXN' + Date.now().toString().slice(-8).toUpperCase();
-        document.getElementById('txnId').textContent = txnId;
+    // Clear notification from queue
+    const notifs   = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
+    localStorage.setItem('sv-pi-notifications',
+        JSON.stringify(notifs.filter(n => n.complaint_id !== currentPIComplaintId)));
 
-        document.getElementById('bkashModal').style.display = 'none';
-        document.getElementById('paymentSuccessModal').style.display = 'flex';
+    document.getElementById('txnId').textContent              = txnId;
+    document.getElementById('bkashModal').style.display       = 'none';
+    document.getElementById('paymentSuccessModal').style.display = 'flex';
 
-        btn.innerHTML = '<i class="fas fa-lock"></i> Pay ৳1,000';
-        btn.disabled = false;
-        currentPIComplaintId = null;
-    }, 2000);
+    btn.innerHTML = '<i class="fas fa-lock"></i> Pay ৳1,000';
+    btn.disabled  = false;
+    currentPIComplaintId = null;
 }
 
 function closePaymentSuccess() {

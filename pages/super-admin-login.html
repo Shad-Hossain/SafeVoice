@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin — SafeVoice</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .sa-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: linear-gradient(135deg,#7c3aed22,#f59e0b22);
+            border: 1px solid #f59e0b40;
+            color: #fbbf24; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px;
+            padding: 4px 12px; border-radius: 20px; margin-bottom: 8px;
+        }
+        .auth-card { border-color: #f59e0b30 !important; }
+        .auth-btn { background: linear-gradient(135deg,#7c3aed,#f59e0b) !important; }
+        .auth-title { color: #fbbf24 !important; }
+        .warning-box {
+            background: #f59e0b10; border: 1px solid #f59e0b30;
+            border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;
+            font-size: 12px; color: #fbbf24; line-height: 1.6;
+        }
+        .warning-box i { margin-right: 6px; }
+    </style>
+</head>
+<body>
+<script>
+    if (localStorage.getItem('isSuperAdminLoggedIn') === 'true') {
+        window.location.href = 'super-admin-dashboard.html';
+    }
+</script>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="../index.html" class="logo">
+            <i class="fas fa-user-shield"></i><span>SafeVoice</span>
+        </a>
+    </div>
+</nav>
+
+<div class="auth-container">
+    <div class="auth-card" style="max-width:420px">
+        <div style="text-align:center;margin-bottom:28px">
+            <div style="width:72px;height:72px;border-radius:50%;
+                 background:linear-gradient(135deg,#7c3aed22,#f59e0b22);
+                 border:2px solid #f59e0b50;
+                 display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+                <i class="fas fa-crown" style="font-size:32px;color:#fbbf24"></i>
+            </div>
+            <div class="sa-badge"><i class="fas fa-shield-alt"></i> Restricted Access</div>
+            <h2 class="auth-title" style="margin:0">Super Admin Portal</h2>
+            <p style="color:var(--text-secondary);font-size:13px;margin-top:6px">
+                Private Investigator Management
+            </p>
+        </div>
+
+        <div class="warning-box">
+            <i class="fas fa-exclamation-triangle"></i>
+            This portal is for authorized personnel only. All access attempts are logged.
+        </div>
+
+        <div class="form-group">
+            <label>Username</label>
+            <div class="input-wrapper">
+                <i class="fas fa-user"></i>
+                <input type="text" id="saUsername" placeholder="Super admin username" autocomplete="off">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrapper">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="saPassword" placeholder="Super admin password"
+                       onkeydown="if(event.key==='Enter') doLogin()">
+                <span class="toggle-pass" onclick="togglePass(this)">
+                    <i class="fas fa-eye"></i>
+                </span>
+            </div>
+        </div>
+
+        <div id="errMsg" style="display:none;background:#ef444415;border:1px solid #ef444440;
+             border-radius:8px;padding:10px 14px;color:#f87171;font-size:13px;margin-bottom:16px">
+            <i class="fas fa-times-circle"></i> <span id="errText"></span>
+        </div>
+
+        <button class="auth-btn" onclick="doLogin()" id="loginBtn">
+            <i class="fas fa-sign-in-alt"></i> Access Super Admin Portal
+        </button>
+
+        <div style="text-align:center;margin-top:20px">
+            <a href="admin-login.html" style="color:var(--text-secondary);font-size:13px;
+               text-decoration:none">
+                <i class="fas fa-arrow-left"></i> Regular Admin Login
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="../js/theme.js"></script>
+<script>
+function togglePass(el) {
+    const inp = el.closest('.input-wrapper').querySelector('input');
+    const ico = el.querySelector('i');
+    if (inp.type === 'password') { inp.type = 'text'; ico.className = 'fas fa-eye-slash'; }
+    else { inp.type = 'password'; ico.className = 'fas fa-eye'; }
+}
+
+async function doLogin() {
+    const username = document.getElementById('saUsername').value.trim();
+    const password = document.getElementById('saPassword').value.trim();
+    const btn      = document.getElementById('loginBtn');
+    const errDiv   = document.getElementById('errMsg');
+
+    if (!username || !password) { showErr('Please enter credentials'); return; }
+
+    btn.innerHTML  = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+    btn.disabled   = true;
+    errDiv.style.display = 'none';
+
+    try {
+        const res  = await fetch('../api/super_admin_auth.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            localStorage.setItem('isSuperAdminLoggedIn', 'true');
+            localStorage.setItem('sa_username', username);
+            localStorage.setItem('sa_password', password); // needed for API calls
+            window.location.href = 'super-admin-dashboard.html';
+        } else {
+            showErr(data.message || 'Invalid credentials');
+        }
+    } catch(e) {
+        // Demo mode fallback (no backend)
+        if (username === 'superadmin' && password === 'SuperAdmin@2024') {
+            localStorage.setItem('isSuperAdminLoggedIn', 'true');
+            localStorage.setItem('sa_username', username);
+            localStorage.setItem('sa_password', password);
+            window.location.href = 'super-admin-dashboard.html';
+        } else {
+            showErr('Login failed. Demo credentials: superadmin / SuperAdmin@2024');
+        }
+    }
+
+    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Access Super Admin Portal';
+    btn.disabled  = false;
+}
+
+function showErr(msg) {
+    const errDiv = document.getElementById('errMsg');
+    document.getElementById('errText').textContent = msg;
+    errDiv.style.display = 'block';
+}
+</script>
+</body>
+</html>
