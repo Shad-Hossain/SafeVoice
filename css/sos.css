@@ -627,3 +627,39 @@
     .quick-action-btn { padding: 12px 14px; min-width: 75px; }
     .activated-actions { flex-direction: column; }
 }
+
+.evidence-modal{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+}
+
+.evidence-box{
+    background:#111;
+    padding:30px;
+    border-radius:20px;
+    width:400px;
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.evidence-box input,
+.evidence-box textarea,
+.evidence-box select{
+    padding:12px;
+    border:none;
+    border-radius:10px;
+}
+
+.evidence-box button{
+    padding:14px;
+    background:red;
+    color:white;
+    border:none;
+    border-radius:10px;
+}
