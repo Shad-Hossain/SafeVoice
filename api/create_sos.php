@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 
 include 'db.php';
 
-$conn = getDB(); // 🔥 THIS IS THE FIX
+$conn = getDB(); 
 
 $data = json_decode(file_get_contents("php://input"), true);
 
