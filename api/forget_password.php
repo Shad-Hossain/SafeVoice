@@ -24,31 +24,52 @@ $db->query("CREATE TABLE IF NOT EXISTS password_resets (
     INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// ── Utility: send OTP email ───────────────────────────────────
+// ── Utility: send OTP email via PHPMailer (Gmail SMTP) ───────
 function sendOtpEmail(string $toEmail, string $toName, string $otp): bool {
-    $subject = 'SafeVoice — Password Reset OTP';
-    $from    = 'noreply@safevoice.local';   // পরিবর্তন করো তোমার domain দিয়ে
+    
+    $smtpUser = 'safevoice.noreply@gmail.com';     
+    $smtpPass = 'wbfr cmdz jsyj ghtc';   
+    $fromName = 'SafeVoice';
+    // ════════════════════════════════════════════════════════════
 
-    $body = "
-    <div style='font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:30px;background:#0d1526;color:#fff;border-radius:12px;'>
-        <h2 style='color:#4f9eff;margin-bottom:4px;'>SafeVoice</h2>
-        <p style='color:#a0b4cc;font-size:13px;margin-top:0'>Password Reset Request</p>
-        <hr style='border:1px solid #1e2d4a;margin:20px 0;'>
-        <p>Hi <strong>{$toName}</strong>,</p>
-        <p>Your one-time password (OTP) for resetting your SafeVoice account password is:</p>
-        <div style='text-align:center;margin:24px 0;'>
-            <span style='font-size:36px;font-weight:900;letter-spacing:10px;color:#4f9eff;background:#0a1428;padding:16px 24px;border-radius:10px;display:inline-block;'>{$otp}</span>
-        </div>
-        <p style='color:#a0b4cc;font-size:13px;'>This OTP is valid for <strong style='color:#fff;'>10 minutes</strong>. Do not share it with anyone.</p>
-        <p style='color:#a0b4cc;font-size:12px;margin-top:30px;'>If you did not request a password reset, please ignore this email.</p>
-    </div>";
+    require_once __DIR__ . '/src/PHPMailer.php';
+    require_once __DIR__ . '/src/SMTP.php';
+    require_once __DIR__ . '/src/Exception.php';
 
-    $headers  = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: SafeVoice <{$from}>\r\n";
-    $headers .= "Reply-To: {$from}\r\n";
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $smtpUser;
+        $mail->Password   = $smtpPass;
+        $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
 
-    return @mail($toEmail, $subject, $body, $headers);
+        $mail->setFrom($smtpUser, $fromName);
+        $mail->addAddress($toEmail, $toName);
+        $mail->isHTML(true);
+        $mail->Subject = 'SafeVoice — Password Reset OTP';
+        $mail->Body    = "
+        <div style='font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:30px;background:#0d1526;color:#fff;border-radius:12px;'>
+            <h2 style='color:#4f9eff;margin-bottom:4px;'>SafeVoice</h2>
+            <p style='color:#a0b4cc;font-size:13px;margin-top:0'>Password Reset Request</p>
+            <hr style='border:1px solid #1e2d4a;margin:20px 0;'>
+            <p>Hi <strong>{$toName}</strong>,</p>
+            <p>Your one-time password (OTP) for resetting your SafeVoice account password is:</p>
+            <div style='text-align:center;margin:24px 0;'>
+                <span style='font-size:36px;font-weight:900;letter-spacing:10px;color:#4f9eff;background:#0a1428;padding:16px 24px;border-radius:10px;display:inline-block;'>{$otp}</span>
+            </div>
+            <p style='color:#a0b4cc;font-size:13px;'>This OTP is valid for <strong style='color:#fff;'>10 minutes</strong>. Do not share it with anyone.</p>
+            <p style='color:#a0b4cc;font-size:12px;margin-top:30px;'>If you did not request a password reset, please ignore this email.</p>
+        </div>";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log('PHPMailer Error: ' . $mail->ErrorInfo);
+        return false;
+    }
 }
 
 // ── ACTION: send_otp ─────────────────────────────────────────
@@ -101,12 +122,9 @@ if ($action === 'send_otp') {
     // Send email
     $sent = sendOtpEmail($email, $userRow['name'], $otp);
 
-    // Return the OTP in dev mode so you can test without a real mail server
-    // ⚠️  PRODUCTION-এ 'dev_otp' লাইনটা মুছে ফেলো
     echo json_encode([
         'success' => true,
         'message' => 'OTP sent to your email!',
-        'dev_otp' => $otp   // ← PRODUCTION-এ DELETE করো
     ]);
     $db->close(); exit;
 }

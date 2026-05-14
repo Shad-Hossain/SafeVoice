@@ -176,12 +176,36 @@
 <script src="../js/main.js"></script>
 <script src="../js/theme.js"></script>
 <script>
-// ── Auth Guard — redirect to login if not logged in ──────────
+// ── Auth Guard — server session verify ────────────────────────
 (function() {
+    // First, quick localStorage check to avoid flicker
     const user = JSON.parse(localStorage.getItem('sv_user') || 'null');
     if (!user || !user.id) {
         window.location.href = 'login.html';
+        return;
     }
+    // Then verify with server — prevents fake localStorage logins
+    fetch('../api/check_session.php', { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.loggedIn) {
+                localStorage.removeItem('sv_user');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('userName');
+                window.location.href = 'login.html';
+            } else {
+                // Sync name from server (prevents fake name in navbar)
+                const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+                svUser.name  = data.user.name;
+                svUser.email = data.user.email;
+                localStorage.setItem('sv_user', JSON.stringify(svUser));
+                document.getElementById('navUsername').textContent = data.user.name;
+            }
+        })
+        .catch(() => {
+            // Network error — trust localStorage temporarily but log warning
+            console.warn('Session check failed — offline?');
+        });
 })();
 
 // ── Load user profile from localStorage ────────
