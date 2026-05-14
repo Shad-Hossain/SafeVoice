@@ -9,9 +9,98 @@
     <link rel="stylesheet" href="../css/responsive.css">
     <link rel="stylesheet" href="../css/theme.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .toast {
+            position: fixed; bottom: 30px; right: 30px;
+            padding: 14px 22px; border-radius: 10px;
+            font-size: 14px; font-weight: 600; color: #fff;
+            z-index: 9999; display: flex; align-items: center; gap: 10px;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; max-width: 340px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #1a7f4b; }
+        .toast.error   { background: #c0392b; }
+        .toast.info    { background: #1a5fa8; }
+        .btn-auth .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff; border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-auth:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        /* ID type selector tabs */
+        .id-type-tabs {
+            display: flex; gap: 10px; margin-bottom: 15px;
+        }
+        .id-tab {
+            flex: 1; padding: 10px; border-radius: 8px; cursor: pointer;
+            border: 2px solid #1e2d4a; background: transparent;
+            color: #a0b4cc; font-size: 13px; font-weight: 600;
+            transition: all 0.2s; text-align: center; display: flex;
+            align-items: center; justify-content: center; gap: 7px;
+        }
+        .id-tab.active {
+            border-color: #4f9eff; background: rgba(79,158,255,0.1); color: #4f9eff;
+        }
+        .id-tab:hover { border-color: #4f9eff; color: #4f9eff; }
+
+        /* Upload box */
+        .upload-box {
+            border: 2px dashed #1e2d4a; border-radius: 10px;
+            padding: 20px; text-align: center; cursor: pointer;
+            transition: border 0.3s; position: relative;
+        }
+        .upload-box:hover { border-color: #4f9eff; }
+        .upload-box i { font-size: 28px; color: #4f9eff; margin-bottom: 8px; display: block; }
+        .upload-box p { color: #a0b4cc; font-size: 13px; margin: 0 0 3px; }
+        .upload-box span { color: #4a5568; font-size: 12px; }
+        .upload-box input[type=file] {
+            position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%;
+        }
+        .upload-preview {
+            display: none; margin-top: 10px; border-radius: 8px;
+            overflow: hidden; max-height: 120px; border: 1px solid #1e2d4a;
+        }
+        .upload-preview img { width: 100%; height: 120px; object-fit: cover; }
+        .upload-preview .file-name {
+            padding: 8px 12px; background: #0a0f1e; color: #a0b4cc;
+            font-size: 12px; display: flex; align-items: center; gap: 6px;
+        }
+
+        /* Password strength */
+        .strength-bar { height: 4px; border-radius: 4px; background: #1e2d4a; margin-top: 8px; overflow: hidden; }
+        .strength-fill { height: 100%; width: 0; transition: width 0.3s, background 0.3s; border-radius: 4px; }
+        .strength-text { font-size: 12px; color: #a0b4cc; margin-top: 4px; }
+
+        /* Progress steps */
+        .reg-progress {
+            display: flex; justify-content: center; gap: 0; margin-bottom: 28px;
+        }
+        .reg-step-dot {
+            width: 32px; height: 32px; border-radius: 50%; border: 2px solid #1e2d4a;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: #4a5568; position: relative;
+            background: #0d1526; transition: all 0.3s; flex-shrink: 0;
+        }
+        .reg-step-dot.active { border-color: #4f9eff; color: #4f9eff; }
+        .reg-step-dot.done   { border-color: #2ecc71; background: #2ecc71; color: #fff; }
+        .reg-step-line {
+            flex: 1; height: 2px; background: #1e2d4a; margin: auto; max-width: 60px;
+            transition: background 0.3s;
+        }
+        .reg-step-line.done { background: #2ecc71; }
+        .reg-panel { display: none; }
+        .reg-panel.active { display: block; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    </style>
 </head>
-
-
+<body>
 <nav class="navbar">
     <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
     <div class="nav-overlay" id="navOverlay"></div>
@@ -19,93 +108,163 @@
         <a href="../index.html" class="logo"><i class="fas fa-shield-alt"></i><span>SafeVoice</span></a>
         <ul class="nav-links">
             <li><a href="../index.html">Home</a></li>
-           
             <li><a href="leaderboard.html">Leaderboard</a></li>
             <li><a href="login.html" class="btn-login">Login</a></li>
             <li><a href="register.html" class="btn-register">Register</a></li>
         </ul>
     </div>
-    <body>
-    
 </nav>
 
 <section class="auth-section">
-    <div class="auth-container" style="max-width:550px;">
+    <div class="auth-container" style="max-width:580px;">
         <div class="auth-card">
             <div class="auth-header">
                 <i class="fas fa-user-plus"></i>
                 <h2>Create Account</h2>
                 <p>Join SafeVoice and make your voice heard</p>
             </div>
+
+            <!-- Progress dots -->
+            <div class="reg-progress">
+                <div class="reg-step-dot active" id="dot1">1</div>
+                <div class="reg-step-line" id="line1"></div>
+                <div class="reg-step-dot" id="dot2">2</div>
+                <div class="reg-step-line" id="line2"></div>
+                <div class="reg-step-dot" id="dot3">3</div>
+            </div>
+
             <div class="auth-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-user"></i>
-                            <input type="text" id="regName" placeholder="Enter your name" />
+
+                <!-- ── PANEL 1: Personal Info ── -->
+                <div class="reg-panel active" id="panel1">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name <span style="color:#e63946;">*</span></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="regName" placeholder="Your full name" autocomplete="name" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number <span style="color:#e63946;">*</span></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-phone"></i>
+                                <input type="tel" id="regPhone" placeholder="01700000000" maxlength="15" />
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Phone Number</label>
+                        <label>Email Address <span style="color:#e63946;">*</span></label>
                         <div class="input-wrapper">
-                            <i class="fas fa-phone"></i>
-                            <input type="tel" placeholder="+880 1700-000000" />
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="regEmail" placeholder="Enter your email" />
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Password</label>
-                        <div class="input-wrapper">
-                            <i class="fas fa-lock"></i>
-                            <input type="password" id="password1" placeholder="Create password" />
-                            <i class="fas fa-eye toggle-password"></i>
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="regEmail" placeholder="Enter your email" autocomplete="email" />
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Confirm Password</label>
+                        <label>Location <span style="color:var(--text-secondary);font-weight:400;">(Optional)</span></label>
                         <div class="input-wrapper">
-                            <i class="fas fa-lock"></i>
-                            <input type="password" id="password2" placeholder="Confirm password" />
-                            <i class="fas fa-eye toggle-password"></i>
+                            <i class="fas fa-map-marker-alt"></i>
+                            <input type="text" id="regLocation" placeholder="e.g. Dhaka, Bangladesh" />
+                            <i class="fas fa-crosshairs" id="detectLocation" style="position:absolute;right:14px;left:auto;color:#4f9eff;cursor:pointer;" title="Auto-detect location"></i>
                         </div>
                     </div>
+                    <button class="btn-auth" id="nextStep1Btn">
+                        Next <i class="fas fa-arrow-right" style="margin-left:6px;"></i>
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label>Location</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <input type="text" placeholder="Auto-detect or enter manually" />
-                        <i class="fas fa-crosshairs toggle-password" style="color:#4f9eff;cursor:pointer;"></i>
+
+                <!-- ── PANEL 2: ID Verification ── -->
+                <div class="reg-panel" id="panel2">
+                    <div class="form-group">
+                        <label>Identity Verification <span style="color:#e63946;">*</span></label>
+                        <div class="id-type-tabs">
+                            <div class="id-tab active" data-type="nid" id="tabNid">
+                                <i class="fas fa-id-card"></i> NID Card
+                            </div>
+                            <div class="id-tab" data-type="birth_certificate" id="tabBirth">
+                                <i class="fas fa-certificate"></i> Birth Certificate
+                            </div>
+                        </div>
+                        <div class="input-wrapper">
+                            <i class="fas fa-hashtag"></i>
+                            <input type="text" id="regIdNumber" placeholder="Enter NID number (10 or 17 digits)" inputmode="numeric" />
+                        </div>
+                        <div style="font-size:12px;color:#4a5568;margin-top:6px;" id="idHint">NID: 10 or 17 digits</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Upload ID Document <span style="color:var(--text-secondary);font-weight:400;">(Optional — JPG/PNG/PDF, max 5MB)</span></label>
+                        <div class="upload-box" id="idUploadBox">
+                            <i class="fas fa-id-card"></i>
+                            <p>Click to upload your ID document</p>
+                            <span>JPG, PNG, PDF up to 5MB</span>
+                            <input type="file" id="idDocFile" accept="image/jpeg,image/png,application/pdf" />
+                        </div>
+                        <div class="upload-preview" id="idPreview">
+                            <div class="file-name" id="idFileName"><i class="fas fa-file"></i> <span></span></div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn-auth" id="backStep2Btn" style="background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;flex:0 0 auto;width:auto;padding:12px 20px;">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn-auth" id="nextStep2Btn" style="flex:1;">
+                            Next <i class="fas fa-arrow-right" style="margin-left:6px;"></i>
+                        </button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Profile Photo <span style="color:var(--text-secondary);font-weight:400;">(Optional)</span></label>
-                    <div class="upload-box">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Click to upload photo</p><span>JPG, PNG up to 2MB</span>
-                        <input type="file" accept="image/*" />
+
+                <!-- ── PANEL 3: Password & Photo ── -->
+                <div class="reg-panel" id="panel3">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Password <span style="color:#e63946;">*</span></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="regPwd1" placeholder="Min 8 characters" />
+                                <i class="fas fa-eye toggle-password" id="togPwd1"></i>
+                            </div>
+                            <div class="strength-bar"><div class="strength-fill" id="pwdStrengthFill"></div></div>
+                            <div class="strength-text" id="pwdStrengthText"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password <span style="color:#e63946;">*</span></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="regPwd2" placeholder="Confirm password" />
+                                <i class="fas fa-eye toggle-password" id="togPwd2"></i>
+                            </div>
+                        </div>
                     </div>
+                    <div class="form-group">
+                        <label>Profile Photo <span style="color:var(--text-secondary);font-weight:400;">(Optional — JPG/PNG, max 2MB)</span></label>
+                        <div class="upload-box" id="photoUploadBox">
+                            <i class="fas fa-camera"></i>
+                            <p>Click to upload your photo</p>
+                            <span>JPG, PNG up to 2MB</span>
+                            <input type="file" id="profilePhotoFile" accept="image/jpeg,image/png,image/webp" />
+                        </div>
+                        <div class="upload-preview" id="photoPreview">
+                            <img src="" alt="preview" id="photoPreviewImg" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="remember-me">
+                            <input type="checkbox" id="termsCheckbox" />
+                            <span>I agree to the <a href="#" id="termsLink" style="color:#4f9eff;">Terms &amp; Conditions</a></span>
+                        </label>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn-auth" id="backStep3Btn" style="background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;flex:0 0 auto;width:auto;padding:12px 20px;">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn-auth" id="registerBtn" style="flex:1;">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+                    </div>
+                    <div class="auth-divider"><span>or</span></div>
+                    <p class="auth-switch">Already have an account? <a href="login.html">Login here</a></p>
                 </div>
-                <div class="form-group">
-                    <label class="remember-me">
-                        <input type="checkbox" id="termsCheckbox" />
-                        <span>I agree to the <a href="#" id="termsLink" style="color:#4f9eff;">Terms &amp; Conditions</a></span>
-                    </label>
-                </div>
-                <button class="btn-auth" id="registerBtn">
-                    <i class="fas fa-user-plus"></i> Create Account
-                </button>
-                <div class="auth-divider"><span>or</span></div>
-                <p class="auth-switch">Already have an account? <a href="login.html">Login here</a></p>
+
             </div>
         </div>
     </div>
@@ -116,51 +275,228 @@
     <div class="modal-box">
         <div class="modal-header">
             <h3><i class="fas fa-file-contract"></i> Terms &amp; Conditions</h3>
-            <i class="fas fa-times modal-close" onclick="closeModal()"></i>
+            <i class="fas fa-times modal-close" onclick="closeTerms()"></i>
         </div>
         <div class="modal-body">
             <h4>1. Acceptance of Terms</h4>
             <p>By registering on SafeVoice, you agree to these terms and conditions.</p>
             <h4>2. User Responsibilities</h4>
-            <p>You are responsible for providing accurate information when submitting complaints.</p>
+            <p>You are responsible for providing accurate information when submitting complaints. False information may result in account suspension.</p>
             <h4>3. Anonymous Complaints</h4>
             <p>SafeVoice allows anonymous reporting. Misuse for harassment is strictly prohibited.</p>
             <h4>4. Privacy Policy</h4>
-            <p>Your personal data is protected and will never be shared with third parties.</p>
+            <p>Your personal data and ID documents are securely stored and will never be shared with third parties.</p>
             <h4>5. Emergency SOS</h4>
-            <p>The SOS feature is for genuine emergencies only.</p>
+            <p>The SOS feature is for genuine emergencies only. Misuse may result in legal action.</p>
             <h4>6. Content Policy</h4>
             <p>Users must not upload offensive, illegal, or misleading content.</p>
             <h4>7. Account Security</h4>
             <p>You are responsible for maintaining the confidentiality of your account credentials.</p>
         </div>
         <div class="modal-footer">
-            <button class="btn-decline" onclick="closeModal()">Decline</button>
+            <button class="btn-decline" onclick="closeTerms()">Decline</button>
             <button class="btn-accept" onclick="acceptTerms()">Accept</button>
         </div>
     </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-document.getElementById('registerBtn').addEventListener('click', function() {
-    const name     = document.getElementById('regName').value;
-    const email    = document.getElementById('regEmail').value;
-    const password = document.getElementById('password1').value;
-    const confirm  = document.getElementById('password2').value;
-    const terms    = document.getElementById('termsCheckbox');
-    if (!name || !email || !password) { alert('Please fill in all fields!'); return; }
-    if (password !== confirm) { alert('Passwords do not match!'); return; }
-    if (!terms.checked) { alert('Please accept the Terms & Conditions!'); return; }
-    localStorage.setItem('isLoggedIn', 'true');
-    window.location.href = 'dashboard.html';
+const API_BASE = '../api';
+let selectedIdType = 'nid';
+let currentStep = 1;
+
+// ── Toast ──────────────────────────────────────────────
+function showToast(msg, type='info', dur=4000) {
+    const icons = {success:'fa-check-circle',error:'fa-exclamation-circle',info:'fa-info-circle'};
+    const t = document.getElementById('toast');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fas ${icons[type]}"></i> ${msg}`;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+function btnLoading(btn, text) { btn.disabled=true; btn.innerHTML=`<span class="spinner"></span> ${text}`; }
+function btnReset(btn, html)   { btn.disabled=false; btn.innerHTML=html; }
+
+// ── Toggle password ────────────────────────────────────
+function setupToggle(id, inputId) {
+    const tog=document.getElementById(id), inp=document.getElementById(inputId);
+    if (!tog||!inp) return;
+    tog.addEventListener('click', function(){ inp.type=inp.type==='password'?'text':'password'; this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash'); });
+}
+setupToggle('togPwd1','regPwd1'); setupToggle('togPwd2','regPwd2');
+
+// ── Step navigation ────────────────────────────────────
+function goStep(n) {
+    document.querySelectorAll('.reg-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(`panel${n}`).classList.add('active');
+    currentStep = n;
+    updateProgress();
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateProgress() {
+    for (let i=1; i<=3; i++) {
+        const dot=document.getElementById(`dot${i}`);
+        dot.classList.remove('active','done');
+        if (i < currentStep)      { dot.classList.add('done'); dot.innerHTML='<i class="fas fa-check" style="font-size:11px;"></i>'; }
+        else if (i === currentStep){ dot.classList.add('active'); dot.textContent=i; }
+        else                        { dot.textContent=i; }
+    }
+    for (let i=1; i<=2; i++) {
+        const line=document.getElementById(`line${i}`);
+        line.classList.toggle('done', i < currentStep);
+    }
+}
+
+// ── Step 1 validation ─────────────────────────────────
+document.getElementById('nextStep1Btn').addEventListener('click', function(){
+    const name  = document.getElementById('regName').value.trim();
+    const phone = document.getElementById('regPhone').value.replace(/\D/g,'');
+    const email = document.getElementById('regEmail').value.trim();
+    if (!name)  { showToast('Full name is required.','error'); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Enter a valid email address.','error'); return; }
+    const cleanPhone = phone.length===13?phone.slice(2):phone;
+    if (!/^01[3-9]\d{8}$/.test(cleanPhone)) { showToast('Enter a valid Bangladesh phone number.','error'); return; }
+    goStep(2);
 });
-document.getElementById('termsLink').addEventListener('click', function(e) {
-    e.preventDefault();
-    document.getElementById('termsModal').classList.add('active');
+
+// ── ID Type tabs ───────────────────────────────────────
+document.querySelectorAll('.id-tab').forEach(tab => {
+    tab.addEventListener('click', function(){
+        document.querySelectorAll('.id-tab').forEach(t=>t.classList.remove('active'));
+        this.classList.add('active');
+        selectedIdType = this.dataset.type;
+        const inp  = document.getElementById('regIdNumber');
+        const hint = document.getElementById('idHint');
+        if (selectedIdType === 'nid') {
+            inp.placeholder = 'Enter NID number (10 or 17 digits)';
+            hint.textContent = 'NID: 10 or 17 digits';
+        } else {
+            inp.placeholder = 'Enter Birth Certificate number (17 digits)';
+            hint.textContent = 'Birth Certificate: 17 digits';
+        }
+        inp.value = '';
+    });
 });
-function closeModal() { document.getElementById('termsModal').classList.remove('active'); }
-function acceptTerms() { document.getElementById('termsCheckbox').checked = true; closeModal(); }
-document.getElementById('termsModal').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
+
+// ID number: only allow digits
+document.getElementById('regIdNumber').addEventListener('input', function(){ this.value=this.value.replace(/\D/g,''); });
+
+// ── File upload previews ───────────────────────────────
+document.getElementById('idDocFile').addEventListener('change', function(){
+    const file = this.files[0]; if (!file) return;
+    if (file.size > 5*1024*1024) { showToast('ID document must be under 5MB.','error'); this.value=''; return; }
+    const prev=document.getElementById('idPreview'), fn=document.getElementById('idFileName');
+    fn.querySelector('span').textContent = file.name;
+    prev.style.display='block';
+});
+
+document.getElementById('profilePhotoFile').addEventListener('change', function(){
+    const file = this.files[0]; if (!file) return;
+    if (file.size > 2*1024*1024) { showToast('Profile photo must be under 2MB.','error'); this.value=''; return; }
+    const reader=new FileReader();
+    reader.onload=e=>{ document.getElementById('photoPreviewImg').src=e.target.result; document.getElementById('photoPreview').style.display='block'; };
+    reader.readAsDataURL(file);
+});
+
+// ── Step 2 validation ─────────────────────────────────
+document.getElementById('nextStep2Btn').addEventListener('click', function(){
+    const idNum = document.getElementById('regIdNumber').value.trim();
+    if (!idNum) { showToast('Please enter your ID number.','error'); return; }
+    if (selectedIdType==='nid' && !/^\d{10}(\d{7})?$/.test(idNum)) { showToast('NID must be 10 or 17 digits.','error'); return; }
+    if (selectedIdType==='birth_certificate' && !/^\d{17}$/.test(idNum)) { showToast('Birth Certificate must be 17 digits.','error'); return; }
+    goStep(3);
+});
+
+document.getElementById('backStep2Btn').addEventListener('click', ()=>goStep(1));
+document.getElementById('backStep3Btn').addEventListener('click', ()=>goStep(2));
+
+// ── Password strength ──────────────────────────────────
+document.getElementById('regPwd1').addEventListener('input', function(){
+    const v=this.value, s=[v.length>=8,/[A-Z]/.test(v),/[0-9]/.test(v),/[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
+    const cfg=[['','',''],['25%','#e63946','Weak'],['50%','#f4a261','Fair'],['75%','#f1c40f','Good'],['100%','#2ecc71','Strong']];
+    document.getElementById('pwdStrengthFill').style.cssText=`width:${cfg[s][0]};background:${cfg[s][1]}`;
+    document.getElementById('pwdStrengthText').style.color=cfg[s][1]; document.getElementById('pwdStrengthText').textContent=cfg[s][2];
+});
+
+// ── Terms modal ────────────────────────────────────────
+document.getElementById('termsLink').addEventListener('click', e=>{ e.preventDefault(); document.getElementById('termsModal').classList.add('active'); });
+function closeTerms() { document.getElementById('termsModal').classList.remove('active'); }
+function acceptTerms() { document.getElementById('termsCheckbox').checked=true; closeTerms(); }
+document.getElementById('termsModal').addEventListener('click', e=>{ if(e.target.id==='termsModal') closeTerms(); });
+
+// ── Auto-detect location ───────────────────────────────
+document.getElementById('detectLocation').addEventListener('click', function(){
+    if (!navigator.geolocation) { showToast('Geolocation not supported.','error'); return; }
+    this.style.animation='spin 1s linear infinite';
+    navigator.geolocation.getCurrentPosition(async pos=>{
+        this.style.animation='';
+        try {
+            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=10`);
+            const d = await r.json();
+            const loc = d.address?.city||d.address?.town||d.address?.village||d.display_name||'Unknown';
+            const country = d.address?.country||'';
+            document.getElementById('regLocation').value = `${loc}, ${country}`;
+        } catch { this.style.animation=''; showToast('Could not detect location.','error'); }
+    }, ()=>{ this.style.animation=''; showToast('Location access denied.','error'); });
+});
+
+// ── REGISTER ───────────────────────────────────────────
+document.getElementById('registerBtn').addEventListener('click', async function(){
+    const name  = document.getElementById('regName').value.trim();
+    const phone = document.getElementById('regPhone').value.replace(/\D/g,'');
+    const email = document.getElementById('regEmail').value.trim();
+    const loc   = document.getElementById('regLocation').value.trim();
+    const idNum = document.getElementById('regIdNumber').value.trim();
+    const pwd1  = document.getElementById('regPwd1').value;
+    const pwd2  = document.getElementById('regPwd2').value;
+    const terms = document.getElementById('termsCheckbox').checked;
+    const cleanPhone = phone.length===13?phone.slice(2):phone;
+
+    if (pwd1.length < 8) { showToast('Password must be at least 8 characters.','error'); return; }
+    if (pwd1 !== pwd2)   { showToast('Passwords do not match.','error'); return; }
+    if (!terms)          { showToast('Please accept the Terms & Conditions.','error'); return; }
+
+    btnLoading(this, 'Creating account…');
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('email', email);
+    formData.append('phone', cleanPhone);
+    formData.append('password', pwd1);
+    formData.append('id_type', selectedIdType);
+    formData.append('id_number', idNum);
+    formData.append('location', loc);
+
+    const idFile    = document.getElementById('idDocFile').files[0];
+    const photoFile = document.getElementById('profilePhotoFile').files[0];
+    if (idFile)    formData.append('id_document', idFile);
+    if (photoFile) formData.append('profile_photo', photoFile);
+
+    try {
+        const res  = await fetch(`${API_BASE}/register.php`, { method:'POST', body:formData });
+        const data = await res.json();
+
+        if (data.success) {
+            // Auto-login after registration
+            localStorage.setItem('sv_user', JSON.stringify(data.user));
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userName', data.user.name);
+            showToast('Account created! Welcome to SafeVoice 🎉', 'success', 2500);
+            setTimeout(()=>window.location.href='dashboard.html', 1500);
+        } else {
+            showToast(data.message || 'Registration failed.', 'error');
+            btnReset(this,'<i class="fas fa-user-plus"></i> Create Account');
+        }
+    } catch(e) {
+        showToast('Server error. Check your connection.', 'error');
+        btnReset(this,'<i class="fas fa-user-plus"></i> Create Account');
+    }
+});
 </script>
 <script src="../js/main.js"></script>
 <script src="../js/theme.js"></script>

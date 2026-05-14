@@ -9,8 +9,79 @@
     <link rel="stylesheet" href="../css/responsive.css">
     <link rel="stylesheet" href="../css/theme.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .toast {
+            position: fixed; bottom: 30px; right: 30px;
+            padding: 14px 22px; border-radius: 10px;
+            font-size: 14px; font-weight: 600; color: #fff;
+            z-index: 9999; display: flex; align-items: center; gap: 10px;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.4s ease; max-width: 340px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #1a7f4b; }
+        .toast.error   { background: #c0392b; }
+        .toast.info    { background: #1a5fa8; }
+        .btn-auth .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff; border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-auth:disabled { opacity: 0.7; cursor: not-allowed; }
+        .fp-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            z-index: 1000; display: flex; align-items: center;
+            justify-content: center; padding: 20px;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .fp-modal-overlay.active { opacity: 1; pointer-events: all; }
+        .fp-modal {
+            background: #0d1526; border: 1px solid #1e2d4a;
+            border-radius: 20px; padding: 35px; width: 100%; max-width: 420px;
+            transform: translateY(20px); transition: transform 0.3s; position: relative;
+        }
+        .fp-modal-overlay.active .fp-modal { transform: translateY(0); }
+        .fp-modal h3 {
+            font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .fp-modal h3 i { color: #4f9eff; }
+        .fp-modal p { color: #a0b4cc; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+        .fp-step { display: none; }
+        .fp-step.active { display: block; }
+        .otp-row { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+        .otp-input {
+            width: 50px; height: 55px; background: #0a0f1e;
+            border: 2px solid #1e2d4a; border-radius: 10px;
+            text-align: center; font-size: 22px; font-weight: 700;
+            color: #fff; outline: none; transition: border 0.2s;
+        }
+        .otp-input:focus, .otp-input.filled { border-color: #4f9eff; }
+        .resend-row { text-align: center; margin-top: 12px; font-size: 13px; color: #a0b4cc; }
+        .resend-row a { color: #4f9eff; cursor: pointer; text-decoration: none; }
+        .resend-row a.disabled { color: #4a5568; pointer-events: none; }
+        .timer-text { color: #4f9eff; font-weight: 600; }
+        .fp-close {
+            position: absolute; top: 20px; right: 20px;
+            font-size: 20px; color: #a0b4cc; cursor: pointer;
+        }
+        .fp-close:hover { color: #fff; }
+        .strength-bar { height: 4px; border-radius: 4px; background: #1e2d4a; margin-top: 8px; overflow: hidden; }
+        .strength-fill { height: 100%; width: 0; transition: width 0.3s, background 0.3s; border-radius: 4px; }
+        .strength-text { font-size: 12px; color: #a0b4cc; margin-top: 4px; }
+        .dev-otp-badge {
+            background: #1a3a1a; border: 1px solid #2d7a2d;
+            border-radius: 8px; padding: 10px 14px;
+            font-size: 13px; color: #5dd85d; margin-top: 12px; display: none;
+        }
+        .dev-otp-badge.show { display: block; }
+        .dev-otp-badge strong { font-size: 20px; letter-spacing: 4px; display: block; margin-top: 4px; }
+    </style>
 </head>
-
+<body>
 <nav class="navbar">
     <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
     <div class="nav-overlay" id="navOverlay"></div>
@@ -18,14 +89,12 @@
         <a href="../index.html" class="logo"><i class="fas fa-shield-alt"></i><span>SafeVoice</span></a>
         <ul class="nav-links">
             <li><a href="../index.html">Home</a></li>
-            
             <li><a href="leaderboard.html">Leaderboard</a></li>
             <li><a href="login.html" class="btn-login">Login</a></li>
             <li><a href="admin-login.html" class="btn-login">Admin</a></li>
             <li><a href="register.html" class="btn-register">Register</a></li>
         </ul>
     </div>
-     
 </nav>
 
 <section class="auth-section">
@@ -41,22 +110,22 @@
                     <label>Email Address</label>
                     <div class="input-wrapper">
                         <i class="fas fa-envelope"></i>
-                        <input type="email" id="loginEmail" placeholder="Enter your email" />
+                        <input type="email" id="loginEmail" placeholder="Enter your email" autocomplete="email" />
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Password</label>
                     <div class="input-wrapper">
                         <i class="fas fa-lock"></i>
-                        <input type="password" id="loginPassword" placeholder="Enter your password" />
-                        <i class="fas fa-eye toggle-password"></i>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
+                        <i class="fas fa-eye toggle-password" id="togglePwd"></i>
                     </div>
                 </div>
                 <div class="form-options">
                     <label class="remember-me">
-                        <input type="checkbox" /><span>Remember me</span>
+                        <input type="checkbox" id="rememberMe" /><span>Remember me</span>
                     </label>
-                    <a href="#" class="forgot-password">Forgot password?</a>
+                    <a href="#" class="forgot-password" id="forgotPasswordLink">Forgot password?</a>
                 </div>
                 <button class="btn-auth" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i> Login
@@ -68,18 +137,230 @@
     </div>
 </section>
 
+<!-- FORGOT PASSWORD MODAL -->
+<div class="fp-modal-overlay" id="fpModal">
+    <div class="fp-modal">
+        <i class="fas fa-times fp-close" id="fpClose"></i>
+
+        <div class="fp-step active" id="fpStep1">
+            <h3><i class="fas fa-mobile-alt"></i> Forgot Password</h3>
+            <p>Enter your registered phone number. We'll send a 6-digit OTP to reset your password.</p>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-phone"></i>
+                    <input type="tel" id="fpPhone" placeholder="01700000000" maxlength="15" />
+                </div>
+            </div>
+            <button class="btn-auth" id="fpSendOtpBtn" style="margin-top:10px;">
+                <i class="fas fa-paper-plane"></i> Send OTP
+            </button>
+            <div class="dev-otp-badge" id="devOtpBadge">
+                🛠️ Dev Mode OTP (remove in production):
+                <strong id="devOtpCode"></strong>
+            </div>
+        </div>
+
+        <div class="fp-step" id="fpStep2">
+            <h3><i class="fas fa-key"></i> Enter OTP</h3>
+            <p>A 6-digit code was sent to <strong id="fpPhoneDisplay" style="color:#4f9eff;"></strong></p>
+            <div class="otp-row">
+                <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+                <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+                <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+                <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+                <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+                <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
+            </div>
+            <div class="resend-row">
+                Didn't receive it? <a id="resendLink" class="disabled">Resend</a>
+                <span class="timer-text" id="timerDisplay"></span>
+            </div>
+            <button class="btn-auth" id="fpVerifyOtpBtn" style="margin-top:16px;">
+                <i class="fas fa-check"></i> Verify OTP
+            </button>
+        </div>
+
+        <div class="fp-step" id="fpStep3">
+            <h3><i class="fas fa-lock"></i> New Password</h3>
+            <p>Create a strong new password for your account.</p>
+            <div class="form-group">
+                <label>New Password</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="fpNewPwd" placeholder="Min 8 characters" />
+                    <i class="fas fa-eye toggle-password" id="toggleNewPwd"></i>
+                </div>
+                <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+                <div class="strength-text" id="strengthText"></div>
+            </div>
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="fpConfirmPwd" placeholder="Confirm new password" />
+                </div>
+            </div>
+            <button class="btn-auth" id="fpResetBtn" style="margin-top:10px;">
+                <i class="fas fa-check-circle"></i> Reset Password
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-document.getElementById('loginBtn').addEventListener('click', function() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    if (!email || !password) { alert('Please fill in all fields!'); return; }
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userName', email.split('@')[0]);
-    window.location.href = 'dashboard.html';
+const API_BASE = '../api';
+
+function showToast(msg, type='info', dur=3500) {
+    const icons = {success:'fa-check-circle', error:'fa-exclamation-circle', info:'fa-info-circle'};
+    const t = document.getElementById('toast');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fas ${icons[type]}"></i> ${msg}`;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function btnLoading(btn, text) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${text}`; }
+function btnReset(btn, html)   { btn.disabled = false; btn.innerHTML = html; }
+
+// Toggle password
+function setupToggle(toggleId, inputId) {
+    const tog = document.getElementById(toggleId);
+    const inp = document.getElementById(inputId);
+    if (!tog || !inp) return;
+    tog.addEventListener('click', function() {
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash');
+    });
+}
+setupToggle('togglePwd', 'loginPassword');
+
+const remembered = localStorage.getItem('sv_remember_email');
+if (remembered) { document.getElementById('loginEmail').value = remembered; document.getElementById('rememberMe').checked = true; }
+
+// ─── LOGIN ─────────────────────────────────────────────────────
+document.getElementById('loginBtn').addEventListener('click', async function() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPassword').value;
+    const rem   = document.getElementById('rememberMe').checked;
+    if (!email || !pass) { showToast('Please fill in all fields.', 'error'); return; }
+    btnLoading(this, 'Logging in…');
+    try {
+        const res  = await fetch(`${API_BASE}/login.php`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('sv_user', JSON.stringify(data.user));
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userName', data.user.name);
+            if (rem) localStorage.setItem('sv_remember_email', email); else localStorage.removeItem('sv_remember_email');
+            showToast(`Welcome back, ${data.user.name}!`, 'success');
+            setTimeout(() => window.location.href = 'dashboard.html', 1000);
+        } else {
+            showToast(data.message || 'Login failed.', 'error');
+            btnReset(this, '<i class="fas fa-sign-in-alt"></i> Login');
+        }
+    } catch(e) {
+        showToast('Server error. Check your connection.', 'error');
+        btnReset(this, '<i class="fas fa-sign-in-alt"></i> Login');
+    }
 });
-// Enter key
-document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+document.addEventListener('keydown', e => { if(e.key==='Enter' && !document.getElementById('fpModal').classList.contains('active')) document.getElementById('loginBtn').click(); });
+
+// ─── FORGOT PASSWORD MODAL ─────────────────────────────────────
+let fpPhone='', fpOtp='', timerInterval=null;
+const fpModal = document.getElementById('fpModal');
+document.getElementById('forgotPasswordLink').addEventListener('click', e => { e.preventDefault(); fpModal.classList.add('active'); showStep(1); });
+document.getElementById('fpClose').addEventListener('click', () => { fpModal.classList.remove('active'); clearInterval(timerInterval); });
+fpModal.addEventListener('click', e => { if(e.target===fpModal) { fpModal.classList.remove('active'); clearInterval(timerInterval); } });
+
+function showStep(n) { document.querySelectorAll('.fp-step').forEach(s=>s.classList.remove('active')); document.getElementById(`fpStep${n}`).classList.add('active'); }
+
+// Send OTP
+document.getElementById('fpSendOtpBtn').addEventListener('click', async function() {
+    fpPhone = document.getElementById('fpPhone').value.replace(/\D/g,'');
+    if (fpPhone.length===13) fpPhone=fpPhone.slice(2);
+    if (!/^01[3-9]\d{8}$/.test(fpPhone)) { showToast('Enter a valid Bangladesh phone number.','error'); return; }
+    btnLoading(this,'Sending…');
+    try {
+        const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_otp',phone:fpPhone})});
+        const data = await res.json();
+        if (data.success) {
+            if (data.dev_otp) { document.getElementById('devOtpCode').textContent=data.dev_otp; document.getElementById('devOtpBadge').classList.add('show'); }
+            document.getElementById('fpPhoneDisplay').textContent = fpPhone;
+            showToast('OTP sent!','success');
+            setTimeout(()=>{ showStep(2); startTimer(600); }, 700);
+        } else { showToast(data.message||'Failed.','error'); }
+    } catch { showToast('Server error.','error'); }
+    btnReset(this,'<i class="fas fa-paper-plane"></i> Send OTP');
+});
+
+// OTP inputs
+const otpInputs = document.querySelectorAll('.otp-input');
+otpInputs.forEach((inp,i) => {
+    inp.addEventListener('input', function(){ this.value=this.value.replace(/\D/g,''); if(this.value && i<5) otpInputs[i+1].focus(); this.classList.toggle('filled',!!this.value); });
+    inp.addEventListener('keydown', function(e){ if(e.key==='Backspace'&&!this.value&&i>0) otpInputs[i-1].focus(); });
+    inp.addEventListener('paste', function(e){
+        e.preventDefault();
+        const p = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
+        p.split('').forEach((c,idx)=>{ if(otpInputs[idx]){otpInputs[idx].value=c;otpInputs[idx].classList.add('filled');} });
+        (otpInputs[Math.min(p.length,5)]||otpInputs[5]).focus();
+    });
+});
+function getOtp() { return [...otpInputs].map(i=>i.value).join(''); }
+
+function startTimer(sec) {
+    clearInterval(timerInterval); let r=sec;
+    const disp=document.getElementById('timerDisplay'), res=document.getElementById('resendLink');
+    res.classList.add('disabled');
+    function tick(){ const m=String(Math.floor(r/60)).padStart(2,'0'), s=String(r%60).padStart(2,'0'); disp.textContent=`${m}:${s}`; if(--r<0){clearInterval(timerInterval);disp.textContent='';res.classList.remove('disabled');} }
+    tick(); timerInterval=setInterval(tick,1000);
+}
+document.getElementById('resendLink').addEventListener('click', async function(){
+    if(this.classList.contains('disabled')) return;
+    this.classList.add('disabled');
+    const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_otp',phone:fpPhone})}).catch(()=>null);
+    if (res) { const data=await res.json(); if(data.dev_otp){document.getElementById('devOtpCode').textContent=data.dev_otp;document.getElementById('devOtpBadge').classList.add('show');} }
+    showToast('OTP resent!','info'); startTimer(600);
+});
+
+// Verify OTP
+document.getElementById('fpVerifyOtpBtn').addEventListener('click', async function(){
+    fpOtp=getOtp(); if(fpOtp.length!==6){showToast('Enter all 6 digits.','error');return;}
+    btnLoading(this,'Verifying…');
+    try {
+        const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'verify_otp',phone:fpPhone,otp:fpOtp})});
+        const data = await res.json();
+        if (data.success) { showToast('OTP verified!','success'); clearInterval(timerInterval); setTimeout(()=>showStep(3),600); }
+        else { showToast(data.message||'Invalid OTP.','error'); }
+    } catch { showToast('Server error.','error'); }
+    btnReset(this,'<i class="fas fa-check"></i> Verify OTP');
+});
+
+// Password strength
+setupToggle('toggleNewPwd','fpNewPwd');
+document.getElementById('fpNewPwd').addEventListener('input', function(){
+    const v=this.value, s=([v.length>=8,/[A-Z]/.test(v),/[0-9]/.test(v),/[^A-Za-z0-9]/.test(v)].filter(Boolean).length);
+    const cfg=[['','',''],['25%','#e63946','Weak'],['50%','#f4a261','Fair'],['75%','#f1c40f','Good'],['100%','#2ecc71','Strong']];
+    document.getElementById('strengthFill').style.cssText=`width:${cfg[s][0]};background:${cfg[s][1]}`;
+    document.getElementById('strengthText').style.color=cfg[s][1]; document.getElementById('strengthText').textContent=cfg[s][2];
+});
+
+// Reset password
+document.getElementById('fpResetBtn').addEventListener('click', async function(){
+    const p1=document.getElementById('fpNewPwd').value, p2=document.getElementById('fpConfirmPwd').value;
+    if(p1.length<8){showToast('Min 8 characters.','error');return;}
+    if(p1!==p2){showToast('Passwords do not match.','error');return;}
+    btnLoading(this,'Resetting…');
+    try {
+        const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'reset',phone:fpPhone,otp:fpOtp,new_password:p1})});
+        const data = await res.json();
+        if (data.success) { showToast('Password reset! Please login.','success'); fpModal.classList.remove('active'); }
+        else { showToast(data.message||'Reset failed.','error'); }
+    } catch { showToast('Server error.','error'); }
+    btnReset(this,'<i class="fas fa-check-circle"></i> Reset Password');
 });
 </script>
 <script src="../js/main.js"></script>
