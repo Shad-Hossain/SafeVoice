@@ -1,24 +1,35 @@
 <?php
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'secure'   => false,
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
 session_start();
-session_unset();
-session_destroy();
 
-if (isset($_COOKIE[session_name()])) {
-    setcookie(session_name(), '', [
-        'expires'  => time() - 3600,
-        'path'     => '/',
-        'secure'   => false,
-        'httponly' => true,
-        'samesite' => 'Lax'
-    ]);
+// Unset all session variables
+$_SESSION = [];
+
+// Destroy session cookie completely
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+
+    setcookie(
+        session_name(),
+        '',
+        time() - 42000,
+        $params["path"],
+        $params["domain"],
+        $params["secure"],
+        $params["httponly"]
+    );
 }
 
-require_once 'db.php';
-echo json_encode(['success' => true, 'message' => 'Logged out.']);
+// Destroy session
+session_destroy();
+
+// Prevent cache
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
+header('Content-Type: application/json');
+
+echo json_encode([
+    'success' => true,
+    'message' => 'Logged out successfully'
+]);

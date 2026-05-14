@@ -240,7 +240,18 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
     if (!email || !pass) { showToast('Please fill in all fields.', 'error'); return; }
     btnLoading(this, 'Logging in…');
     try {
-        const res  = await fetch(`${API_BASE}/login.php`, {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+       const res = await fetch(`${API_BASE}/login.php`, {
+    method: 'POST',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        email,
+        password: pass
+    })
+});
         const data = await res.json();
         if (data.success) {
             localStorage.setItem('sv_user', JSON.stringify(data.user));
