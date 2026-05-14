@@ -40,10 +40,7 @@ function detectSOSLocation() {
         currentLat = pos.coords.latitude;
         currentLng = pos.coords.longitude;
 
-        const lat = currentLat;
-        const lng = currentLng;
-
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${currentLat}&lon=${currentLng}`)
         .then(res => res.json())
         .then(data => {
 
@@ -57,7 +54,7 @@ function detectSOSLocation() {
 }
 
 
-// 👀 FAKE SCAN UI
+// 👀 FAKE SCAN
 function startResponderScan() {
 
     let count = 0;
@@ -82,7 +79,6 @@ function startHold() {
     if (sosActive) return;
 
     const btn = document.getElementById('sosBtn');
-    const fill = document.getElementById('holdFill');
     const statusText = document.getElementById('statusText');
     const statusBar = document.getElementById('statusBar');
 
@@ -95,10 +91,6 @@ function startHold() {
 
     holdInterval = setInterval(() => {
         holdProgress += circumference / 60;
-        if (fill) {
-            fill.style.strokeDashoffset =
-                circumference - Math.min(holdProgress, circumference);
-        }
     }, HOLD_DURATION / 60);
 
     holdTimer = setTimeout(() => {
@@ -118,23 +110,22 @@ function cancelHold() {
     holdProgress = 0;
 
     const btn = document.getElementById('sosBtn');
-    const fill = document.getElementById('holdFill');
     const statusText = document.getElementById('statusText');
     const statusBar = document.getElementById('statusBar');
 
     if (btn) btn.classList.remove('holding');
-    if (fill) fill.style.strokeDashoffset = 452;
     if (statusText) statusText.textContent = 'Ready to send alert';
     if (statusBar) statusBar.className = 'sos-status-bar';
 }
 
 
-// 🚨 SOS ACTIVATE (MAIN CORE)
+// 🚨 SOS MAIN
 function activateSOS() {
 
     sosActive = true;
 
-    // UI update first
+    console.log("🚨 SOS FUNCTION TRIGGERED");
+
     const btn = document.getElementById('sosBtn');
 
     if (btn) {
@@ -143,8 +134,8 @@ function activateSOS() {
         btn.querySelector('span').textContent = 'SENT';
         btn.querySelector('small').textContent = 'Help is coming';
     }
-console.log("SOS FUNCTION TRIGGERED");
-    // 📡 SEND SOS TO BACKEND
+
+    // 📡 BACKEND CALL
     fetch('../api/create_sos.php', {
         method: 'POST',
         headers: {
@@ -156,26 +147,37 @@ console.log("SOS FUNCTION TRIGGERED");
             location: currentLocation
         })
     })
-    .then(res => res.json())
-   .then(data => {
+    .then(async res => {
 
-    console.log("SOS RESPONSE:", data);
+        const text = await res.text();
+        console.log("RAW RESPONSE:", text);
 
-    if(data.success){
-        currentSOSId = data.sos_id;
+        let data;
 
-        console.log("OPENING MODAL NOW");
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.log("JSON ERROR:", e);
+            return;
+        }
 
-        openEvidenceModal();
-    }
-});
+        console.log("SOS RESPONSE:", data);
 
-    // fake UI responders
+        if (data.success) {
+            currentSOSId = data.sos_id;
+            console.log("OPENING MODAL...");
+            openEvidenceModal();
+        }
+    })
+    .catch(err => {
+        console.log("FETCH ERROR:", err);
+    });
+
     showFakeResponders();
 }
 
 
-// 👥 FAKE RESPONDER UI
+// 👥 FAKE UI
 function showFakeResponders() {
 
     const responderList = document.getElementById('responderList');
@@ -202,22 +204,10 @@ function showFakeResponders() {
                         <h5>${r.name}</h5>
                         <p>${r.dist}</p>
                     </div>
-                    <span class="resp-status ${r.status}">
-                        ${r.status === 'helping' ? 'Responding' : 'Notified'}
-                    </span>
+                    <span>${r.status}</span>
                 `;
 
                 responderList.appendChild(card);
-            }
-
-            if (logList) {
-                const log = document.createElement('div');
-                log.className = 'log-item';
-                log.innerHTML = `
-                    <i class="fas fa-check-circle"></i>
-                    <div>${r.name} notified</div>
-                `;
-                logList.appendChild(log);
             }
 
             if (alertedCount) alertedCount.textContent = i + 1;
@@ -232,22 +222,18 @@ function showFakeResponders() {
 }
 
 
-// 🧾 OPEN MODAL
+// 🧾 MODAL
 function openEvidenceModal() {
 
     const modal = document.getElementById('evidenceModal');
 
-    console.log("MODAL FOUND:", modal); // 🔥 debug
+    console.log("MODAL:", modal);
 
-    if (!modal) {
-        alert("Modal not found in HTML!");
-        return;
-    }
-
-    modal.style.display = 'flex';
+    if (modal) modal.style.display = 'flex';
 }
 
-// 📤 SUBMIT EVIDENCE
+
+// 📤 EVIDENCE SUBMIT
 function submitEvidence() {
 
     const crimeType = document.getElementById('crimeType').value;
@@ -270,14 +256,14 @@ function submitEvidence() {
     .then(data => {
 
         if (data.success) {
-            alert('Evidence uploaded successfully');
+            alert('Evidence uploaded');
             document.getElementById('evidenceModal').style.display = 'none';
         }
     });
 }
 
 
-// ❌ CANCEL SOS
+// ❌ CANCEL
 function cancelSOS() {
 
     sosActive = false;
@@ -293,18 +279,6 @@ function cancelSOS() {
         btn.querySelector('small').textContent = 'Hold to activate';
     }
 
-    const fill = document.getElementById('holdFill');
-    if (fill) fill.style.strokeDashoffset = 452;
-
     document.getElementById('responderList').innerHTML = '';
     document.getElementById('logList').innerHTML = '';
-
-    const alertLog = document.getElementById('alertLog');
-    if (alertLog) alertLog.style.display = 'none';
-
-    const alertedCount = document.getElementById('alertedCount');
-    if (alertedCount) alertedCount.textContent = 0;
-
-    const nearbyCount = document.getElementById('nearbyCount');
-    if (nearbyCount) nearbyCount.textContent = 0;
 }
