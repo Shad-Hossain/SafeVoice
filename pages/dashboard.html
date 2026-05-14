@@ -356,11 +356,13 @@ function statusBadge(s) {
 
 // ── Logout ─────────────────────────────────────
 async function doLogout() {
-    try { await fetch('../api/logout.php'); } catch(e) {}
+    try { await fetch('../api/logout.php', { credentials: 'include' }); } catch(e) {}
     localStorage.removeItem('sv_user');
     localStorage.removeItem('sv-profile');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userName');
+    localStorage.removeItem('sv_remember_email');
+    sessionStorage.clear();
     window.location.href = 'login.html';
 }
 
