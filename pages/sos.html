@@ -122,6 +122,40 @@
         <p class="activated-note">Stay calm. Help is on the way. Keep your phone with you.</p>
     </div>
 </div>
+<div class="evidence-modal" id="evidenceModal">
+
+    <div class="evidence-box">
+
+        <h2>Emergency Details</h2>
+
+        <select id="crimeType">
+
+            <option value="">Select Crime Type</option>
+
+            <option>Harassment</option>
+
+            <option>Kidnapping</option>
+
+            <option>Violence</option>
+
+            <option>Robbery</option>
+
+        </select>
+
+        <textarea
+            id="crimeDesc"
+            placeholder="Describe situation..."
+        ></textarea>
+
+        <input type="file" id="evidenceFile">
+
+        <button onclick="submitEvidence()">
+            Submit Evidence
+        </button>
+
+    </div>
+
+</div>
 
 <script src="../js/main.js"></script>
 <script src="../js/sos.js"></script>
