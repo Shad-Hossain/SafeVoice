@@ -6,12 +6,10 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
-
 session_start();
 session_unset();
 session_destroy();
 
-// Session cookie টা browser থেকেও মুছে দাও
 if (isset($_COOKIE[session_name()])) {
     setcookie(session_name(), '', [
         'expires'  => time() - 3600,

@@ -6,9 +6,7 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
-
 session_start();
-
 require_once 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -34,11 +32,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 $db = getDB();
-
-$stmt = $db->prepare(
-    "SELECT id, name, email, phone, password_hash, status, profile_photo, complaints_count
-     FROM users WHERE email = ? LIMIT 1"
-);
+$stmt = $db->prepare("SELECT id, name, email, phone, password_hash, status, profile_photo, complaints_count FROM users WHERE email = ? LIMIT 1");
 $stmt->bind_param('s', $email);
 $stmt->execute();
 $result = $stmt->get_result();
