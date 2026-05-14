@@ -249,7 +249,7 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
     if (!email || !pass) { showToast('Please fill in all fields.', 'error'); return; }
     btnLoading(this, 'Logging in…');
     try {
-        const res  = await fetch(`${API_BASE}/login.php`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+        const res  = await fetch(`${API_BASE}/login.php`, {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
         const data = await res.json();
         if (data.success) {
             localStorage.setItem('sv_user', JSON.stringify(data.user));
@@ -289,7 +289,7 @@ document.getElementById('fpSendOtpBtn').addEventListener('click', async function
         const res  = await fetch(`${API_BASE}/forget_password.php`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_otp',email:fpEmail})});
         const data = await res.json();
         if (data.success) {
-            // OTP is sent to email only
+            
             document.getElementById('fpEmailDisplay').textContent = fpEmail;
             showToast('OTP sent to your email!', 'success');
             setTimeout(()=>{ showStep(2); startTimer(600); }, 700);
@@ -325,7 +325,7 @@ document.getElementById('resendLink').addEventListener('click', async function()
     try {
         const res  = await fetch(`${API_BASE}/forget_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_otp',email:fpEmail})});
         const data = await res.json();
-        // OTP is sent to email only
+        
         showToast('OTP resent to your email!', 'info');
     } catch { showToast('Server error.', 'error'); }
     startTimer(600);

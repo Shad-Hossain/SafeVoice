@@ -24,14 +24,12 @@ $db->query("CREATE TABLE IF NOT EXISTS password_resets (
     INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// ── Utility: send OTP email via PHPMailer (Gmail SMTP) ───────
-function sendOtpEmail(string $toEmail, string $toName, string $otp): bool {
-    
-    $smtpUser = 'safevoice.noreply@gmail.com';     
-    $smtpPass = 'wbfr cmdz jsyj ghtc';   
-    $fromName = 'SafeVoice';
-    // ════════════════════════════════════════════════════════════
 
+define('SMTP_USER', 'safevoice.noreply@gmail.com');      
+define('SMTP_PASS', 'wbfr cmdz jsyj ghtc');  
+
+// ── Utility: send OTP email via PHPMailer + Gmail SMTP ────────
+function sendOtpEmail(string $toEmail, string $toName, string $otp): bool {
     require_once __DIR__ . '/src/PHPMailer.php';
     require_once __DIR__ . '/src/SMTP.php';
     require_once __DIR__ . '/src/Exception.php';
@@ -41,12 +39,13 @@ function sendOtpEmail(string $toEmail, string $toName, string $otp): bool {
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = $smtpUser;
-        $mail->Password   = $smtpPass;
+        $mail->Username   = SMTP_USER;
+        $mail->Password   = SMTP_PASS;
         $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
+        $mail->CharSet    = 'UTF-8';
 
-        $mail->setFrom($smtpUser, $fromName);
+        $mail->setFrom(SMTP_USER, 'SafeVoice');
         $mail->addAddress($toEmail, $toName);
         $mail->isHTML(true);
         $mail->Subject = 'SafeVoice — Password Reset OTP';
@@ -66,7 +65,7 @@ function sendOtpEmail(string $toEmail, string $toName, string $otp): bool {
 
         $mail->send();
         return true;
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         error_log('PHPMailer Error: ' . $mail->ErrorInfo);
         return false;
     }
@@ -122,10 +121,11 @@ if ($action === 'send_otp') {
     // Send email
     $sent = sendOtpEmail($email, $userRow['name'], $otp);
 
-    echo json_encode([
-        'success' => true,
-        'message' => 'OTP sent to your email!',
-    ]);
+    if (!$sent) {
+        echo json_encode(['success' => false, 'message' => 'Failed to send OTP email. Check SMTP settings.']);
+        $db->close(); exit;
+    }
+    echo json_encode(['success' => true, 'message' => 'OTP sent to your email!']);
     $db->close(); exit;
 }
 

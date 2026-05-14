@@ -178,33 +178,30 @@
 <script>
 // ── Auth Guard — server session verify ────────────────────────
 (function() {
-    // First, quick localStorage check to avoid flicker
-    const user = JSON.parse(localStorage.getItem('sv_user') || 'null');
-    if (!user || !user.id) {
-        window.location.href = 'login.html';
-        return;
-    }
-    // Then verify with server — prevents fake localStorage logins
     fetch('../api/check_session.php', { credentials: 'include' })
         .then(r => r.json())
         .then(data => {
             if (!data.loggedIn) {
-                localStorage.removeItem('sv_user');
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('userName');
+                localStorage.clear();
                 window.location.href = 'login.html';
-            } else {
-                // Sync name from server (prevents fake name in navbar)
-                const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
-                svUser.name  = data.user.name;
-                svUser.email = data.user.email;
-                localStorage.setItem('sv_user', JSON.stringify(svUser));
-                document.getElementById('navUsername').textContent = data.user.name;
+                return;
             }
+            // Server is the truth — update localStorage with real server data
+            const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+            svUser.id    = data.user.id;
+            svUser.name  = data.user.name;
+            svUser.email = data.user.email;
+            localStorage.setItem('sv_user', JSON.stringify(svUser));
+            // Update navbar immediately with real name from server
+            const navEl = document.getElementById('navUsername');
+            if (navEl) navEl.textContent = data.user.name;
+            const welcomeEl = document.getElementById('welcomeName');
+            if (welcomeEl) welcomeEl.textContent = data.user.name;
         })
         .catch(() => {
-            // Network error — trust localStorage temporarily but log warning
-            console.warn('Session check failed — offline?');
+            // Cannot reach server — block access
+            localStorage.clear();
+            window.location.href = 'login.html';
         });
 })();
 

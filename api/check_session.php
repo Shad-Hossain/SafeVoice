@@ -1,16 +1,23 @@
 <?php
 session_start();
-header('Content-Type: application/json');
+require_once __DIR__ . '/db.php';
 
 if (!empty($_SESSION['user_id'])) {
-    echo json_encode([
-        'loggedIn' => true,
-        'user' => [
-            'id'    => $_SESSION['user_id'],
-            'email' => $_SESSION['user_email'],
-            'name'  => $_SESSION['user_name'],
-        ]
-    ]);
+    $db   = getDB();
+    $stmt = $db->prepare("SELECT id, name, email FROM users WHERE id = ? AND status NOT IN ('Banned','Suspended') LIMIT 1");
+    $stmt->bind_param('i', $_SESSION['user_id']);
+    $stmt->execute();
+    $user = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $db->close();
+
+    if ($user) {
+        echo json_encode(['loggedIn' => true, 'user' => $user]);
+    } else {
+        session_destroy();
+        http_response_code(401);
+        echo json_encode(['loggedIn' => false]);
+    }
 } else {
     http_response_code(401);
     echo json_encode(['loggedIn' => false]);
