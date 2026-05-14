@@ -177,30 +177,41 @@
 <script src="../js/theme.js"></script>
 <script>
 // ── Auth Guard — server session verify ────────────────────────
+// পেজ লুকিয়ে রাখো যতক্ষণ verify না হয় - habijabi access ঠেকাতে
+document.documentElement.style.visibility = 'hidden';
+
 (function() {
     fetch('../api/check_session.php', { credentials: 'include' })
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             if (!data.loggedIn) {
-                localStorage.clear();
+                // Session নেই — login page এ পাঠাও
+                localStorage.removeItem('sv_user');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('userName');
                 window.location.href = 'login.html';
                 return;
             }
-            // Server is the truth — update localStorage with real server data
-            const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+            // Server থেকে real data দিয়ে localStorage আপডেট করো
+            var svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
             svUser.id    = data.user.id;
             svUser.name  = data.user.name;
             svUser.email = data.user.email;
             localStorage.setItem('sv_user', JSON.stringify(svUser));
-            // Update navbar immediately with real name from server
-            const navEl = document.getElementById('navUsername');
+
+            // Navbar এ server থেকে আসা real নাম বসাও
+            var navEl = document.getElementById('navUsername');
             if (navEl) navEl.textContent = data.user.name;
-            const welcomeEl = document.getElementById('welcomeName');
+            var welcomeEl = document.getElementById('welcomeName');
             if (welcomeEl) welcomeEl.textContent = data.user.name;
+
+            // এখন page দেখাও
+            document.documentElement.style.visibility = 'visible';
         })
-        .catch(() => {
-            // Cannot reach server — block access
-            localStorage.clear();
+        .catch(function() {
+            // Server reach করা গেলে না — block করো
+            localStorage.removeItem('sv_user');
+            localStorage.removeItem('isLoggedIn');
             window.location.href = 'login.html';
         });
 })();

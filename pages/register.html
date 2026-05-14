@@ -478,7 +478,7 @@ document.getElementById('registerBtn').addEventListener('click', async function(
     if (photoFile) formData.append('profile_photo', photoFile);
 
     try {
-        const res  = await fetch(`${API_BASE}/register.php`, { method:'POST', body:formData });
+        const res  = await fetch(`${API_BASE}/register.php`, { method:'POST', credentials:'include', body:formData });
         const data = await res.json();
 
         if (data.success) {
