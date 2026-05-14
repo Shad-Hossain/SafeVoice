@@ -56,7 +56,7 @@
             <li><a href="sos.html"><i class="fas fa-exclamation-triangle" style="color:#e63946"></i> Emergency SOS</a></li>
             <li class="sidebar-divider"></li>
             <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Settings</a></li>
-            <li><a href="login.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            <li><a href="#" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
     </aside>
 
@@ -176,12 +176,22 @@
 <script src="../js/main.js"></script>
 <script src="../js/theme.js"></script>
 <script>
+// ── Auth Guard — redirect to login if not logged in ──────────
+(function() {
+    const user = JSON.parse(localStorage.getItem('sv_user') || 'null');
+    if (!user || !user.id) {
+        window.location.href = 'login.html';
+    }
+})();
+
 // ── Load user profile from localStorage ────────
 function loadProfile() {
-    const profile = JSON.parse(localStorage.getItem('sv-profile') || '{}');
-    const name    = profile.name  || 'User';
-    const email   = profile.email || '';
-    const phone   = profile.phone || '';
+    // sv_user = data from login API; sv-profile = locally saved edits
+    const svUser   = JSON.parse(localStorage.getItem('sv_user')   || '{}');
+    const svEdit   = JSON.parse(localStorage.getItem('sv-profile') || '{}');
+    const name     = svEdit.name  || svUser.name  || 'User';
+    const email    = svEdit.email || svUser.email || '';
+    const phone    = svEdit.phone || svUser.phone || '';
 
     document.getElementById('welcomeName').textContent = name;
     document.getElementById('navUsername').textContent = name;
@@ -205,6 +215,7 @@ async function loadComplaints() {
     try {
         const res  = await fetch('../api/get_user_complaints.php?limit=5');
         const data = await res.json();
+        if (data.redirect) { doLogout(); return; }
         if (!data.success) throw new Error();
 
         const stats = data.stats || {};
@@ -273,6 +284,12 @@ function saveSettings() {
         phone: document.getElementById('settingPhone').value.trim()
     };
     localStorage.setItem('sv-profile', JSON.stringify(profile));
+    // Also update sv_user so the name persists across sessions
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+    svUser.name  = profile.name;
+    svUser.email = profile.email;
+    svUser.phone = profile.phone;
+    localStorage.setItem('sv_user', JSON.stringify(svUser));
     closeSettings();
     loadProfile();
     showToast('<i class="fas fa-check-circle"></i> Settings saved!');
@@ -304,6 +321,17 @@ function statusBadge(s) {
 }
 
 // ── Init ───────────────────────────────────────
+
+// ── Logout ─────────────────────────────────────
+async function doLogout() {
+    try { await fetch('../api/logout.php'); } catch(e) {}
+    localStorage.removeItem('sv_user');
+    localStorage.removeItem('sv-profile');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userName');
+    window.location.href = 'login.html';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadProfile();
     loadComplaints();

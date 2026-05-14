@@ -143,13 +143,13 @@
         <i class="fas fa-times fp-close" id="fpClose"></i>
 
         <div class="fp-step active" id="fpStep1">
-            <h3><i class="fas fa-mobile-alt"></i> Forgot Password</h3>
-            <p>Enter your registered phone number. We'll send a 6-digit OTP to reset your password.</p>
+            <h3><i class="fas fa-envelope"></i> Forgot Password</h3>
+            <p>Enter your registered email address. We'll send a 6-digit OTP to reset your password.</p>
             <div class="form-group">
-                <label>Phone Number</label>
+                <label>Email Address</label>
                 <div class="input-wrapper">
-                    <i class="fas fa-phone"></i>
-                    <input type="tel" id="fpPhone" placeholder="01700000000" maxlength="15" />
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="fpEmail" placeholder="your@email.com" />
                 </div>
             </div>
             <button class="btn-auth" id="fpSendOtpBtn" style="margin-top:10px;">
@@ -163,7 +163,7 @@
 
         <div class="fp-step" id="fpStep2">
             <h3><i class="fas fa-key"></i> Enter OTP</h3>
-            <p>A 6-digit code was sent to <strong id="fpPhoneDisplay" style="color:#4f9eff;"></strong></p>
+            <p>A 6-digit code was sent to <strong id="fpEmailDisplay" style="color:#4f9eff;"></strong></p>
             <div class="otp-row">
                 <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
                 <input class="otp-input" maxlength="1" type="text" inputmode="numeric">
@@ -270,7 +270,7 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
 document.addEventListener('keydown', e => { if(e.key==='Enter' && !document.getElementById('fpModal').classList.contains('active')) document.getElementById('loginBtn').click(); });
 
 // ─── FORGOT PASSWORD MODAL ─────────────────────────────────────
-let fpPhone='', fpOtp='', timerInterval=null;
+let fpEmail='', fpOtp='', timerInterval=null;
 const fpModal = document.getElementById('fpModal');
 document.getElementById('forgotPasswordLink').addEventListener('click', e => { e.preventDefault(); fpModal.classList.add('active'); showStep(1); });
 document.getElementById('fpClose').addEventListener('click', () => { fpModal.classList.remove('active'); clearInterval(timerInterval); });
@@ -278,23 +278,24 @@ fpModal.addEventListener('click', e => { if(e.target===fpModal) { fpModal.classL
 
 function showStep(n) { document.querySelectorAll('.fp-step').forEach(s=>s.classList.remove('active')); document.getElementById(`fpStep${n}`).classList.add('active'); }
 
-// Send OTP
+// Send OTP to email
 document.getElementById('fpSendOtpBtn').addEventListener('click', async function() {
-    fpPhone = document.getElementById('fpPhone').value.replace(/\D/g,'');
-    if (fpPhone.length===13) fpPhone=fpPhone.slice(2);
-    if (!/^01[3-9]\d{8}$/.test(fpPhone)) { showToast('Enter a valid Bangladesh phone number.','error'); return; }
-    btnLoading(this,'Sending…');
+    fpEmail = document.getElementById('fpEmail').value.trim().toLowerCase();
+    if (!fpEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fpEmail)) {
+        showToast('Please enter a valid email address.', 'error'); return;
+    }
+    btnLoading(this, 'Sending…');
     try {
-        const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_otp',phone:fpPhone})});
+        const res  = await fetch(`${API_BASE}/forget_password.php`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_otp',email:fpEmail})});
         const data = await res.json();
         if (data.success) {
             if (data.dev_otp) { document.getElementById('devOtpCode').textContent=data.dev_otp; document.getElementById('devOtpBadge').classList.add('show'); }
-            document.getElementById('fpPhoneDisplay').textContent = fpPhone;
-            showToast('OTP sent!','success');
+            document.getElementById('fpEmailDisplay').textContent = fpEmail;
+            showToast('OTP sent to your email!', 'success');
             setTimeout(()=>{ showStep(2); startTimer(600); }, 700);
-        } else { showToast(data.message||'Failed.','error'); }
-    } catch { showToast('Server error.','error'); }
-    btnReset(this,'<i class="fas fa-paper-plane"></i> Send OTP');
+        } else { showToast(data.message||'Failed to send OTP.', 'error'); }
+    } catch { showToast('Server error. Check your connection.', 'error'); }
+    btnReset(this, '<i class="fas fa-paper-plane"></i> Send OTP');
 });
 
 // OTP inputs
@@ -321,9 +322,13 @@ function startTimer(sec) {
 document.getElementById('resendLink').addEventListener('click', async function(){
     if(this.classList.contains('disabled')) return;
     this.classList.add('disabled');
-    const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_otp',phone:fpPhone})}).catch(()=>null);
-    if (res) { const data=await res.json(); if(data.dev_otp){document.getElementById('devOtpCode').textContent=data.dev_otp;document.getElementById('devOtpBadge').classList.add('show');} }
-    showToast('OTP resent!','info'); startTimer(600);
+    try {
+        const res  = await fetch(`${API_BASE}/forget_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_otp',email:fpEmail})});
+        const data = await res.json();
+        if (data.dev_otp) { document.getElementById('devOtpCode').textContent=data.dev_otp; document.getElementById('devOtpBadge').classList.add('show'); }
+        showToast('OTP resent to your email!', 'info');
+    } catch { showToast('Server error.', 'error'); }
+    startTimer(600);
 });
 
 // Verify OTP
@@ -331,7 +336,7 @@ document.getElementById('fpVerifyOtpBtn').addEventListener('click', async functi
     fpOtp=getOtp(); if(fpOtp.length!==6){showToast('Enter all 6 digits.','error');return;}
     btnLoading(this,'Verifying…');
     try {
-        const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'verify_otp',phone:fpPhone,otp:fpOtp})});
+        const res  = await fetch(`${API_BASE}/forget_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'verify_otp',email:fpEmail,otp:fpOtp})});
         const data = await res.json();
         if (data.success) { showToast('OTP verified!','success'); clearInterval(timerInterval); setTimeout(()=>showStep(3),600); }
         else { showToast(data.message||'Invalid OTP.','error'); }
@@ -339,6 +344,7 @@ document.getElementById('fpVerifyOtpBtn').addEventListener('click', async functi
     btnReset(this,'<i class="fas fa-check"></i> Verify OTP');
 });
 
+// Password strength
 // Password strength
 setupToggle('toggleNewPwd','fpNewPwd');
 document.getElementById('fpNewPwd').addEventListener('input', function(){
@@ -355,7 +361,7 @@ document.getElementById('fpResetBtn').addEventListener('click', async function()
     if(p1!==p2){showToast('Passwords do not match.','error');return;}
     btnLoading(this,'Resetting…');
     try {
-        const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'reset',phone:fpPhone,otp:fpOtp,new_password:p1})});
+        const res  = await fetch(`${API_BASE}/forgot_password.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'reset',email:fpEmail,otp:fpOtp,new_password:p1})});
         const data = await res.json();
         if (data.success) { showToast('Password reset! Please login.','success'); fpModal.classList.remove('active'); }
         else { showToast(data.message||'Reset failed.','error'); }
