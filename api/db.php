@@ -4,8 +4,8 @@
 // =============================================
 
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');       // XAMPP default
-define('DB_PASS', '');           // XAMPP default (empty)
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_NAME', 'safevoice');
 
 function getDB() {
@@ -19,15 +19,16 @@ function getDB() {
     return $conn;
 }
 
-// CORS headers — credentials:include support (needed for session cookies)
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+// CORS — localhost XAMPP এর জন্য
+$origin = $_SERVER['HTTP_ORIGIN'] ?? 'http://localhost';
+if (empty($origin)) $origin = 'http://localhost';
+
 header("Access-Control-Allow-Origin: $origin");
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
-// Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;

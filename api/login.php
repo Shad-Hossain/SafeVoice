@@ -1,5 +1,4 @@
 <?php
-// ── Session must start before any output ──────────────────────
 session_start();
 
 require_once 'db.php';
@@ -62,7 +61,8 @@ if (!password_verify($password, $user['password_hash'])) {
     $stmt->close(); $db->close(); exit;
 }
 
-// ── PHP Session (server-side auth) ────────────────────────────
+// Session set
+session_regenerate_id(true);
 $_SESSION['user_id']    = $user['id'];
 $_SESSION['user_email'] = $user['email'];
 $_SESSION['user_name']  = $user['name'];
