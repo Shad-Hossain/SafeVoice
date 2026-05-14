@@ -67,6 +67,7 @@ session_regenerate_id(true);
 $_SESSION['user_id']    = $user['id'];
 $_SESSION['user_email'] = $user['email'];
 $_SESSION['user_name']  = $user['name'];
+session_write_close();
 
 $stmt->close();
 $db->close();
