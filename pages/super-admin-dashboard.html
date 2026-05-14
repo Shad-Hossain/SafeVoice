@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin — PI Management — SafeVoice</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --sa-gold: #fbbf24;
+            --sa-purple: #a855f7;
+            --sa-gold-bg: #fbbf2415;
+            --sa-gold-border: #fbbf2440;
+        }
+        .sa-nav { background: linear-gradient(135deg, #0a0a1a, #1a0a2e) !important; }
+        .sa-badge-nav {
+            display:inline-flex;align-items:center;gap:5px;
+            background:#fbbf2420;border:1px solid #fbbf2440;
+            color:#fbbf24;font-size:10px;font-weight:700;text-transform:uppercase;
+            letter-spacing:1px;padding:3px 10px;border-radius:20px;margin-left:10px;
+        }
+        .pi-card {
+            background: #111c33; border: 1px solid #1e2d4a;
+            border-radius: 16px; padding: 20px; margin-bottom: 16px;
+            transition: border-color .2s;
+        }
+        .pi-card:hover { border-color: #a855f740; }
+        .pi-card.inactive { opacity: 0.55; }
+        .pi-avatar {
+            width:56px;height:56px;border-radius:50%;object-fit:cover;
+            border:2px solid #a855f750;background:#1e2d4a;
+            display:flex;align-items:center;justify-content:center;
+            font-size:22px;color:#a855f7;flex-shrink:0;
+        }
+        .pi-avatar img { width:100%;height:100%;border-radius:50%;object-fit:cover; }
+        .pi-header { display:flex;gap:14px;align-items:flex-start;margin-bottom:14px; }
+        .pi-meta h3 { color:#fff;font-size:15px;font-weight:700;margin:0 0 4px; }
+        .pi-meta .pi-code { color:#a855f7;font-size:12px;font-weight:600;margin-bottom:4px; }
+        .pi-meta .pi-status { font-size:11px; }
+        .pi-info-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px; }
+        .pi-info-item { background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:10px 12px; }
+        .pi-info-item .lbl { font-size:10px;color:#a0b4cc;text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px; }
+        .pi-info-item .val { font-size:13px;color:#e5e7eb;font-weight:500; word-break:break-all; }
+        .pi-info-item.full { grid-column: 1/-1; }
+        .workload-bar { background:#1e2d4a;border-radius:20px;height:6px;margin-top:4px;overflow:hidden; }
+        .workload-fill { height:100%;border-radius:20px;background:linear-gradient(90deg,#10b981,#a855f7); transition: width .5s; }
+        .nid-img { width:100%;max-width:220px;border-radius:8px;border:1px solid #1e2d4a;margin-top:6px; }
+        .pi-actions { display:flex;gap:8px;flex-wrap:wrap; }
+        .pi-actions button {
+            flex:1;min-width:80px;padding:8px 14px;border-radius:8px;font-size:12px;
+            font-weight:600;cursor:pointer;border:none;transition:all .2s;
+        }
+        .btn-edit-pi   { background:#2563eb20;color:#60a5fa;border:1px solid #2563eb40 !important; }
+        .btn-edit-pi:hover { background:#2563eb40; }
+        .btn-toggle-pi { background:#f59e0b20;color:#fbbf24;border:1px solid #f59e0b40 !important; }
+        .btn-toggle-pi:hover { background:#f59e0b40; }
+        .btn-delete-pi { background:#ef444420;color:#f87171;border:1px solid #ef444440 !important; }
+        .btn-delete-pi:hover { background:#ef444440; }
+        .btn-pass-pi   { background:#10b98120;color:#34d399;border:1px solid #10b98140 !important; }
+        .btn-pass-pi:hover { background:#10b98140; }
+        .recruit-form {
+            background:#111c33;border:1px solid #fbbf2430;
+            border-radius:16px;padding:24px;margin-bottom:20px;display:none;
+        }
+        .recruit-form.open { display:block; }
+        .rf-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+        .rf-grid .full { grid-column:1/-1; }
+        .rf-label { font-size:12px;color:#a0b4cc;margin-bottom:6px;display:block; }
+        .rf-input {
+            width:100%;background:#0a0f1e;border:1px solid #1e2d4a;
+            color:#e5e7eb;border-radius:8px;padding:10px 14px;font-size:13px;outline:none;
+            box-sizing:border-box;transition:border-color .2s;
+        }
+        .rf-input:focus { border-color:#fbbf24; }
+        .btn-recruit {
+            background:linear-gradient(135deg,#7c3aed,#fbbf24);
+            color:#fff;border:none;border-radius:10px;padding:12px 24px;
+            font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;
+        }
+        .btn-recruit:hover { opacity:.85; }
+        .stat-row { display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px; }
+        .stat-box {
+            flex:1;min-width:120px;background:#111c33;border:1px solid #1e2d4a;
+            border-radius:12px;padding:16px;text-align:center;
+        }
+        .stat-box .snum { font-size:28px;font-weight:800;color:#fbbf24; }
+        .stat-box .slbl { font-size:12px;color:#a0b4cc;margin-top:4px; }
+        .modal-overlay {
+            position:fixed;inset:0;background:rgba(0,0,0,0.8);
+            display:none;align-items:center;justify-content:center;z-index:9999;padding:20px;
+        }
+        .modal-overlay.active { display:flex; }
+        .modal-box {
+            background:#111c33;border:1px solid #1e2d4a;border-radius:20px;
+            padding:28px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;
+        }
+        .modal-box h3 { color:#fbbf24;font-size:17px;margin-bottom:20px; }
+        .toast {
+            position:fixed;bottom:30px;right:30px;background:#2ecc71;color:#fff;
+            padding:13px 20px;border-radius:10px;font-size:14px;font-weight:600;
+            z-index:99999;display:flex;align-items:center;gap:8px;
+            animation:slideUp .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.3);
+        }
+        .toast.error { background:#e63946; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        body.light-mode .pi-card { background:#fff;border-color:#e2e8f0; }
+        body.light-mode .pi-info-item { background:#f8fafc;border-color:#e2e8f0; }
+        body.light-mode .pi-info-item .val { color:#0f172a; }
+        body.light-mode .recruit-form { background:#fff;border-color:#fbbf2430; }
+        body.light-mode .rf-input { background:#f8fafc;border-color:#d1dce8;color:#0f172a; }
+        body.light-mode .modal-box { background:#fff; }
+        body.light-mode .stat-box { background:#fff;border-color:#e2e8f0; }
+        .search-bar {
+            background:#0a0f1e;border:1px solid #1e2d4a;color:#e5e7eb;
+            border-radius:10px;padding:9px 16px;font-size:13px;outline:none;
+            width:100%;max-width:300px;margin-bottom:16px;
+        }
+        body.light-mode .search-bar { background:#f8fafc;border-color:#d1dce8;color:#0f172a; }
+    </style>
+</head>
+<body>
+<script>
+    if (localStorage.getItem('isSuperAdminLoggedIn') !== 'true') {
+        window.location.href = 'super-admin-login.html';
+    }
+</script>
+
+<nav class="navbar sa-nav">
+    <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+    <div class="nav-overlay" id="navOverlay"></div>
+    <div class="nav-container">
+        <a href="../index.html" class="logo">
+            <i class="fas fa-crown" style="color:#fbbf24"></i>
+            <span>SafeVoice</span>
+            <span class="sa-badge-nav"><i class="fas fa-shield-alt"></i> Super Admin</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#" onclick="showSection('investigators')">Investigators</a></li>
+            <li><a href="#" onclick="showSection('overview')">Overview</a></li>
+            <li><a href="admin-login.html" style="color:#a0b4cc">Normal Admin</a></li>
+            <li><a href="#" onclick="logout()">Logout</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <ul class="sidebar-menu">
+            <li id="nav-investigators">
+                <a href="#" onclick="showSection('investigators')">
+                    <i class="fas fa-user-secret"></i> Investigators
+                </a>
+            </li>
+            <li id="nav-overview">
+                <a href="#" onclick="showSection('overview')">
+                    <i class="fas fa-chart-bar"></i> Overview
+                </a>
+            </li>
+            <li id="nav-cases">
+                <a href="#" onclick="showSection('cases')">
+                    <i class="fas fa-folder-open"></i> Active Cases
+                </a>
+            </li>
+        </ul>
+        <div style="padding:16px;border-top:1px solid #1e2d4a;margin-top:auto">
+            <div style="font-size:11px;color:#a0b4cc;margin-bottom:8px;text-transform:uppercase;letter-spacing:.7px">
+                Logged in as
+            </div>
+            <div style="color:#fbbf24;font-weight:600;font-size:13px" id="saUserDisplay">—</div>
+            <div style="font-size:11px;color:#a0b4cc;margin-top:2px">Super Administrator</div>
+        </div>
+    </aside>
+
+    <main class="main-content" id="mainContent">
+
+        <!-- ── INVESTIGATORS SECTION ───────────────────────────── -->
+        <div id="view-investigators" style="display:none">
+            <div class="welcome-bar" style="background:linear-gradient(135deg,#1a0a2e,#0a0f1e);border:1px solid #fbbf2420;border-radius:14px;padding:20px 24px;margin-bottom:24px">
+                <h1 style="color:#fbbf24"><i class="fas fa-user-secret"></i> Private Investigators</h1>
+                <p>Recruit, manage and monitor all private investigators. This data is strictly confidential.</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stat-row" id="piStatRow">
+                <div class="stat-box"><div class="snum" id="stat-total-pi">—</div><div class="slbl">Total PIs</div></div>
+                <div class="stat-box"><div class="snum" id="stat-active-pi" style="color:#34d399">—</div><div class="slbl">Active</div></div>
+                <div class="stat-box"><div class="snum" id="stat-total-cases" style="color:#60a5fa">—</div><div class="slbl">Total Cases Handled</div></div>
+                <div class="stat-box"><div class="snum" id="stat-active-cases" style="color:#fb923c">—</div><div class="slbl">Active Cases</div></div>
+            </div>
+
+            <!-- Recruit Button -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+                <input type="text" class="search-bar" placeholder="🔍  Search PI by name, code, email..." oninput="filterPIs(this.value)" id="piSearch">
+                <button class="btn-recruit" onclick="toggleRecruitForm()">
+                    <i class="fas fa-user-plus"></i> Recruit New PI
+                </button>
+            </div>
+
+            <!-- Recruit Form -->
+            <div class="recruit-form" id="recruitForm">
+                <h3 style="color:#fbbf24;margin-bottom:18px"><i class="fas fa-user-plus"></i> Recruit New Private Investigator</h3>
+                <div class="rf-grid">
+                    <div>
+                        <label class="rf-label">Full Name *</label>
+                        <input type="text" class="rf-input" id="rf_name" placeholder="e.g. Rahim Uddin">
+                    </div>
+                    <div>
+                        <label class="rf-label">NID Number *</label>
+                        <input type="text" class="rf-input" id="rf_nid" placeholder="17-digit NID">
+                    </div>
+                    <div>
+                        <label class="rf-label">Phone Number *</label>
+                        <input type="tel" class="rf-input" id="rf_phone" placeholder="01XXXXXXXXX">
+                    </div>
+                    <div>
+                        <label class="rf-label">Email Address *</label>
+                        <input type="email" class="rf-input" id="rf_email" placeholder="pi@example.com">
+                    </div>
+                    <div class="full">
+                        <label class="rf-label">Full Address *</label>
+                        <input type="text" class="rf-input" id="rf_address" placeholder="House, Road, Area, City">
+                    </div>
+                    <div>
+                        <label class="rf-label">Login Email (for case notifications) *</label>
+                        <input type="email" class="rf-input" id="rf_login_email" placeholder="cases will be sent here">
+                    </div>
+                    <div>
+                        <label class="rf-label">Initial Password *</label>
+                        <input type="text" class="rf-input" id="rf_password" placeholder="min 8 characters">
+                    </div>
+                    <div>
+                        <label class="rf-label">Profile Photo URL</label>
+                        <input type="text" class="rf-input" id="rf_photo" placeholder="https://...">
+                    </div>
+                    <div>
+                        <label class="rf-label">NID Photo URL</label>
+                        <input type="text" class="rf-input" id="rf_nid_photo" placeholder="https://...">
+                    </div>
+                    <div class="full">
+                        <label class="rf-label">Internal Notes</label>
+                        <textarea class="rf-input" id="rf_notes" rows="2" placeholder="Optional notes for super admin only" style="resize:vertical"></textarea>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:18px;flex-wrap:wrap">
+                    <button class="btn-recruit" onclick="recruitPI()" id="recruitBtn">
+                        <i class="fas fa-user-check"></i> Confirm Recruitment
+                    </button>
+                    <button onclick="toggleRecruitForm()" style="background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:10px;padding:12px 20px;font-size:13px;cursor:pointer">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- PI List -->
+            <div id="piList">
+                <div style="text-align:center;padding:40px;color:#a0b4cc">
+                    <i class="fas fa-spinner fa-spin" style="font-size:28px;margin-bottom:12px;display:block"></i>
+                    Loading investigators...
+                </div>
+            </div>
+        </div>
+
+        <!-- ── OVERVIEW SECTION ───────────────────────────────── -->
+        <div id="view-overview" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-chart-bar"></i> System Overview</h1>
+                <p>Workload distribution and PI performance summary</p>
+            </div>
+            <div id="overviewContent">
+                <div style="text-align:center;padding:40px;color:#a0b4cc">
+                    <i class="fas fa-spinner fa-spin" style="font-size:28px;display:block;margin-bottom:12px"></i>
+                    Loading overview...
+                </div>
+            </div>
+        </div>
+
+        <!-- ── ACTIVE CASES SECTION ──────────────────────────── -->
+        <div id="view-cases" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-folder-open"></i> Active PI Cases</h1>
+                <p>Complaints currently assigned to investigators (only super admin can see PI assignments)</p>
+            </div>
+            <div id="casesContent">
+                <div style="text-align:center;padding:40px;color:#a0b4cc">
+                    <i class="fas fa-spinner fa-spin" style="font-size:28px;display:block;margin-bottom:12px"></i>
+                    Loading cases...
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Edit PI Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-edit"></i> Edit Investigator</h3>
+        <input type="hidden" id="edit_id">
+        <div class="rf-grid">
+            <div>
+                <label class="rf-label">Full Name</label>
+                <input type="text" class="rf-input" id="edit_name">
+            </div>
+            <div>
+                <label class="rf-label">Phone</label>
+                <input type="tel" class="rf-input" id="edit_phone">
+            </div>
+            <div>
+                <label class="rf-label">Email</label>
+                <input type="email" class="rf-input" id="edit_email">
+            </div>
+            <div>
+                <label class="rf-label">NID Number</label>
+                <input type="text" class="rf-input" id="edit_nid">
+            </div>
+            <div class="full">
+                <label class="rf-label">Address</label>
+                <input type="text" class="rf-input" id="edit_address">
+            </div>
+            <div>
+                <label class="rf-label">Photo URL</label>
+                <input type="text" class="rf-input" id="edit_photo">
+            </div>
+            <div>
+                <label class="rf-label">NID Photo URL</label>
+                <input type="text" class="rf-input" id="edit_nid_photo">
+            </div>
+            <div class="full">
+                <label class="rf-label">Notes</label>
+                <textarea class="rf-input" id="edit_notes" rows="2" style="resize:vertical"></textarea>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+            <button class="btn-recruit" onclick="saveEdit()" style="flex:1">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <button onclick="closeModal('editModal')" style="background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:10px;padding:12px 18px;cursor:pointer;font-size:13px">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay" id="passModal">
+    <div class="modal-box" style="max-width:380px">
+        <h3><i class="fas fa-key"></i> Change PI Password</h3>
+        <input type="hidden" id="pass_pi_id">
+        <p style="color:#a0b4cc;font-size:13px;margin-bottom:16px" id="pass_pi_name"></p>
+        <label class="rf-label">New Password (min 8 characters)</label>
+        <input type="text" class="rf-input" id="new_password" placeholder="Enter new password" style="margin-bottom:16px">
+        <div style="display:flex;gap:10px">
+            <button class="btn-recruit" onclick="savePassword()" style="flex:1;background:linear-gradient(135deg,#10b981,#059669)">
+                <i class="fas fa-key"></i> Update Password
+            </button>
+            <button onclick="closeModal('passModal')" style="background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:10px;padding:12px 18px;cursor:pointer;font-size:13px">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Credentials Modal (after recruitment) -->
+<div class="modal-overlay" id="credModal">
+    <div class="modal-box" style="max-width:420px;text-align:center">
+        <div style="width:64px;height:64px;border-radius:50%;background:#2ecc7120;border:2px solid #2ecc7150;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <i class="fas fa-check-circle" style="font-size:28px;color:#2ecc71"></i>
+        </div>
+        <h3 style="color:#2ecc71">PI Recruited Successfully!</h3>
+        <p style="color:#a0b4cc;font-size:13px;margin-bottom:18px">Save these credentials. The PI will use this email for all case notifications.</p>
+        <div style="background:#0a0f1e;border:1px solid #2ecc7130;border-radius:10px;padding:18px;text-align:left;margin-bottom:18px">
+            <div style="font-size:12px;color:#a0b4cc;margin-bottom:4px">PI Code</div>
+            <div style="font-size:18px;font-weight:700;color:#fbbf24;margin-bottom:12px" id="cred_code">—</div>
+            <div style="font-size:12px;color:#a0b4cc;margin-bottom:4px">Login Email</div>
+            <div style="font-size:14px;color:#60a5fa;margin-bottom:12px" id="cred_email">—</div>
+            <div style="font-size:12px;color:#a0b4cc;margin-bottom:4px">Initial Password</div>
+            <div style="font-size:14px;color:#34d399;font-weight:600" id="cred_pass">—</div>
+        </div>
+        <div style="background:#f59e0b10;border:1px solid #f59e0b30;border-radius:8px;padding:10px 14px;font-size:12px;color:#fbbf24;margin-bottom:18px">
+            <i class="fas fa-exclamation-triangle"></i> Share these credentials with the PI securely. They can change their password later.
+        </div>
+        <button onclick="closeModal('credModal')" class="btn-recruit" style="width:100%">
+            <i class="fas fa-check"></i> Done
+        </button>
+    </div>
+</div>
+
+<script src="../js/main.js"></script>
+<script src="../js/theme.js"></script>
+<script>
+// ── Auth ─────────────────────────────────────────────────────────────────────
+const SA_USER = localStorage.getItem('sa_username') || 'superadmin';
+const SA_PASS = localStorage.getItem('sa_password') || '';
+document.getElementById('saUserDisplay').textContent = SA_USER;
+
+function logout() {
+    ['isSuperAdminLoggedIn','sa_username','sa_password'].forEach(k => localStorage.removeItem(k));
+    window.location.href = 'super-admin-login.html';
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showSection(s) {
+    ['investigators','overview','cases'].forEach(id => {
+        document.getElementById('view-'+id).style.display = 'none';
+        document.getElementById('nav-'+id)?.classList.remove('active');
+    });
+    document.getElementById('view-'+s).style.display = 'block';
+    document.getElementById('nav-'+s)?.classList.add('active');
+    if (s === 'investigators') loadPIs();
+    if (s === 'overview')      loadOverview();
+    if (s === 'cases')         loadCases();
+}
+
+// ── In-memory PI store (demo + live) ─────────────────────────────────────────
+let allPIs = [];
+
+// Demo data for when backend is unavailable
+const demoPIs = [
+    { id:1, pi_code:'PI-001', full_name:'Rahim Uddin Chowdhury',
+      email:'rahim.pi001@safevoice.com', phone:'01711000001',
+      address:'House 12, Road 5, Dhanmondi, Dhaka',
+      nid_number:'1234567890123', login_email:'rahim.pi001@safevoice.com',
+      photo_url:'', nid_photo_url:'', is_active:1, active_cases:2, total_cases:14,
+      joined_at:'2026-01-10', notes:'Specialist in financial fraud cases' },
+    { id:2, pi_code:'PI-002', full_name:'Farida Khanam',
+      email:'farida.pi002@safevoice.com', phone:'01811000002',
+      address:'Flat 3B, Block C, Mirpur-10, Dhaka',
+      nid_number:'9876543210987', login_email:'farida.pi002@safevoice.com',
+      photo_url:'', nid_photo_url:'', is_active:1, active_cases:1, total_cases:9,
+      joined_at:'2026-02-15', notes:'Experienced in harassment cases' },
+    { id:3, pi_code:'PI-003', full_name:'Kamal Hossain',
+      email:'kamal.pi003@safevoice.com', phone:'01911000003',
+      address:'Village: Narayanganj Sadar, Narayanganj',
+      nid_number:'1122334455667', login_email:'kamal.pi003@safevoice.com',
+      photo_url:'', nid_photo_url:'', is_active:1, active_cases:3, total_cases:22,
+      joined_at:'2025-11-20', notes:'Senior PI - most experienced' }
+];
+
+async function loadPIs() {
+    try {
+        const res  = await fetch(`../api/pi_management.php?action=list&sa_username=${encodeURIComponent(SA_USER)}&sa_password=${encodeURIComponent(SA_PASS)}`);
+        const data = await res.json();
+        if (data.success) { allPIs = data.investigators; }
+        else throw new Error();
+    } catch(e) {
+        allPIs = demoPIs; // fallback to demo
+    }
+    renderPIs(allPIs);
+    updateStats(allPIs);
+}
+
+function updateStats(pis) {
+    document.getElementById('stat-total-pi').textContent   = pis.length;
+    document.getElementById('stat-active-pi').textContent  = pis.filter(p=>p.is_active==1).length;
+    document.getElementById('stat-total-cases').textContent = pis.reduce((a,p)=>a+(parseInt(p.total_cases)||0),0);
+    document.getElementById('stat-active-cases').textContent= pis.reduce((a,p)=>a+(parseInt(p.active_cases)||0),0);
+}
+
+function filterPIs(q) {
+    q = q.toLowerCase();
+    const filtered = allPIs.filter(p =>
+        p.full_name.toLowerCase().includes(q) ||
+        p.pi_code.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        (p.nid_number||'').includes(q)
+    );
+    renderPIs(filtered);
+}
+
+function renderPIs(pis) {
+    const container = document.getElementById('piList');
+    if (!pis.length) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#a0b4cc"><i class="fas fa-user-secret" style="font-size:36px;display:block;margin-bottom:12px;opacity:.3"></i>No investigators found</div>';
+        return;
+    }
+    container.innerHTML = pis.map(pi => piCard(pi)).join('');
+}
+
+function piCard(pi) {
+    const activePct  = Math.min((pi.active_cases / 10) * 100, 100);
+    const statusBadge = pi.is_active == 1
+        ? '<span style="background:#2ecc7120;color:#34d399;border:1px solid #2ecc7130;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600">● Active</span>'
+        : '<span style="background:#ef444420;color:#f87171;border:1px solid #ef444430;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600">● Inactive</span>';
+    const avatarHtml = pi.photo_url
+        ? `<div class="pi-avatar"><img src="${pi.photo_url}" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-user-secret\\'></i>'"></div>`
+        : `<div class="pi-avatar"><i class="fas fa-user-secret"></i></div>`;
+    const nidPhotoHtml = pi.nid_photo_url
+        ? `<div style="margin-top:6px"><img src="${pi.nid_photo_url}" class="nid-img" onerror="this.style.display='none'" alt="NID"></div>`
+        : '';
+
+    return `
+    <div class="pi-card ${pi.is_active != 1 ? 'inactive' : ''}" id="picard-${pi.id}">
+        <div class="pi-header">
+            ${avatarHtml}
+            <div class="pi-meta" style="flex:1">
+                <h3>${pi.full_name}</h3>
+                <div class="pi-code"><i class="fas fa-id-badge"></i> ${pi.pi_code}</div>
+                <div>${statusBadge}</div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-size:11px;color:#a0b4cc">Active Cases</div>
+                <div style="font-size:22px;font-weight:800;color:#fb923c">${pi.active_cases}</div>
+                <div style="font-size:11px;color:#a0b4cc">${pi.total_cases} total</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:#a0b4cc;margin-bottom:4px">Workload (${pi.active_cases}/10 cases)</div>
+            <div class="workload-bar"><div class="workload-fill" style="width:${activePct}%"></div></div>
+        </div>
+
+        <div class="pi-info-grid">
+            <div class="pi-info-item">
+                <div class="lbl"><i class="fas fa-phone"></i> Phone</div>
+                <div class="val">${pi.phone}</div>
+            </div>
+            <div class="pi-info-item">
+                <div class="lbl"><i class="fas fa-envelope"></i> Email</div>
+                <div class="val">${pi.email}</div>
+            </div>
+            <div class="pi-info-item">
+                <div class="lbl"><i class="fas fa-id-card"></i> NID Number</div>
+                <div class="val">${pi.nid_number}</div>
+            </div>
+            <div class="pi-info-item">
+                <div class="lbl"><i class="fas fa-inbox"></i> Case Inbox</div>
+                <div class="val">${pi.login_email}</div>
+            </div>
+            <div class="pi-info-item full">
+                <div class="lbl"><i class="fas fa-map-marker-alt"></i> Address</div>
+                <div class="val">${pi.address}</div>
+            </div>
+            ${pi.notes ? `<div class="pi-info-item full"><div class="lbl"><i class="fas fa-sticky-note"></i> Notes</div><div class="val" style="color:#fbbf24">${pi.notes}</div></div>` : ''}
+            ${nidPhotoHtml ? `<div class="pi-info-item full"><div class="lbl"><i class="fas fa-id-card-alt"></i> NID Photo</div>${nidPhotoHtml}</div>` : ''}
+        </div>
+
+        <div class="pi-actions">
+            <button class="pi-actions btn-edit-pi" onclick="openEdit(${JSON.stringify(pi).replace(/"/g,'&quot;')})">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="pi-actions btn-pass-pi" onclick="openPassModal(${pi.id},'${escHtml(pi.full_name)}')">
+                <i class="fas fa-key"></i> Password
+            </button>
+            <button class="pi-actions btn-toggle-pi" onclick="togglePI(${pi.id}, this)">
+                <i class="fas fa-${pi.is_active==1?'pause':'play'}"></i> ${pi.is_active==1?'Deactivate':'Activate'}
+            </button>
+            <button class="pi-actions btn-delete-pi" onclick="deletePI(${pi.id},'${escHtml(pi.full_name)}')">
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        </div>
+    </div>`;
+}
+
+function escHtml(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+// ── Recruit Form ─────────────────────────────────────────────────────────────
+function toggleRecruitForm() {
+    const f = document.getElementById('recruitForm');
+    f.classList.toggle('open');
+    if (f.classList.contains('open')) f.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function recruitPI() {
+    const fields = {
+        full_name:      document.getElementById('rf_name').value.trim(),
+        nid_number:     document.getElementById('rf_nid').value.trim(),
+        phone:          document.getElementById('rf_phone').value.trim(),
+        email:          document.getElementById('rf_email').value.trim(),
+        address:        document.getElementById('rf_address').value.trim(),
+        login_email:    document.getElementById('rf_login_email').value.trim(),
+        initial_password: document.getElementById('rf_password').value.trim(),
+        photo_url:      document.getElementById('rf_photo').value.trim(),
+        nid_photo_url:  document.getElementById('rf_nid_photo').value.trim(),
+        notes:          document.getElementById('rf_notes').value.trim(),
+    };
+
+    for (const [k,v] of Object.entries(fields)) {
+        if (!v && !['photo_url','nid_photo_url','notes'].includes(k)) {
+            showToast('Please fill in: ' + k.replace(/_/g,' '), true); return;
+        }
+    }
+    if (fields.initial_password.length < 8) { showToast('Password must be at least 8 characters', true); return; }
+
+    const btn = document.getElementById('recruitBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recruiting...';
+    btn.disabled = true;
+
+    try {
+        const res  = await fetch('../api/pi_management.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ action:'create', sa_username:SA_USER, sa_password:SA_PASS, ...fields })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showCredentials(data.pi_code, data.login_email, data.initial_password);
+        } else throw new Error(data.message);
+    } catch(e) {
+        // Demo mode
+        const nextCode = 'PI-00' + (allPIs.length + 1);
+        const newPI = {
+            id: allPIs.length + 100, pi_code: nextCode,
+            full_name: fields.full_name, email: fields.email,
+            phone: fields.phone, address: fields.address,
+            nid_number: fields.nid_number, login_email: fields.login_email,
+            photo_url: fields.photo_url, nid_photo_url: fields.nid_photo_url,
+            is_active: 1, active_cases: 0, total_cases: 0,
+            joined_at: new Date().toISOString().split('T')[0],
+            notes: fields.notes
+        };
+        allPIs.push(newPI);
+        renderPIs(allPIs);
+        updateStats(allPIs);
+        showCredentials(nextCode, fields.login_email, fields.initial_password);
+    }
+
+    // Reset form
+    ['rf_name','rf_nid','rf_phone','rf_email','rf_address','rf_login_email','rf_password','rf_photo','rf_nid_photo','rf_notes']
+        .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('recruitForm').classList.remove('open');
+    btn.innerHTML = '<i class="fas fa-user-check"></i> Confirm Recruitment';
+    btn.disabled  = false;
+}
+
+function showCredentials(code, email, pass) {
+    document.getElementById('cred_code').textContent  = code;
+    document.getElementById('cred_email').textContent = email;
+    document.getElementById('cred_pass').textContent  = pass;
+    document.getElementById('credModal').classList.add('active');
+    showToast('<i class="fas fa-user-check"></i> PI ' + code + ' recruited!');
+}
+
+// ── Edit ─────────────────────────────────────────────────────────────────────
+function openEdit(pi) {
+    if (typeof pi === 'string') pi = JSON.parse(pi);
+    document.getElementById('edit_id').value       = pi.id;
+    document.getElementById('edit_name').value     = pi.full_name;
+    document.getElementById('edit_phone').value    = pi.phone;
+    document.getElementById('edit_email').value    = pi.email;
+    document.getElementById('edit_nid').value      = pi.nid_number;
+    document.getElementById('edit_address').value  = pi.address;
+    document.getElementById('edit_photo').value    = pi.photo_url || '';
+    document.getElementById('edit_nid_photo').value= pi.nid_photo_url || '';
+    document.getElementById('edit_notes').value    = pi.notes || '';
+    document.getElementById('editModal').classList.add('active');
+}
+
+async function saveEdit() {
+    const id = parseInt(document.getElementById('edit_id').value);
+    const payload = {
+        action:'update', sa_username:SA_USER, sa_password:SA_PASS, id,
+        full_name:   document.getElementById('edit_name').value.trim(),
+        phone:       document.getElementById('edit_phone').value.trim(),
+        email:       document.getElementById('edit_email').value.trim(),
+        nid_number:  document.getElementById('edit_nid').value.trim(),
+        address:     document.getElementById('edit_address').value.trim(),
+        photo_url:   document.getElementById('edit_photo').value.trim(),
+        nid_photo_url: document.getElementById('edit_nid_photo').value.trim(),
+        notes:       document.getElementById('edit_notes').value.trim(),
+    };
+    try {
+        await fetch('../api/pi_management.php', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+    } catch(e) {}
+    // Update local data
+    const idx = allPIs.findIndex(p => p.id == id);
+    if (idx > -1) Object.assign(allPIs[idx], { full_name:payload.full_name, phone:payload.phone, email:payload.email, nid_number:payload.nid_number, address:payload.address, photo_url:payload.photo_url, nid_photo_url:payload.nid_photo_url, notes:payload.notes });
+    renderPIs(allPIs);
+    closeModal('editModal');
+    showToast('<i class="fas fa-check-circle"></i> PI details updated');
+}
+
+// ── Password Change ───────────────────────────────────────────────────────────
+function openPassModal(id, name) {
+    document.getElementById('pass_pi_id').value       = id;
+    document.getElementById('pass_pi_name').textContent = 'PI: ' + name;
+    document.getElementById('new_password').value     = '';
+    document.getElementById('passModal').classList.add('active');
+}
+
+async function savePassword() {
+    const id  = parseInt(document.getElementById('pass_pi_id').value);
+    const pwd = document.getElementById('new_password').value.trim();
+    if (pwd.length < 8) { showToast('Password must be at least 8 characters', true); return; }
+    try {
+        await fetch('../api/pi_management.php', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'change_password', sa_username:SA_USER, sa_password:SA_PASS, id, new_password:pwd })
+        });
+    } catch(e) {}
+    closeModal('passModal');
+    showToast('<i class="fas fa-key"></i> Password updated successfully');
+}
+
+// ── Toggle ────────────────────────────────────────────────────────────────────
+async function togglePI(id, btn) {
+    try {
+        await fetch('../api/pi_management.php', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'toggle', sa_username:SA_USER, sa_password:SA_PASS, id })
+        });
+    } catch(e) {}
+    const pi = allPIs.find(p => p.id == id);
+    if (pi) { pi.is_active = pi.is_active == 1 ? 0 : 1; }
+    renderPIs(allPIs);
+    updateStats(allPIs);
+    showToast('<i class="fas fa-check-circle"></i> PI status updated');
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deletePI(id, name) {
+    if (!confirm(`Remove PI: ${name}?\n\nThis cannot be undone. Active cases will be unassigned.`)) return;
+    try {
+        await fetch('../api/pi_management.php', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'delete', sa_username:SA_USER, sa_password:SA_PASS, id })
+        });
+    } catch(e) {}
+    allPIs = allPIs.filter(p => p.id != id);
+    renderPIs(allPIs);
+    updateStats(allPIs);
+    showToast('<i class="fas fa-trash"></i> PI removed', true);
+}
+
+// ── Overview ──────────────────────────────────────────────────────────────────
+function loadOverview() {
+    if (!allPIs.length) { loadPIs(); }
+    const pis = allPIs.length ? allPIs : demoPIs;
+    const maxLoad = Math.max(...pis.map(p => parseInt(p.active_cases)||0), 1);
+    document.getElementById('overviewContent').innerHTML = `
+        <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:24px;margin-bottom:20px">
+            <h3 style="color:#fbbf24;margin-bottom:20px"><i class="fas fa-balance-scale"></i> Workload Distribution</h3>
+            ${pis.map(pi => `
+            <div style="margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+                    <span style="color:#e5e7eb;font-weight:600">${pi.pi_code} — ${pi.full_name}</span>
+                    <span style="color:#fb923c">${pi.active_cases} active / ${pi.total_cases} total</span>
+                </div>
+                <div style="background:#1e2d4a;border-radius:20px;height:8px;overflow:hidden">
+                    <div style="height:100%;border-radius:20px;background:linear-gradient(90deg,#10b981,${pi.active_cases > 7 ? '#ef4444' : '#a855f7'});
+                         width:${Math.min((pi.active_cases/maxLoad)*100,100)}%;transition:width .5s"></div>
+                </div>
+                <div style="font-size:11px;color:#a0b4cc;margin-top:3px">${pi.is_active==1?'✅ Active':'🔴 Inactive'} · Joined: ${pi.joined_at?.split('T')[0]||pi.joined_at}</div>
+            </div>`).join('')}
+        </div>
+        <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:24px">
+            <h3 style="color:#fbbf24;margin-bottom:16px"><i class="fas fa-info-circle"></i> System Info</h3>
+            <div style="font-size:13px;color:#a0b4cc;line-height:2">
+                • Auto-assignment picks the PI with the <strong style="color:#e5e7eb">lowest active_cases</strong><br>
+                • PI identity is <strong style="color:#fbbf24">completely hidden</strong> from normal admin and users<br>
+                • Case emails are sent automatically to the PI's registered login email<br>
+                • PI workload counter increments on assignment, decrements when case resolves<br>
+                • Only super admin can recruit, edit, or remove investigators
+            </div>
+        </div>`;
+}
+
+// ── Active Cases ──────────────────────────────────────────────────────────────
+async function loadCases() {
+    const el = document.getElementById('casesContent');
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:#a0b4cc"><i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:10px"></i>Loading...</div>';
+    try {
+        const res  = await fetch('../api/complaints.php?status=Private%20Investigator%20Assigned');
+        const data = await res.json();
+        if (!data.success || !data.complaints.length) throw new Error('No cases');
+        const pMap = {};
+        allPIs.forEach(p => { pMap[p.id] = p; });
+        el.innerHTML = `
+            <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead><tr style="border-bottom:2px solid #1e2d4a">
+                    <th style="padding:12px;text-align:left;color:#a0b4cc">ID</th>
+                    <th style="padding:12px;text-align:left;color:#a0b4cc">Type</th>
+                    <th style="padding:12px;text-align:left;color:#a0b4cc">Location</th>
+                    <th style="padding:12px;text-align:left;color:#a0b4cc">Assigned PI</th>
+                    <th style="padding:12px;text-align:left;color:#a0b4cc">Date</th>
+                    <th style="padding:12px;text-align:left;color:#a0b4cc">Email Sent</th>
+                </tr></thead>
+                <tbody>${data.complaints.map(c => `
+                    <tr style="border-bottom:1px solid #1e2d4a">
+                        <td style="padding:12px;color:#4f9eff;font-weight:700">${c.complaint_id}</td>
+                        <td style="padding:12px;color:#e5e7eb">${c.type}</td>
+                        <td style="padding:12px;color:#a0b4cc">${c.location||'—'}</td>
+                        <td style="padding:12px;color:#c084fc">${c.assigned_pi_id ? (pMap[c.assigned_pi_id]?.pi_code || 'PI-???') : '<span style="color:#f87171">Unassigned</span>'}</td>
+                        <td style="padding:12px;color:#a0b4cc">${c.pi_assigned_at ? c.pi_assigned_at.split(' ')[0] : (c.submitted_at||'').split(' ')[0]}</td>
+                        <td style="padding:12px">${c.pi_email_sent==1 ? '<span style="color:#34d399">✅ Sent</span>' : '<span style="color:#fbbf24">⏳ Pending</span>'}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table></div>`;
+    } catch(e) {
+        el.innerHTML = `
+            <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:24px;text-align:center;color:#a0b4cc">
+                <i class="fas fa-folder-open" style="font-size:36px;display:block;margin-bottom:12px;opacity:.3"></i>
+                No active PI cases found or database unavailable.
+            </div>`;
+    }
+}
+
+// ── Utility ────────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function showToast(msg, isError) {
+    const t = document.createElement('div');
+    t.className = 'toast' + (isError ? ' error' : '');
+    t.innerHTML = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    showSection('investigators');
+    document.getElementById('nav-investigators').classList.add('active');
+});
+</script>
+</body>
+</html>

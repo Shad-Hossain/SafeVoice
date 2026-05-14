@@ -139,6 +139,24 @@
         body.light-mode .desc-box { background: #f8fafc; border-color: #d1dce8; color: #475569; }
         .modal-close-btn { background: transparent; border: 1px solid #1e2d4a; color: #a0b4cc; border-radius: 8px; padding: 10px 20px; font-size: 13px; cursor: pointer; margin-top: 20px; transition: all .2s; }
         .modal-close-btn:hover { border-color: #4f9eff; color: #4f9eff; }
+
+        /* PI Notification modal */
+        .pi-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px; }
+        .pi-modal-overlay.active { display:flex; }
+        .pi-modal { background:#111c33;border:1px solid #a855f740;border-radius:20px;padding:30px;max-width:480px;width:100%; }
+        .pi-modal-icon { width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#a855f720,#c084fc20);border:2px solid #a855f750;display:flex;align-items:center;justify-content:center;margin:0 auto 18px; }
+        .pi-modal-icon i { font-size:28px;color:#c084fc; }
+        .pi-modal h3 { text-align:center;color:#fff;font-size:18px;margin-bottom:8px; }
+        .pi-modal p  { text-align:center;color:#a0b4cc;font-size:14px;line-height:1.6;margin-bottom:22px; }
+        .pi-fee-box { background:#a855f710;border:1px solid #a855f740;border-radius:12px;padding:16px 20px;text-align:center;margin-bottom:22px; }
+        .pi-fee-box .fee-label { font-size:12px;color:#a0b4cc;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px; }
+        .pi-fee-box .fee-amount { font-size:28px;font-weight:800;color:#c084fc; }
+        .pi-fee-box .fee-note { font-size:12px;color:#a0b4cc;margin-top:4px; }
+        .pi-modal-btns { display:flex;gap:12px; }
+        .pi-modal-btns .btn-send { flex:1;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s; }
+        .pi-modal-btns .btn-send:hover { opacity:.85; }
+        .pi-modal-btns .btn-cancel { background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:10px;padding:13px 20px;font-size:14px;cursor:pointer;transition:all .2s; }
+        .pi-modal-btns .btn-cancel:hover { border-color:#4f9eff;color:#4f9eff; }
     </style>
 </head>
 <body>
@@ -166,6 +184,11 @@
             <li id="nav-users"><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Users</a></li>
             <li id="nav-sos"><a href="#" onclick="showSection('sos')"><i class="fas fa-exclamation-triangle"></i> SOS Alerts</a></li>
         </ul>
+        <div style="padding:14px 16px;border-top:1px solid #1e2d4a;margin-top:20px">
+            <a href="super-admin-login.html" style="display:flex;align-items:center;gap:8px;color:#fbbf24;font-size:12px;font-weight:600;text-decoration:none;background:#fbbf2410;border:1px solid #fbbf2430;border-radius:8px;padding:9px 12px">
+                <i class="fas fa-crown"></i> Super Admin Portal
+            </a>
+        </div>
     </aside>
 
     <main class="main-content" id="mainContent">
@@ -219,8 +242,9 @@
                     <option value="">All Statuses</option>
                     <option value="Submitted">Submitted</option>
                     <option value="Under Review">Under Review</option>
-                    <option value="Officer Assigned">Officer Assigned</option>
-                    <option value="Investigation">Investigation</option>
+                    <option value="PI Notification Sent">PI Notification Sent</option>
+                    <option value="PI Payment Confirmed">PI Payment Confirmed</option>
+                    <option value="Private Investigator Assigned">PI Assigned</option>
                     <option value="Resolved">Resolved</option>
                     <option value="Rejected">Rejected</option>
                 </select>
@@ -299,6 +323,29 @@
         <button class="modal-close-btn" onclick="document.getElementById('viewModal').classList.remove('active')">
             <i class="fas fa-times"></i> Close
         </button>
+    </div>
+</div>
+
+
+<!-- PI Notification Modal (Admin sends to user) -->
+<div class="pi-modal-overlay" id="piNotifyModal">
+    <div class="pi-modal">
+        <div class="pi-modal-icon"><i class="fas fa-user-secret"></i></div>
+        <h3>Send Private Investigator Notification</h3>
+        <p>You've marked this complaint as <strong style="color:#fbbf24">Private Investigator Assigned</strong>. The user will receive a notification asking them to accept or decline the PI service.</p>
+        <div class="pi-fee-box">
+            <div class="fee-label">Service Fee (Paid by User)</div>
+            <div class="fee-amount">৳1,000</div>
+            <div class="fee-note">One-time fee · bKash / Nagad / Rocket / Bank</div>
+        </div>
+        <p style="font-size:12px;color:#a0b4cc;text-align:center;margin-bottom:18px">
+            <i class="fas fa-shield-alt" style="color:#a855f7"></i>
+            The system will auto-assign the PI with lowest workload. PI identity stays hidden from normal admin.
+        </p>
+        <div class="pi-modal-btns">
+            <button class="btn-cancel" onclick="cancelPINotify()">Cancel</button>
+            <button class="btn-send" onclick="confirmSendPINotify()"><i class="fas fa-paper-plane"></i> Send Notification to User</button>
+        </div>
     </div>
 </div>
 
@@ -437,8 +484,9 @@ async function loadComplaints() {
                     <select class="status-select ${statusClass(c.status)}" onchange="updateStatus('${c.complaint_id}', this)">
                         <option ${c.status==='Submitted'        ? 'selected':''}>Submitted</option>
                         <option ${c.status==='Under Review'     ? 'selected':''}>Under Review</option>
-                        <option ${c.status==='Officer Assigned' ? 'selected':''}>Officer Assigned</option>
-                        <option ${c.status==='Investigation'    ? 'selected':''}>Investigation</option>
+                        <option ${c.status==='PI Notification Sent'          ? 'selected':''}>PI Notification Sent</option>
+                        <option ${c.status==='PI Payment Confirmed'           ? 'selected':''}>PI Payment Confirmed</option>
+                        <option ${c.status==='Private Investigator Assigned'  ? 'selected':''}>Private Investigator Assigned</option>
                         <option ${c.status==='Resolved'         ? 'selected':''}>Resolved</option>
                         <option ${c.status==='Rejected'         ? 'selected':''}>Rejected</option>
                     </select>
@@ -453,11 +501,29 @@ async function loadComplaints() {
     }
 }
 
+// PI notify state
+let piPendingComplaintId = null;
+let piPendingSelectEl    = null;
+let piPendingOldStatus   = null;
+
 async function updateStatus(complaint_id, selectEl) {
     const newStatus = selectEl.value;
     const oldStatus = selectEl.dataset.prev || selectEl.value;
     selectEl.dataset.prev = newStatus;
     selectEl.className = 'status-select ' + statusClass(newStatus);
+
+    // Intercept PI assignment — show notification modal first
+    if (newStatus === 'Private Investigator Assigned') {
+        piPendingComplaintId = complaint_id;
+        piPendingSelectEl    = selectEl;
+        piPendingOldStatus   = oldStatus;
+        // Revert select visually until user confirms
+        selectEl.value = oldStatus;
+        selectEl.className = 'status-select ' + statusClass(oldStatus);
+        document.getElementById('piNotifyModal').classList.add('active');
+        return;
+    }
+
     try {
         const res  = await fetch('../api/complaints.php', {
             method:  'POST',
@@ -466,16 +532,48 @@ async function updateStatus(complaint_id, selectEl) {
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.message);
-        if (newStatus === 'Officer Assigned') {
-            showToast('<i class="fas fa-user-shield"></i> Officer assigned by system — identity protected');
-        } else {
-            showToast('<i class="fas fa-check-circle"></i> Status updated to ' + newStatus);
-        }
+        showToast('<i class="fas fa-check-circle"></i> Status updated to ' + newStatus);
     } catch(err) {
         showToast('<i class="fas fa-times-circle"></i> Failed: ' + err.message, true);
         selectEl.value = oldStatus;
         selectEl.className = 'status-select ' + statusClass(oldStatus);
     }
+}
+
+function cancelPINotify() {
+    document.getElementById('piNotifyModal').classList.remove('active');
+    piPendingComplaintId = piPendingSelectEl = piPendingOldStatus = null;
+}
+
+async function confirmSendPINotify() {
+    document.getElementById('piNotifyModal').classList.remove('active');
+
+    // 1. Store in localStorage so user dashboard sees it immediately
+    const pending = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
+    // Remove any old notification for same complaint
+    const updated = pending.filter(n => n.complaint_id !== piPendingComplaintId);
+    updated.push({ complaint_id: piPendingComplaintId, timestamp: Date.now(), status: 'pending_payment' });
+    localStorage.setItem('sv-pi-notifications', JSON.stringify(updated));
+
+    // 2. Also update DB via API
+    try {
+        await fetch('../api/pi_notification.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ complaint_id: piPendingComplaintId })
+        });
+    } catch(e) { /* backend optional */ }
+
+    // 3. Update status dropdown visually
+    if (piPendingSelectEl) {
+        piPendingSelectEl.value = 'PI Notification Sent';
+        piPendingSelectEl.className = 'status-select s-under-review';
+        piPendingSelectEl.dataset.prev = 'PI Notification Sent';
+    }
+
+    showToast('<i class="fas fa-paper-plane"></i> PI notification sent to user for ' + piPendingComplaintId);
+    piPendingComplaintId = piPendingSelectEl = piPendingOldStatus = null;
+    loadComplaints();
 }
 
 function viewComplaint(c) {
@@ -510,7 +608,7 @@ function statusBadge(s) {
     const map = {
         'Submitted':        '<span class="status review">Submitted</span>',
         'Under Review':     '<span class="status pending">Under Review</span>',
-        'Officer Assigned': '<span class="status" style="background:#a855f715;color:#c084fc;border:1px solid #a855f740;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Officer Assigned</span>',
+        'Private Investigator Assigned': '<span class="status" style="background:#a855f715;color:#c084fc;border:1px solid #a855f740;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Private Investigator Assigned</span>',
         'Investigation':    '<span class="status" style="background:#f9731615;color:#fb923c;border:1px solid #f9731640;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Investigation</span>',
         'Resolved':         '<span class="status resolved">Resolved</span>',
         'Rejected':         '<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>'
@@ -522,8 +620,9 @@ function statusClass(s) {
     const map = {
         'Submitted':        's-submitted',
         'Under Review':     's-under-review',
-        'Officer Assigned': 's-officer-assigned',
-        'Investigation':    's-investigation',
+        'Private Investigator Assigned': 's-officer-assigned',
+        'PI Notification Sent':         's-under-review',
+        'PI Payment Confirmed':         's-under-review',
         'Resolved':         's-resolved',
         'Rejected':         's-rejected'
     };
