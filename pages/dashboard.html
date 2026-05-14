@@ -245,7 +245,7 @@ function showSection(section) {
 // ── Load complaints from DB ────────────────────
 async function loadComplaints() {
     try {
-        const res  = await fetch('../api/get_user_complaints.php?limit=5');
+        const res  = await fetch('../api/get_user_complaints.php?limit=5', { credentials: 'include' });
         const data = await res.json();
         if (data.redirect) { doLogout(); return; }
         if (!data.success) throw new Error();
@@ -277,7 +277,7 @@ async function loadComplaints() {
 
 async function loadAllComplaints() {
     try {
-        const res  = await fetch('../api/get_user_complaints.php');
+        const res  = await fetch('../api/get_user_complaints.php', { credentials: 'include' });
         const data = await res.json();
         const tbody = document.getElementById('all-tbody');
 
@@ -383,7 +383,7 @@ async function checkPINotifications() {
     }
     // 2. DB poll — works across devices
     try {
-        const res  = await fetch('../api/get_user_complaints.php');
+        const res  = await fetch('../api/get_user_complaints.php?limit=5', { credentials: 'include' });
         const data = await res.json();
         const complaints = data.complaints || [];
         for (const c of complaints) {
