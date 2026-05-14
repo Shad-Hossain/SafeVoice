@@ -143,7 +143,7 @@ function activateSOS() {
         btn.querySelector('span').textContent = 'SENT';
         btn.querySelector('small').textContent = 'Help is coming';
     }
-
+console.log("SOS FUNCTION TRIGGERED");
     // 📡 SEND SOS TO BACKEND
     fetch('../api/create_sos.php', {
         method: 'POST',
@@ -157,13 +157,18 @@ function activateSOS() {
         })
     })
     .then(res => res.json())
-    .then(data => {
+   .then(data => {
 
-        if (data.success) {
-            currentSOSId = data.sos_id;
-            openEvidenceModal();
-        }
-    });
+    console.log("SOS RESPONSE:", data);
+
+    if(data.success){
+        currentSOSId = data.sos_id;
+
+        console.log("OPENING MODAL NOW");
+
+        openEvidenceModal();
+    }
+});
 
     // fake UI responders
     showFakeResponders();
@@ -231,9 +236,16 @@ function showFakeResponders() {
 function openEvidenceModal() {
 
     const modal = document.getElementById('evidenceModal');
-    if (modal) modal.style.display = 'flex';
-}
 
+    console.log("MODAL FOUND:", modal); // 🔥 debug
+
+    if (!modal) {
+        alert("Modal not found in HTML!");
+        return;
+    }
+
+    modal.style.display = 'flex';
+}
 
 // 📤 SUBMIT EVIDENCE
 function submitEvidence() {
