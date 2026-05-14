@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Dashboard — SafeVoice</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
@@ -356,10 +359,24 @@ function statusBadge(s) {
 
 // ── Logout ─────────────────────────────────────
 async function doLogout() {
-    try { await fetch('../api/logout.php', { credentials: 'include' }); } catch(e) {}
-    localStorage.clear();
+    try {
+        await fetch('../api/logout.php', {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store'
+        });
+    } catch(e) {
+        console.error(e);
+    }
+
+    localStorage.removeItem('sv_user');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userName');
+
     sessionStorage.clear();
-    window.location.href = 'login.html';
+
+    // Force full reload
+    window.location.replace('login.html');
 }
 
 document.addEventListener('DOMContentLoaded', () => {

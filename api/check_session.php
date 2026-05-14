@@ -7,6 +7,8 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
 require_once __DIR__ . '/db.php';
 
 if (!empty($_SESSION['user_id'])) {

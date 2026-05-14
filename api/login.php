@@ -7,6 +7,7 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
+$_SESSION = [];
 require_once 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -63,10 +64,18 @@ if (!password_verify($password, $user['password_hash'])) {
     $stmt->close(); $db->close(); exit;
 }
 
+// Destroy old session completely
+session_unset();
+session_destroy();
+
+// Start fresh session
+session_start();
 session_regenerate_id(true);
-$_SESSION['user_id']    = $user['id'];
+
+$_SESSION['user_id'] = $user['id'];
 $_SESSION['user_email'] = $user['email'];
-$_SESSION['user_name']  = $user['name'];
+$_SESSION['user_name'] = $user['name'];
+
 session_write_close();
 
 $stmt->close();
