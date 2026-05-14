@@ -1,4 +1,12 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path'     => '/',
+    'secure'   => false,
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+
 session_start();
 
 require_once 'db.php';
@@ -61,7 +69,6 @@ if (!password_verify($password, $user['password_hash'])) {
     $stmt->close(); $db->close(); exit;
 }
 
-// Session set
 session_regenerate_id(true);
 $_SESSION['user_id']    = $user['id'];
 $_SESSION['user_email'] = $user['email'];
