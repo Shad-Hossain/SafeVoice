@@ -25,8 +25,7 @@ $db->query("CREATE TABLE IF NOT EXISTS password_resets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 
-define('SMTP_USER', 'safevoice.noreply@gmail.com');      
-define('SMTP_PASS', 'wbfr cmdz jsyj ghtc');  
+require_once __DIR__ . '/smtp_config.php'; // Gmail credentials এখানে নেই — smtp_config.php তে আছে
 
 // ── Utility: send OTP email via PHPMailer + Gmail SMTP ────────
 function sendOtpEmail(string $toEmail, string $toName, string $otp): bool {
