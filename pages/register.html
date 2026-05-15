@@ -397,7 +397,7 @@ document.getElementById('idDocFile').addEventListener('change', async function()
             showToast('⚠️ Scan failed — try a clearer, well-lit photo of your ID.', 'error', 6000);
             return;
         }
-
+        console.log('RAW OCR TEXT:', text);
         const {name, idNumber} = parseOcrText(text, selectedIdType);
         const nameInp = document.getElementById('regName');
         const idInp   = document.getElementById('regIdNumber');
