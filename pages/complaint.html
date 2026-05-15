@@ -169,11 +169,15 @@
 
                 <div class="form-group">
                     <label><i class="fas fa-paperclip"></i> Evidence <span style="color:var(--text-secondary);font-weight:400">(Optional)</span></label>
-                    <div class="upload-box">
+                    <div class="upload-box" id="uploadBox" onclick="document.getElementById('evidenceFiles').click()" style="cursor:pointer;">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Upload photos or PDF</p>
-                        <span>JPG, PNG, PDF up to 10MB</span>
-                        <input type="file" accept="image/*, .pdf" multiple />
+                        <span>JPG, PNG, PDF up to 10MB each</span>
+                        <input type="file" id="evidenceFiles" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple style="display:none;" onchange="showSelectedFiles(this)" />
+                    </div>
+                    <div id="fileList" style="margin-top:10px;display:none;">
+                        <p style="font-size:13px;color:var(--text-secondary,#a0b4cc);margin-bottom:6px;"><i class="fas fa-paperclip"></i> Selected files:</p>
+                        <ul id="fileNames" style="list-style:none;padding:0;margin:0;font-size:13px;color:#a0b4cc;"></ul>
                     </div>
                 </div>
 
@@ -343,6 +347,7 @@ async function submitComplaint() {
         // ── Real PHP backend call ──
         const res  = await fetch('../api/submit_complaint.php', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
@@ -356,6 +361,27 @@ async function submitComplaint() {
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Report';
         alert('Error submitting complaint: ' + err.message + '\n\nMake sure XAMPP is running and the database is set up.');
         return;
+    }
+
+    // ── Upload evidence files if any ──
+    const fileInput = document.getElementById('evidenceFiles');
+    if (fileInput && fileInput.files.length > 0) {
+        btn.innerHTML = '<i class="fas fa-spinner"></i> Uploading evidence...';
+        const formData = new FormData();
+        formData.append('complaint_id', complaint_id);
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('evidence[]', fileInput.files[i]);
+        }
+        try {
+            await fetch('../api/upload_complaint_evidence.php', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+            // Evidence upload errors are non-fatal; complaint already saved
+        } catch(e) {
+            console.warn('Evidence upload failed:', e);
+        }
     }
 
     // Show success modal
@@ -376,6 +402,21 @@ function copyId() {
         btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
         setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copy ID'; }, 2000);
     });
+}
+
+function showSelectedFiles(input) {
+    const list = document.getElementById('fileList');
+    const names = document.getElementById('fileNames');
+    if (!input.files.length) { list.style.display = 'none'; return; }
+    names.innerHTML = '';
+    Array.from(input.files).forEach(f => {
+        const li = document.createElement('li');
+        li.style.cssText = 'padding:4px 0;display:flex;align-items:center;gap:8px;';
+        const icon = f.type === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-image';
+        li.innerHTML = `<i class="fas ${icon}" style="color:#4f9eff;width:16px;"></i> ${esc(f.name)} <span style="color:#4a5568;font-size:12px;">(${(f.size/1024/1024).toFixed(2)} MB)</span>`;
+        names.appendChild(li);
+    });
+    list.style.display = 'block';
 }
 
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

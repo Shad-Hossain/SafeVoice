@@ -44,7 +44,7 @@ $stmt = $db->prepare(
     'INSERT INTO complaints (complaint_id, user_id, type, incident_date, location, description, is_anonymous, status)
      VALUES (?, ?, ?, ?, ?, ?, ?, "Submitted")'
 );
-$stmt->bind_param('ssisssi', $complaint_id, $user_id, $type, $incident_date, $location, $description, $is_anon);
+$stmt->bind_param('sisissi', $complaint_id, $user_id, $type, $incident_date, $location, $description, $is_anon);
 
 if ($stmt->execute()) {
     // Update user's complaints count
