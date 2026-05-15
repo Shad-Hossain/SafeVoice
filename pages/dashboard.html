@@ -270,8 +270,9 @@ async function loadComplaints() {
                 <td>${formatType(c.type)}</td>
                 <td style="color:var(--text-secondary);font-size:13px">${formatDate(c.submitted_at)}</td>
                 <td>${statusBadge(c.status)}</td>
-                <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                <td style="white-space:nowrap;">
                     <a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> View</a>
+                    &nbsp;
                     <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
                 </td>
             </tr>`).join('');
@@ -299,8 +300,11 @@ async function loadAllComplaints() {
                 <td style="font-size:12px;color:var(--text-secondary)">${formatDate(c.submitted_at)}</td>
                 <td style="text-align:center">${c.is_anonymous == 1 ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:var(--text-secondary)"></i>'}</td>
                 <td>${statusBadge(c.status)}</td>
-                <td><a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> Track</a>
-                    <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;margin-left:4px;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i></button></td>
+                <td style="white-space:nowrap;">
+                    <a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> Track</a>
+                    &nbsp;
+                    <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
+                </td>
             </tr>`).join('');
     } catch(e) {
         document.getElementById('all-tbody').innerHTML =
