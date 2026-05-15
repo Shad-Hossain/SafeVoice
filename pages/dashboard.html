@@ -687,7 +687,7 @@ async function loadExistingEvidence(complaint_id) {
     const box = document.getElementById('evExistingList');
     box.innerHTML = '<p style="color:#4a5568;font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
     try {
-        const res  = await fetch(`../api/get_complaint_evidence.php?complaint_id=${encodeURIComponent(complaint_id)}`, { credentials: 'include' });
+        const res  = await fetch(`../api/get_complaints_evidence.php?complaint_id=${encodeURIComponent(complaint_id)}`, { credentials: 'include' });
         const data = await res.json();
         if (!data.success || !data.files || !data.files.length) {
             box.innerHTML = '<p style="color:#4a5568;font-size:13px;"><i class="fas fa-folder-open"></i> No evidence uploaded yet.</p>';
