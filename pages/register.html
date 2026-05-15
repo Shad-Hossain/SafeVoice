@@ -287,7 +287,7 @@
 <script>
 // ════════════════════════════════════════════════════════
 //  তোমার OCR.space API key এখানে বসাও
-const OCR_API_KEY = 'K83023065088957 ';
+const OCR_API_KEY = 'K83023065088957';
 // ════════════════════════════════════════════════════════
 
 const API_BASE     = '../api';
@@ -370,43 +370,41 @@ document.getElementById('idDocFile').addEventListener('change', async function()
 
     try {
         // base64 দিয়ে পাঠাও — free plan এ এটাই reliable
-        const base64 = await new Promise((resolve, reject) => {
-            const r = new FileReader();
-            r.onload  = () => resolve(r.result); // full data URL: "data:image/jpeg;base64,..."
-            r.onerror = reject;
-            r.readAsDataURL(file);
+        const formData = new FormData();
+
+        formData.append('apikey', OCR_API_KEY);
+        formData.append('language', 'eng');
+        formData.append('isOverlayRequired', false);
+        formData.append('detectOrientation', true);
+        formData.append('scale', true);
+        formData.append('OCREngine', 2);
+        formData.append('file', file);
+
+        const res = await fetch('https://api.ocr.space/parse/image', {
+            method: 'POST',
+            body: formData
         });
 
-        const payload = {
-            base64Image:        base64,
-            apikey:             OCR_API_KEY,
-            language:           'eng',
-            isOverlayRequired:  false,
-            detectOrientation:  true,
-            scale:              true,
-            OCREngine:          2,
-            isTable:            false,
-        };
-
-        const res  = await fetch('https://api.ocr.space/parse/image', {
-            method:  'POST',
-            headers: {'Content-Type': 'application/json'},
-            body:    JSON.stringify(payload),
-        });
         const data = await res.json();
+
+        console.log(data);
 
         document.getElementById('ocrScanOverlay').classList.remove('active');
 
         if (data.IsErroredOnProcessing || !data.ParsedResults?.length) {
-            showToast('Scan failed. Please type your details manually.', 'error');
+            console.log(data);
+            showToast('Scan failed. Please try clearer image.', 'error');
             return;
         }
 
         const text = data.ParsedResults[0].ParsedText || '';
-        if (!text.trim()) { showToast('Could not read. Please fill manually.', 'error'); return; }
+
+        if (!text.trim()) {
+            showToast('No text detected.', 'error');
+            return;
+        }
 
         const {name, idNumber} = parseOcrText(text, selectedIdType);
-
         const nameInp = document.getElementById('regName');
         const idInp   = document.getElementById('regIdNumber');
 
