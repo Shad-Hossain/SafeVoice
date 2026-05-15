@@ -10,22 +10,22 @@ if (empty($complaint_id)) {
     exit;
 }
 
-// Must be logged in — either user (owns the complaint) or admin
-$is_admin = (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true)
-         || (isset($_SESSION['admin_id']))
-         || (isset($_COOKIE['sv_admin']) && $_COOKIE['sv_admin'] === '1');
+// Admin check — session theke
+$is_admin = !empty($_SESSION['admin_id']) || !empty($_SESSION['is_admin']);
 
-$is_user  = isset($_SESSION['user_id']);
+// User check
+$is_user = !empty($_SESSION['user_id']);
 
+// Admin na hole, user o na hole — block
 if (!$is_admin && !$is_user) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+    echo json_encode(['success' => false, 'message' => 'Not authenticated', 'debug_session' => array_keys($_SESSION)]);
     exit;
 }
 
 $db = getDB();
 
-// If regular user, verify they own the complaint
+// Regular user hole verify korbo complaint tar kina
 if (!$is_admin && $is_user) {
     $chk = $db->prepare("SELECT id FROM complaints WHERE complaint_id = ? AND user_id = ? LIMIT 1");
     $chk->bind_param('si', $complaint_id, $_SESSION['user_id']);

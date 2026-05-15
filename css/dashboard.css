@@ -291,16 +291,24 @@
 
 /* VIEW BUTTON */
 .btn-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     background: #4f9eff20;
     color: #4f9eff;
-    padding: 6px 16px;
+    padding: 6px 14px;
     border-radius: 6px;
-    font-size: 13px;
+    border: 1px solid #4f9eff50;
+    font-size: 12px;
     font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
     transition: all 0.3s;
 }
 
 .btn-view:hover {
     background: #4f9eff;
     color: #ffffff;
+    border-color: #4f9eff;
 }
