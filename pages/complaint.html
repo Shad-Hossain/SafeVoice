@@ -370,6 +370,7 @@ async function submitComplaint() {
 
         if (!data.success) throw new Error(data.message || 'Submission failed');
         complaint_id = data.complaint_id;
+        window.lastComplaintId = complaint_id;
 
     } catch (err) {
         btn.classList.remove('loading');
@@ -540,13 +541,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function uploadExtraEvidence() {
-    var complaint_id = document.getElementById('complaintId').textContent.trim();
+    var complaint_id = window.lastComplaintId || document.getElementById('complaintId').textContent.trim();
     var input  = document.getElementById('extraEvidenceFiles');
     var status = document.getElementById('extraUploadStatus');
     var btn    = document.getElementById('extraUploadBtn');
 
-    if (!input.files.length || !complaint_id) return;
-
+    if (!input.files.length || !complaint_id) {
+        status.innerHTML = '<span style="color:#e63946;"><i class="fas fa-exclamation-circle"></i> Error: Complaint ID পাওয়া যাচ্ছে না। Page reload করে আবার try করুন।</span>';
+        return;
+    }
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
     status.innerHTML = '';
