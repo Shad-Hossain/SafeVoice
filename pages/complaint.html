@@ -229,6 +229,21 @@
             <div class="ai-label"><i class="fas fa-robot"></i> &nbsp;What happens next</div>
             <div id="modalAiText">—</div>
         </div>
+        <!-- Additional Evidence Upload (after submission) -->
+        <div id="additionalEvidenceBox" style="margin:18px 0 10px;padding:16px;background:#0a0f1e;border:1px dashed #1e2d4a;border-radius:12px;text-align:left;">
+            <p style="color:#4f9eff;font-size:13px;font-weight:600;margin:0 0 10px;"><i class="fas fa-paperclip"></i> &nbsp;Add More Evidence (Optional)</p>
+            <input type="file" id="extraEvidenceFiles" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple style="display:none;" />
+            <div id="extraUploadBox" onclick="document.getElementById('extraEvidenceFiles').click()" style="border:1px dashed #2d3a55;border-radius:8px;padding:12px;text-align:center;cursor:pointer;color:#4a5568;font-size:12px;">
+                <i class="fas fa-cloud-upload-alt" style="font-size:20px;color:#4f9eff;display:block;margin-bottom:6px;"></i>
+                Click to select images or PDF files (max 10MB each)
+            </div>
+            <div id="extraFileNames" style="margin-top:8px;font-size:12px;color:#a0aec0;"></div>
+            <button id="extraUploadBtn" onclick="uploadExtraEvidence()" style="display:none;margin-top:10px;width:100%;background:#4f9eff;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">
+                <i class="fas fa-upload"></i> Upload Evidence
+            </button>
+            <div id="extraUploadStatus" style="margin-top:8px;font-size:12px;"></div>
+        </div>
+
         <div class="modal-footer" style="border:none;justify-content:center;gap:15px">
             <a href="dashboard.html" class="btn-accept">Go to Dashboard</a>
             <a href="complaint-track.html" class="btn-decline">Track Complaint</a>
@@ -503,6 +518,64 @@ function confirmMapLocation() {
     document.getElementById('incidentLocation').value = addr;
     closeMapPicker();
 }
+
+// ── Extra evidence upload (after submission) ──────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    var extraInput = document.getElementById('extraEvidenceFiles');
+    if (extraInput) {
+        extraInput.addEventListener('change', function() {
+            var names = document.getElementById('extraFileNames');
+            var btn   = document.getElementById('extraUploadBtn');
+            if (this.files.length > 0) {
+                names.innerHTML = Array.from(this.files).map(f =>
+                    '<div style="padding:3px 0;color:#cbd5e0;"><i class="fas fa-file" style="color:#4f9eff;margin-right:6px;"></i>' + f.name + '</div>'
+                ).join('');
+                btn.style.display = 'block';
+            } else {
+                names.innerHTML = '';
+                btn.style.display = 'none';
+            }
+        });
+    }
+});
+
+async function uploadExtraEvidence() {
+    var complaint_id = document.getElementById('complaintId').textContent.trim();
+    var input  = document.getElementById('extraEvidenceFiles');
+    var status = document.getElementById('extraUploadStatus');
+    var btn    = document.getElementById('extraUploadBtn');
+
+    if (!input.files.length || !complaint_id) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    status.innerHTML = '';
+
+    var formData = new FormData();
+    formData.append('complaint_id', complaint_id);
+    for (var i = 0; i < input.files.length; i++) {
+        formData.append('evidence[]', input.files[i]);
+    }
+
+    try {
+        var res  = await fetch('../api/upload_complaint_evidence.php', {
+            method: 'POST', credentials: 'include', body: formData
+        });
+        var data = await res.json();
+        if (data.success) {
+            status.innerHTML = '<span style="color:#2ecc71;"><i class="fas fa-check-circle"></i> ' + data.message + '</span>';
+            input.value = '';
+            document.getElementById('extraFileNames').innerHTML = '';
+            btn.style.display = 'none';
+        } else {
+            status.innerHTML = '<span style="color:#e63946;"><i class="fas fa-exclamation-circle"></i> Upload failed: ' + (data.message || 'Unknown error') + '</span>';
+        }
+    } catch(e) {
+        status.innerHTML = '<span style="color:#e63946;"><i class="fas fa-exclamation-circle"></i> Upload error: ' + e.message + '</span>';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-upload"></i> Upload Evidence';
+}
+
 </script>
-</body>
-</html>

@@ -88,7 +88,7 @@ async function loadEvidence(complaint_id) {
     const box = document.getElementById('evidenceList');
     box.innerHTML = '<p style="color:#4a5568;font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Loading evidence...</p>';
     try {
-        const res  = await fetch(`${API}/get_complaint_evidence.php?complaint_id=${encodeURIComponent(complaint_id)}`, { credentials: 'include' });
+        const res  = await fetch(`${API}/get_complaints_evidence.php?complaint_id=${encodeURIComponent(complaint_id)}`, { credentials: 'include' });
         const data = await res.json();
         if (!data.success || !data.files || data.files.length === 0) {
             box.innerHTML = '<p style="color:#4a5568;font-size:13px;"><i class="fas fa-folder-open"></i> No evidence files uploaded yet.</p>';
