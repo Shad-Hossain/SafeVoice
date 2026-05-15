@@ -169,11 +169,11 @@
 
                 <div class="form-group">
                     <label><i class="fas fa-paperclip"></i> Evidence <span style="color:var(--text-secondary);font-weight:400">(Optional)</span></label>
-                    <div class="upload-box" id="uploadBox" onclick="document.getElementById('evidenceFiles').click()" style="cursor:pointer;">
+                    <div class="upload-box" id="uploadBox">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Upload photos or PDF</p>
                         <span>JPG, PNG, PDF up to 10MB each</span>
-                        <input type="file" id="evidenceFiles" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple style="display:none;" onchange="showSelectedFiles(this)" />
+                        <input type="file" id="evidenceFiles" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple onchange="showSelectedFiles(this)" />
                     </div>
                     <div id="fileList" style="margin-top:10px;display:none;">
                         <p style="font-size:13px;color:var(--text-secondary,#a0b4cc);margin-bottom:6px;"><i class="fas fa-paperclip"></i> Selected files:</p>
