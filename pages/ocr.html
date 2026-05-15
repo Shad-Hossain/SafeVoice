@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Vision OCR</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <style>
+
+        body{
+            font-family: Arial;
+            padding:40px;
+            background:#111;
+            color:white;
+        }
+
+        input{
+            margin-bottom:20px;
+        }
+
+        textarea{
+            width:100%;
+            height:400px;
+            background:#1e1e1e;
+            color:#00ff88;
+            padding:20px;
+            border:none;
+            outline:none;
+            resize:none;
+        }
+
+        .loading{
+            margin-top:20px;
+            color:orange;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Google Vision OCR</h1>
+
+    <input type="file" id="fileInput" accept="image/*,.pdf">
+
+    <div class="loading" id="loading"></div>
+
+    <textarea id="result"></textarea>
+
+<script>
+
+const API_KEY = 'AIzaSyAhiyoekecNlj612tBagqaNoeuDcDvt2VI';
+
+const fileInput = document.getElementById('fileInput');
+const result = document.getElementById('result');
+const loading = document.getElementById('loading');
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+
+
+fileInput.addEventListener('change', async (e) => {
+
+    const file = e.target.files[0];
+
+    if(!file) return;
+
+    result.value = '';
+    loading.innerText = 'Scanning...';
+
+    try{
+
+        if(file.type === 'application/pdf'){
+
+            await scanPDF(file);
+
+        }else{
+
+            await scanImage(file);
+
+        }
+
+        loading.innerText = 'Done ✅';
+
+    }catch(err){
+
+        console.error(err);
+
+        loading.innerText = 'OCR Failed ❌';
+
+    }
+
+});
+
+
+
+async function scanImage(file){
+
+    const base64 = await fileToBase64(file);
+
+    const text = await detectText(base64);
+
+    result.value = text;
+
+}
+
+
+
+async function scanPDF(file){
+
+    const arrayBuffer = await file.arrayBuffer();
+
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    let finalText = '';
+
+    for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++){
+
+        loading.innerText = `Scanning page ${pageNum}/${pdf.numPages}`;
+
+        const page = await pdf.getPage(pageNum);
+
+        const viewport = page.getViewport({ scale: 4 });
+
+        const canvas = document.createElement('canvas');
+
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+            canvasContext: ctx,
+            viewport: viewport
+        }).promise;
+
+        const base64 = canvas.toDataURL('image/png');
+
+        const text = await detectText(base64);
+
+        finalText += `\n\n===== PAGE ${pageNum} =====\n\n`;
+        finalText += text;
+
+    }
+
+    result.value = finalText;
+
+}
+
+
+
+async function detectText(base64){
+
+    const response = await fetch(
+        `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`,
+        {
+            method:'POST',
+            headers:{
+                'Content-Type':'application/json'
+            },
+            body:JSON.stringify({
+                requests:[
+                    {
+                        image:{
+                            content: base64.split(',')[1]
+                        },
+                        features:[
+                            {
+                                type:'DOCUMENT_TEXT_DETECTION'
+                            }
+                        ]
+                    }
+                ]
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    console.log(data);
+
+    if(data.error){
+
+        alert(
+            'ERROR: ' +
+            data.error.message
+        );
+
+        return 'API ERROR';
+
+    }
+
+    return (
+        data.responses?.[0]?.fullTextAnnotation?.text ||
+        data.responses?.[0]?.textAnnotations?.[0]?.description ||
+        'No text found'
+    );
+
+}
+
+
+function fileToBase64(file){
+
+    return new Promise((resolve,reject)=>{
+
+        const reader = new FileReader();
+
+        reader.readAsDataURL(file);
+
+        reader.onload = () => resolve(reader.result);
+
+        reader.onerror = error => reject(error);
+
+    });
+
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script>
+async function detectText(file){
+
+    const { data: { text } } = await Tesseract.recognize(
+        file,
+        'eng',
+        {
+            logger: m => console.log(m)
+        }
+    );
+
+    return text;
+}
+</script>
+</body>
+</html>

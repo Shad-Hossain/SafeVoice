@@ -283,7 +283,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
-
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 // ════════════════════════════════════════════════════════
 
@@ -352,6 +352,7 @@ document.querySelectorAll('.id-tab').forEach(tab => {
 // OCR Upload
 document.getElementById('idDocFile').addEventListener('change', async function() {
     const file = this.files[0];
+    window.__currentOCRFile = file;
     if (!file) return;
     if (file.size > 5*1024*1024) { showToast('File must be under 5MB.','error'); this.value=''; return; }
 
@@ -403,12 +404,40 @@ if (
     showToast('OCR scan failed.', 'error');
     return;
 }
-        const text = data.ParsedResults[0].ParsedText || '';
+        
 
-        if (!text.trim()) {
-            showToast('No text detected.', 'error');
-            return;
-        }
+       let text = data?.ParsedResults?.[0]?.ParsedText || '';
+
+// fallback if OCR.Space fails or empty
+let attempt = 0;
+
+async function runTesseractOnce() {
+    attempt++;
+    return await detectTextWithTesseract(file);
+}
+if (!text.trim()) {
+    showToast('OCR Space failed, switching to backup engine...', 'info');
+
+    try {
+        text = await detectTextWithTesseract(file);
+    } 
+    catch(err) {
+        console.error(err);
+        showToast('Both OCR engines failed 😵', 'error');
+        return;
+    }
+}
+   if (!text || text.trim().length < 5) {
+    showToast('Weak OCR result, retrying...', 'info');
+
+    try {
+        text = await detectTextWithTesseract(file);
+    } catch(err) {
+        console.error(err);
+        showToast('OCR still too weak 😵 Try clearer image', 'error');
+        return;
+    }
+}
 
         const {name, idNumber} = parseOcrText(text, selectedIdType);
         const nameInp = document.getElementById('regName');
@@ -600,8 +629,21 @@ document.getElementById('registerBtn').addEventListener('click', async function(
         btnReset(this,'<i class="fas fa-user-plus"></i> Create Account');
     }
 });
+async function detectTextWithTesseract(file){
+
+    const result = await Tesseract.recognize(
+        file,
+        'eng',
+        {
+            logger: m => console.log(m)
+        }
+    );
+
+    return result.data.text;
+}
 </script>
 <script src="../js/main.js"></script>
 <script src="../js/theme.js"></script>
+
 </body>
 </html>
