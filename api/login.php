@@ -68,7 +68,14 @@ if (!password_verify($password, $user['password_hash'])) {
 session_unset();
 session_destroy();
 
-// Start fresh session
+// Start fresh session with same secure cookie params
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path'     => '/',
+    'secure'   => false,
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
 session_regenerate_id(true);
 
@@ -76,21 +83,3 @@ $_SESSION['user_id'] = $user['id'];
 $_SESSION['user_email'] = $user['email'];
 $_SESSION['user_name'] = $user['name'];
 
-session_write_close();
-
-$stmt->close();
-$db->close();
-
-echo json_encode([
-    'success' => true,
-    'message' => 'Login successful!',
-    'user'    => [
-        'id'               => $user['id'],
-        'name'             => $user['name'],
-        'email'            => $user['email'],
-        'phone'            => $user['phone'],
-        'status'           => $user['status'],
-        'profile_photo'    => $user['profile_photo'],
-        'complaints_count' => $user['complaints_count'],
-    ]
-]);

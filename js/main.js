@@ -116,30 +116,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── LOGIN ──
-    const authBtn = document.querySelector('.btn-auth');
-    const currentPage = window.location.pathname;
-    if (authBtn && currentPage.includes('login') && !currentPage.includes('admin')) {
-        authBtn.addEventListener('click', function () {
-            const email   = document.querySelector('input[type="email"]')?.value;
-            const pwInput = document.querySelector('input[placeholder="Enter your password"]');
-            if (!email || !pwInput?.value) { alert('Please fill in all fields!'); return; }
-            window.location.href = 'dashboard.html';
-        });
-    }
-    if (authBtn && currentPage.includes('register')) {
-        authBtn.addEventListener('click', function () {
-            const name    = document.querySelector('input[placeholder="Enter your name"]')?.value || '';
-            const email   = document.querySelector('input[type="email"]')?.value || '';
-            const password= document.getElementById('password1')?.value || '';
-            const confirm = document.getElementById('password2')?.value || '';
-            const terms   = document.getElementById('termsCheckbox');
-            if (!name || !email || !password) { alert('Please fill in all fields!'); return; }
-            if (password !== confirm) { alert('Passwords do not match!'); return; }
-            if (terms && !terms.checked) { alert('Please accept the Terms & Conditions!'); return; }
-            window.location.href = 'dashboard.html';
-        });
-    }
+    // ── LOGIN / REGISTER ──
+    // Handled by page-specific inline scripts in login.html and register.html
+    // (which call the real PHP API). This block intentionally left empty.
 
     injectDropdownStyles();
 });
