@@ -270,7 +270,10 @@ async function loadComplaints() {
                 <td>${formatType(c.type)}</td>
                 <td style="color:var(--text-secondary);font-size:13px">${formatDate(c.submitted_at)}</td>
                 <td>${statusBadge(c.status)}</td>
-                <td><a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> View</a></td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> View</a>
+                    <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
+                </td>
             </tr>`).join('');
     } catch(e) {
         document.getElementById('recent-tbody').innerHTML =
@@ -296,7 +299,8 @@ async function loadAllComplaints() {
                 <td style="font-size:12px;color:var(--text-secondary)">${formatDate(c.submitted_at)}</td>
                 <td style="text-align:center">${c.is_anonymous == 1 ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:var(--text-secondary)"></i>'}</td>
                 <td>${statusBadge(c.status)}</td>
-                <td><a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> Track</a></td>
+                <td><a href="complaint-track.html?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> Track</a>
+                    <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;margin-left:4px;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i></button></td>
             </tr>`).join('');
     } catch(e) {
         document.getElementById('all-tbody').innerHTML =
@@ -590,7 +594,182 @@ function closePaymentSuccess() {
         </div>
         <button onclick="closePaymentSuccess()" style="background:linear-gradient(135deg,#1a6f4a,#2ecc71);color:#fff;border:none;border-radius:10px;padding:13px 40px;font-size:15px;font-weight:700;cursor:pointer;">Done</button>
     </div>
+<!-- EVIDENCE MODAL -->
+<div id="evidenceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#0d1526;border:1px solid #1e2d4a;border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;">
+        <div style="padding:20px 24px;border-bottom:1px solid #1e2d4a;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0d1526;z-index:1;">
+            <div>
+                <h3 style="margin:0;color:#fff;font-size:17px;"><i class="fas fa-paperclip" style="color:#4f9eff;margin-right:8px;"></i>Evidence Files</h3>
+                <p id="evModalId" style="margin:4px 0 0;color:#4a5568;font-size:12px;"></p>
+            </div>
+            <i class="fas fa-times" onclick="closeEvidenceModal()" style="color:#a0b4cc;font-size:20px;cursor:pointer;padding:4px;"></i>
+        </div>
+
+        <!-- Existing evidence list -->
+        <div style="padding:20px 24px;">
+            <p style="font-size:13px;font-weight:700;color:#a0b4cc;margin:0 0 12px;text-transform:uppercase;letter-spacing:.5px;">Uploaded Evidence</p>
+            <div id="evExistingList">
+                <p style="color:#4a5568;font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>
+            </div>
+        </div>
+
+        <!-- Upload more -->
+        <div style="padding:0 24px 24px;">
+            <p style="font-size:13px;font-weight:700;color:#a0b4cc;margin:0 0 12px;text-transform:uppercase;letter-spacing:.5px;">Add More Evidence</p>
+            <div id="evUploadBox" style="background:#0a0f1e;border:2px dashed #1e2d4a;border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border .2s;" onmouseover="this.style.borderColor='#4f9eff'" onmouseout="this.style.borderColor='#1e2d4a'">
+                <i class="fas fa-cloud-upload-alt" style="font-size:30px;color:#4f9eff;margin-bottom:8px;display:block;"></i>
+                <p style="color:#fff;font-size:14px;margin:0 0 4px;">Click to select files</p>
+                <span style="color:#4a5568;font-size:12px;">JPG, PNG, PDF — max 10MB each</span>
+            </div>
+            <input type="file" id="evFileInput" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple style="position:absolute;left:-9999px;" />
+            <div id="evFileList" style="margin-top:10px;display:none;">
+                <ul id="evFileNames" style="list-style:none;padding:0;margin:0;font-size:13px;color:#a0b4cc;"></ul>
+            </div>
+            <button id="evUploadBtn" onclick="uploadMoreEvidence()" style="margin-top:16px;width:100%;background:linear-gradient(135deg,#1a6f4a,#2ecc71);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-upload"></i> Upload Evidence
+            </button>
+            <div id="evUploadMsg" style="margin-top:10px;font-size:13px;text-align:center;display:none;"></div>
+        </div>
+    </div>
 </div>
+
+<script>
+let evComplaintId = '';
+
+function openEvidenceModal(complaint_id) {
+    evComplaintId = complaint_id;
+    document.getElementById('evModalId').textContent = complaint_id;
+    document.getElementById('evidenceModal').style.display = 'flex';
+    document.getElementById('evFileList').style.display = 'none';
+    document.getElementById('evFileNames').innerHTML = '';
+    document.getElementById('evUploadMsg').style.display = 'none';
+    document.getElementById('evFileInput').value = '';
+    document.getElementById('evUploadBox').querySelector('p').textContent = 'Click to select files';
+    loadExistingEvidence(complaint_id);
+}
+
+function closeEvidenceModal() {
+    document.getElementById('evidenceModal').style.display = 'none';
+    evComplaintId = '';
+}
+
+document.getElementById('evidenceModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEvidenceModal();
+});
+
+// Wire upload box
+document.addEventListener('DOMContentLoaded', function() {
+    const box   = document.getElementById('evUploadBox');
+    const input = document.getElementById('evFileInput');
+    if (box && input) {
+        box.addEventListener('click', function() { input.click(); });
+        input.addEventListener('change', function() {
+            const files = this.files;
+            const list  = document.getElementById('evFileList');
+            const names = document.getElementById('evFileNames');
+            if (!files.length) { list.style.display='none'; return; }
+            names.innerHTML = '';
+            Array.from(files).forEach(f => {
+                const li = document.createElement('li');
+                li.style.cssText = 'padding:4px 0;display:flex;align-items:center;gap:8px;';
+                const icon = f.name.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image';
+                li.innerHTML = `<i class="fas ${icon}" style="color:#4f9eff;width:16px;"></i> ${escDash(f.name)} <span style="color:#4a5568;font-size:12px;">(${(f.size/1024/1024).toFixed(2)} MB)</span>`;
+                names.appendChild(li);
+            });
+            list.style.display = 'block';
+            box.querySelector('p').textContent = files.length + ' file(s) selected';
+            box.style.borderColor = '#4f9eff';
+        });
+    }
+});
+
+async function loadExistingEvidence(complaint_id) {
+    const box = document.getElementById('evExistingList');
+    box.innerHTML = '<p style="color:#4a5568;font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+    try {
+        const res  = await fetch(`../api/get_complaint_evidence.php?complaint_id=${encodeURIComponent(complaint_id)}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success || !data.files || !data.files.length) {
+            box.innerHTML = '<p style="color:#4a5568;font-size:13px;"><i class="fas fa-folder-open"></i> No evidence uploaded yet.</p>';
+            return;
+        }
+        box.innerHTML = data.files.map(f => {
+            const isPdf = f.file_name.toLowerCase().endsWith('.pdf');
+            const icon  = isPdf ? 'fa-file-pdf' : 'fa-file-image';
+            const url   = `../` + f.file_path;
+            const date  = new Date(f.uploaded_at).toLocaleString('en-GB');
+            return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;margin-bottom:8px;">
+                <i class="fas ${icon}" style="color:#4f9eff;font-size:20px;flex-shrink:0;"></i>
+                <div style="flex:1;min-width:0;">
+                    <div style="color:#fff;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escDash(f.file_name)}</div>
+                    <div style="color:#4a5568;font-size:11px;">${date}</div>
+                </div>
+                <a href="${url}" target="_blank" style="color:#4f9eff;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;background:#1e2d4a;border:1px solid #4f9eff;padding:5px 12px;border-radius:8px;">
+                    <i class="fas fa-eye"></i> View
+                </a>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        box.innerHTML = '<p style="color:#e63946;font-size:13px;">Could not load evidence.</p>';
+    }
+}
+
+async function uploadMoreEvidence() {
+    const input = document.getElementById('evFileInput');
+    const btn   = document.getElementById('evUploadBtn');
+    const msg   = document.getElementById('evUploadMsg');
+
+    if (!input.files.length) { 
+        msg.style.display = 'block';
+        msg.style.color   = '#f39c12';
+        msg.textContent   = 'Please select at least one file first.';
+        return;
+    }
+
+    btn.disabled     = true;
+    btn.innerHTML    = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    msg.style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('complaint_id', evComplaintId);
+    for (let i = 0; i < input.files.length; i++) {
+        formData.append('evidence[]', input.files[i]);
+    }
+
+    try {
+        const res  = await fetch('../api/upload_complaint_evidence.php', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+        const data = await res.json();
+
+        msg.style.display = 'block';
+        if (data.success) {
+            msg.style.color = '#2ecc71';
+            msg.innerHTML   = `<i class="fas fa-check-circle"></i> ${data.message}`;
+            input.value     = '';
+            document.getElementById('evFileList').style.display = 'none';
+            document.getElementById('evUploadBox').querySelector('p').textContent = 'Click to select files';
+            document.getElementById('evUploadBox').style.borderColor = '#1e2d4a';
+            // Reload evidence list
+            setTimeout(() => loadExistingEvidence(evComplaintId), 500);
+        } else {
+            msg.style.color = '#e63946';
+            msg.innerHTML   = `<i class="fas fa-exclamation-circle"></i> Upload failed: ${data.message || 'Unknown error'}`;
+        }
+    } catch(e) {
+        msg.style.display = 'block';
+        msg.style.color   = '#e63946';
+        msg.innerHTML     = '<i class="fas fa-exclamation-circle"></i> Upload failed. Check your connection.';
+    }
+
+    btn.disabled  = false;
+    btn.innerHTML = '<i class="fas fa-upload"></i> Upload Evidence';
+}
+
+function escDash(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
 
 </body>
 </html>
