@@ -303,12 +303,9 @@ input:checked + .slider:before {
     color: #a0b4cc;
 }
 
+/* file input is now hidden off-screen and triggered via JS click */
 .upload-box input[type="file"] {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    opacity: 0;
-    cursor: pointer;
+    display: none;
 }
 
 /*  BUTTONS  */
