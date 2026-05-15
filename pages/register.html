@@ -146,7 +146,7 @@
                         </label>
                         <div class="input-wrapper">
                             <i class="fas fa-user"></i>
-                            <input type="text" id="regName" placeholder="Upload ID photo to auto-fill" />
+                            <input type="text" id="regName" placeholder="Upload ID photo to auto-fill" readonly style="cursor:not-allowed;opacity:0.7;" />
                         </div>
                         <div class="auto-filled-note" id="nameFilled"><i class="fas fa-magic"></i> Auto-filled — ভুল থাকলে ঠিক করো</div>
                     </div>
@@ -157,7 +157,7 @@
                         </label>
                         <div class="input-wrapper">
                             <i class="fas fa-hashtag"></i>
-                            <input type="text" id="regIdNumber" placeholder="Upload ID photo to auto-fill" inputmode="numeric" />
+                            <input type="text" id="regIdNumber" placeholder="Upload ID photo to auto-fill" readonly style="cursor:not-allowed;opacity:0.7;" />
                         </div>
                         <div style="font-size:12px;color:#4a5568;margin-top:4px;" id="idHint">NID: 10 or 17 digits</div>
                         <div class="auto-filled-note" id="idFilled"><i class="fas fa-magic"></i> Auto-filled — ভুল থাকলে ঠিক করো</div>
@@ -286,7 +286,7 @@
 
 <script>
 // ════════════════════════════════════════════════════════
-
+//  তোমার OCR.space API key এখানে বসাও
 const OCR_API_KEY = 'K83023065088957 ';
 // ════════════════════════════════════════════════════════
 
@@ -369,16 +369,30 @@ document.getElementById('idDocFile').addEventListener('change', async function()
     showToast('Scanning document…', 'info', 10000);
 
     try {
-        const fd = new FormData();
-        fd.append('file',              file);
-        fd.append('apikey',            OCR_API_KEY);
-        fd.append('language',          'eng');
-        fd.append('isOverlayRequired', 'false');
-        fd.append('detectOrientation', 'true');
-        fd.append('scale',             'true');
-        fd.append('OCREngine',         '2');
+        // base64 দিয়ে পাঠাও — free plan এ এটাই reliable
+        const base64 = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload  = () => resolve(r.result); // full data URL: "data:image/jpeg;base64,..."
+            r.onerror = reject;
+            r.readAsDataURL(file);
+        });
 
-        const res  = await fetch('https://api.ocr.space/parse/image', {method:'POST', body:fd});
+        const payload = {
+            base64Image:        base64,
+            apikey:             OCR_API_KEY,
+            language:           'eng',
+            isOverlayRequired:  false,
+            detectOrientation:  true,
+            scale:              true,
+            OCREngine:          2,
+            isTable:            false,
+        };
+
+        const res  = await fetch('https://api.ocr.space/parse/image', {
+            method:  'POST',
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify(payload),
+        });
         const data = await res.json();
 
         document.getElementById('ocrScanOverlay').classList.remove('active');
