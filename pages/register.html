@@ -148,7 +148,7 @@
                             <i class="fas fa-user"></i>
                             <input type="text" id="regName" placeholder="Upload ID photo to auto-fill" readonly style="cursor:not-allowed;opacity:0.7;" />
                         </div>
-                        <div class="auto-filled-note" id="nameFilled"><i class="fas fa-magic"></i> Auto-filled — ভুল থাকলে ঠিক করো</div>
+                        <div class="auto-filled-note" id="nameFilled"><i class="fas fa-magic"></i> Auto-filled from your ID</div>
                     </div>
 
                     <div class="form-group">
@@ -160,7 +160,7 @@
                             <input type="text" id="regIdNumber" placeholder="Upload ID photo to auto-fill" readonly style="cursor:not-allowed;opacity:0.7;" />
                         </div>
                         <div style="font-size:12px;color:#4a5568;margin-top:4px;" id="idHint">NID: 10 or 17 digits</div>
-                        <div class="auto-filled-note" id="idFilled"><i class="fas fa-magic"></i> Auto-filled — ভুল থাকলে ঠিক করো</div>
+                        <div class="auto-filled-note" id="idFilled"><i class="fas fa-magic"></i> Auto-filled from your ID</div>
                     </div>
 
                     <button class="btn-auth" id="nextStep1Btn">
@@ -410,17 +410,11 @@ document.getElementById('idDocFile').addEventListener('change', async function()
         if (name) {
             nameInp.value = name;
             nameInp.classList.add('auto-filled');
-            nameInp.removeAttribute('readonly');
-            nameInp.style.cursor = '';
-            nameInp.style.opacity = '1';
             document.getElementById('nameFilled').classList.add('show');
         }
         if (idNumber) {
             idInp.value = idNumber;
             idInp.classList.add('auto-filled');
-            idInp.removeAttribute('readonly');
-            idInp.style.cursor = '';
-            idInp.style.opacity = '1';
             document.getElementById('idFilled').classList.add('show');
         }
 
