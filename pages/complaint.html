@@ -169,12 +169,12 @@
 
                 <div class="form-group">
                     <label><i class="fas fa-paperclip"></i> Evidence <span style="color:var(--text-secondary);font-weight:400">(Optional)</span></label>
-                    <div class="upload-box" id="uploadBox">
+                    <div class="upload-box" id="uploadBox" style="cursor:pointer;">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Upload photos or PDF</p>
                         <span>JPG, PNG, PDF up to 10MB each</span>
-                        <input type="file" id="evidenceFiles" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple onchange="showSelectedFiles(this)" />
                     </div>
+                    <input type="file" id="evidenceFiles" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;" />
                     <div id="fileList" style="margin-top:10px;display:none;">
                         <p style="font-size:13px;color:var(--text-secondary,#a0b4cc);margin-bottom:6px;"><i class="fas fa-paperclip"></i> Selected files:</p>
                         <ul id="fileNames" style="list-style:none;padding:0;margin:0;font-size:13px;color:#a0b4cc;"></ul>
@@ -404,12 +404,13 @@ function copyId() {
     });
 }
 
-function showSelectedFiles(input) {
-    const list = document.getElementById('fileList');
+function showSelectedFiles(files) {
+    const list  = document.getElementById('fileList');
     const names = document.getElementById('fileNames');
-    if (!input.files.length) { list.style.display = 'none'; return; }
+    const box   = document.getElementById('uploadBox');
+    if (!files || !files.length) { list.style.display = 'none'; return; }
     names.innerHTML = '';
-    Array.from(input.files).forEach(f => {
+    Array.from(files).forEach(f => {
         const li = document.createElement('li');
         li.style.cssText = 'padding:4px 0;display:flex;align-items:center;gap:8px;';
         const icon = f.type === 'application/pdf' ? 'fa-file-pdf' : 'fa-file-image';
@@ -417,7 +418,22 @@ function showSelectedFiles(input) {
         names.appendChild(li);
     });
     list.style.display = 'block';
+    if (box) {
+        const p = box.querySelector('p');
+        if (p) p.textContent = files.length + ' file(s) selected — click to change';
+        box.style.borderColor = '#4f9eff';
+    }
 }
+
+// Wire upload box click → hidden input, and input change → showSelectedFiles
+document.addEventListener('DOMContentLoaded', function() {
+    var box   = document.getElementById('uploadBox');
+    var input = document.getElementById('evidenceFiles');
+    if (box && input) {
+        box.addEventListener('click', function() { input.click(); });
+        input.addEventListener('change', function() { showSelectedFiles(this.files); });
+    }
+});
 
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
