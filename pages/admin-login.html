@@ -64,7 +64,12 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-auth">
+                    <!-- ✅ FIX: Error message div added -->
+                    <div id="loginError" style="display:none;color:#e63946;font-size:13px;margin-bottom:10px;padding:10px;background:rgba(230,57,70,0.1);border-radius:8px;border:1px solid rgba(230,57,70,0.3);">
+                        <i class="fas fa-exclamation-circle"></i> <span id="loginErrorMsg">Invalid credentials</span>
+                    </div>
+
+                    <button type="submit" class="btn-auth" id="loginBtn">
                         <i class="fas fa-sign-in-alt"></i>
                         Admin Login
                     </button>
@@ -78,20 +83,45 @@
 </section>
 
 <script>
-document.getElementById("adminLoginForm").addEventListener("submit", function(e){
+document.getElementById("adminLoginForm").addEventListener("submit", async function(e){
     e.preventDefault();
 
-    const email = document.getElementById("adminEmail").value;
-    const password = document.getElementById("adminPassword").value;
+    const email    = document.getElementById("adminEmail").value.trim();
+    const password = document.getElementById("adminPassword").value.trim();
+    const btn      = document.getElementById("loginBtn");
+    const errorBox = document.getElementById("loginError");
+    const errorMsg = document.getElementById("loginErrorMsg");
 
-    const ADMIN_EMAIL = "admin@safevoice.com";
-    const ADMIN_PASS = "1234";
+    errorBox.style.display = "none";
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
 
-    if(email === ADMIN_EMAIL && password === ADMIN_PASS){
-        localStorage.setItem("isAdminLoggedIn", "true");
-        window.location.href = "admin-dashboard.html";
-    } else {
-        alert("Invalid admin credentials ❌");
+    // ✅ FIX: Call PHP API to create a real server-side session
+    // This replaces the old hardcoded credential check that only used localStorage
+    try {
+        const res  = await fetch("../api/admin_login.php", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            // Also keep localStorage for page-guard checks (admin-complaint.html etc)
+            localStorage.setItem("isAdminLoggedIn", "true");
+            window.location.href = "admin-dashboard.html";
+        } else {
+            errorMsg.textContent = data.message || "Invalid credentials";
+            errorBox.style.display = "block";
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Admin Login';
+        }
+    } catch(err) {
+        errorMsg.textContent = "Server error. Make sure XAMPP is running.";
+        errorBox.style.display = "block";
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Admin Login';
     }
 });
 </script>
