@@ -1,5 +1,6 @@
 <?php
 session_start();
+header('Content-Type: application/json');
 require_once 'db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -8,7 +9,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Auth check
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Please login first.', 'redirect' => '../pages/login.html']);
@@ -23,7 +23,7 @@ $type        = trim($data['type']          ?? '');
 $description = trim($data['description']   ?? '');
 $date        = trim($data['incident_date'] ?? '');
 $location    = trim($data['location']      ?? '');
-$is_anon     = isset($data['is_anonymous']) && $data['is_anonymous'] ? 1 : 0;
+$is_anon     = (!empty($data['is_anonymous'])) ? 1 : 0;
 
 if (empty($type) || empty($description)) {
     http_response_code(400);
@@ -38,20 +38,30 @@ if (!empty($date)) {
     if ($dt) $incident_date = $dt->format('Y-m-d H:i:s');
 }
 
-$db = getDB();
-
+$db   = getDB();
 $stmt = $db->prepare(
     'INSERT INTO complaints (complaint_id, user_id, type, incident_date, location, description, is_anonymous, status)
      VALUES (?, ?, ?, ?, ?, ?, ?, "Submitted")'
 );
-$stmt->bind_param('sisissi', $complaint_id, $user_id, $type, $incident_date, $location, $description, $is_anon);
+
+// s=complaint_id, i=user_id, s=type, s=incident_date, s=location, s=description, i=is_anon
+$stmt->bind_param('sissssi',
+    $complaint_id,
+    $user_id,
+    $type,
+    $incident_date,
+    $location,
+    $description,
+    $is_anon
+);
 
 if ($stmt->execute()) {
-    // Update user's complaints count
     $upd = $db->prepare("UPDATE users SET complaints_count = complaints_count + 1 WHERE id = ?");
     $upd->bind_param('i', $user_id);
     $upd->execute();
     $upd->close();
+    $stmt->close();
+    $db->close();
 
     echo json_encode([
         'success'      => true,
@@ -59,9 +69,9 @@ if ($stmt->execute()) {
         'message'      => 'Complaint submitted successfully'
     ]);
 } else {
+    $err = $stmt->error;
+    $stmt->close();
+    $db->close();
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Failed to save complaint: ' . $stmt->error]);
+    echo json_encode(['success' => false, 'message' => 'Failed to save: ' . $err]);
 }
-
-$stmt->close();
-$db->close();
