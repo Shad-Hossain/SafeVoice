@@ -5,8 +5,8 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-// ─── আপনার OCR.Space API key এখানে দিন ───
-define('OCR_API_KEY', 'YOUR_OCR_SPACE_API_KEY_HERE'); // ← এখানে আপনার key দিন
+
+define('OCR_API_KEY', 'K83023065088957'); 
 // ──────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
