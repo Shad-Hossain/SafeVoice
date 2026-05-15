@@ -23,7 +23,7 @@
             <li><a href="dashboard.html">Dashboard</a></li>
             <li class="user-menu">
                 <div class="user-avatar"><i class="fas fa-user"></i></div>
-                <span>Shad Hossain</span>
+                <span>User</span>
                 <i class="fas fa-chevron-down"></i>
             </li>
         </ul>
@@ -31,6 +31,7 @@
 </nav>
 
 <div class="sos-layout">
+    <!-- LEFT: SOS Button Panel -->
     <div class="sos-panel">
         <div class="sos-status-bar" id="statusBar">
             <span class="status-dot"></span>
@@ -38,7 +39,7 @@
         </div>
         <div class="sos-heading">
             <h1>Emergency <span>SOS</span></h1>
-            <p>Press and hold the button to send an emergency alert to nearby responders</p>
+            <p>Press and hold the button to instantly alert nearby responders</p>
         </div>
         <div class="sos-btn-wrapper" id="sosBtnWrapper">
             <div class="sos-ring sos-ring-1"></div>
@@ -73,6 +74,7 @@
         </div>
     </div>
 
+    <!-- RIGHT: Responders Panel -->
     <div class="responders-panel">
         <div class="nearby-header">
             <div class="nearby-count-box">
@@ -99,6 +101,10 @@
     </div>
 </div>
 
+
+<!-- ═══════════════════════════════════════════════════════════
+     ACTIVATED OVERLAY
+════════════════════════════════════════════════════════════ -->
 <div class="sos-activated-overlay" id="activatedOverlay">
     <div class="activated-box">
         <div class="activated-icon">
@@ -122,30 +128,192 @@
         <p class="activated-note">Stay calm. Help is on the way. Keep your phone with you.</p>
     </div>
 </div>
-<div id="evidenceModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;">
 
-    <div style="background:#111; padding:20px; border-radius:15px; width:320px; display:flex; flex-direction:column; gap:10px;">
 
-        <h3 style="color:white;">Emergency Details</h3>
+<!-- ═══════════════════════════════════════════════════════════
+     EVIDENCE MODAL — Victim adds crime type + evidence
+     Opens AFTER notifications are sent
+════════════════════════════════════════════════════════════ -->
+<div id="evidenceModal" style="display:none;" class="sv-modal-overlay">
+    <div class="sv-modal evidence-modal">
 
-        <select id="crimeType">
-            <option value="">Select Crime Type</option>
-            <option>Harassment</option>
-            <option>Violence</option>
-            <option>Robbery</option>
-            <option>Kidnapping</option>
-        </select>
+        <div class="sv-modal-header">
+            <div class="sv-modal-icon sent">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div>
+                <h3>Alert Sent!</h3>
+                <p>Add details to help responders</p>
+            </div>
+            <button class="sv-modal-close" onclick="closeEvidenceModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
 
-        <textarea id="crimeDesc" placeholder="Describe situation"></textarea>
+        <div class="sv-modal-badge">
+            <i class="fas fa-bell"></i>
+            Notifications sent — now add details so responders know what's happening
+        </div>
 
-        <input type="file" id="evidenceFile">
+        <!-- Crime Type -->
+        <div class="sv-form-group">
+            <label><i class="fas fa-exclamation-triangle"></i> Crime Type <span class="required">*</span></label>
+            <div class="crime-type-grid">
+                <label class="crime-chip">
+                    <input type="radio" name="crimeTypeRadio" value="Harassment" onchange="setCrimeType(this)">
+                    <span><i class="fas fa-user-slash"></i> Harassment</span>
+                </label>
+                <label class="crime-chip">
+                    <input type="radio" name="crimeTypeRadio" value="Violence" onchange="setCrimeType(this)">
+                    <span><i class="fas fa-fist-raised"></i> Violence</span>
+                </label>
+                <label class="crime-chip">
+                    <input type="radio" name="crimeTypeRadio" value="Robbery" onchange="setCrimeType(this)">
+                    <span><i class="fas fa-mask"></i> Robbery</span>
+                </label>
+                <label class="crime-chip">
+                    <input type="radio" name="crimeTypeRadio" value="Kidnapping" onchange="setCrimeType(this)">
+                    <span><i class="fas fa-handcuffs"></i> Kidnapping</span>
+                </label>
+                <label class="crime-chip">
+                    <input type="radio" name="crimeTypeRadio" value="Stalking" onchange="setCrimeType(this)">
+                    <span><i class="fas fa-eye"></i> Stalking</span>
+                </label>
+                <label class="crime-chip">
+                    <input type="radio" name="crimeTypeRadio" value="Other" onchange="setCrimeType(this)">
+                    <span><i class="fas fa-ellipsis-h"></i> Other</span>
+                </label>
+            </div>
+            <input type="hidden" id="crimeType" value="">
+        </div>
 
-        <button onclick="submitEvidence()">Submit</button>
+        <!-- Description -->
+        <div class="sv-form-group">
+            <label><i class="fas fa-align-left"></i> Describe the situation</label>
+            <textarea id="crimeDesc" placeholder="What is happening? Where are you exactly? Describe the attacker..." rows="3"></textarea>
+        </div>
+
+        <!-- Evidence Upload -->
+        <div class="sv-form-group">
+            <label><i class="fas fa-paperclip"></i> Upload Evidence <span class="optional">(optional)</span></label>
+            <div class="file-upload-area" onclick="document.getElementById('evidenceFile').click()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Tap to upload photo, video or audio</p>
+                <small>JPG, PNG, MP4, MP3 supported</small>
+            </div>
+            <input type="file" id="evidenceFile" style="display:none;"
+                   accept="image/*,video/*,audio/*"
+                   onchange="handleFileSelect(this)">
+            <div id="filePreview"></div>
+        </div>
+
+        <!-- Message -->
+        <div id="modalMsg" class="modal-msg" style="display:none;"></div>
+
+        <!-- Actions -->
+        <div class="sv-modal-actions">
+            <button class="btn-skip" onclick="closeEvidenceModal()">
+                Skip for now
+            </button>
+            <button class="btn-submit-evidence" id="submitEvidenceBtn" onclick="submitEvidence()">
+                <i class="fas fa-paper-plane"></i> Submit Evidence
+            </button>
+        </div>
 
     </div>
-
 </div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     INCOMING ALERT PANEL — Shown to responders who get notified
+════════════════════════════════════════════════════════════ -->
+<div id="incomingAlertPanel" class="incoming-alert-panel">
+    <div class="incoming-alert-pulse"></div>
+    <div class="incoming-alert-header">
+        <div class="incoming-alert-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div>
+            <strong>SOS ALERT NEARBY</strong>
+            <small>Someone needs help!</small>
+        </div>
+        <button class="incoming-dismiss" onclick="dismissIncomingAlert()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="incoming-alert-body">
+        <div class="incoming-detail">
+            <i class="fas fa-user"></i>
+            <span id="incomingVictimName">Unknown</span>
+        </div>
+        <div class="incoming-detail">
+            <i class="fas fa-map-marker-alt"></i>
+            <span id="incomingLocation">Loading...</span>
+        </div>
+        <div class="incoming-detail">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="incomingCrimeType">Not specified</span>
+        </div>
+        <div class="incoming-detail">
+            <i class="fas fa-clock"></i>
+            <span id="incomingTime">Just now</span>
+        </div>
+    </div>
+    <div class="incoming-alert-actions">
+        <button class="btn-respond" onclick="viewSOSDetails()">
+            <i class="fas fa-running"></i> Respond & View Details
+        </button>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SOS DETAILS MODAL — Full details for responders
+════════════════════════════════════════════════════════════ -->
+<div id="sosDetailsModal" style="display:none;" class="sv-modal-overlay">
+    <div class="sv-modal details-modal">
+        <div class="sv-modal-header">
+            <div class="sv-modal-icon emergency">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div>
+                <h3>Emergency Details</h3>
+                <p>Victim information &amp; evidence</p>
+            </div>
+            <button class="sv-modal-close" onclick="closeSOSDetailsModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="sosDetailsContent" class="sos-details-content">
+            <p style="color:#a0b4cc;text-align:center;padding:20px;">Loading...</p>
+        </div>
+    </div>
+</div>
+
+
 <script src="../js/main.js"></script>
 <script src="../js/sos.js"></script>
+
+<script>
+// Crime type radio helper
+function setCrimeType(radio) {
+    document.getElementById('crimeType').value = radio.value;
+    // Update modal msg visibility
+    const el = document.getElementById('modalMsg');
+    if (el) el.style.display = 'none';
+}
+
+// Override showModalMsg to also show the element
+const _origShowModalMsg = showModalMsg;
+function showModalMsg(msg, type) {
+    const el = document.getElementById('modalMsg');
+    if (el) {
+        el.textContent = msg;
+        el.className   = 'modal-msg ' + type;
+        el.style.display = 'block';
+    }
+}
+</script>
+
 </body>
 </html>
