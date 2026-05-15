@@ -123,9 +123,9 @@
                         <div class="ocr-upload-box" id="ocrUploadBox">
                             <i class="fas fa-camera ocr-icon"></i>
                             <h4>Upload ID Photo</h4>
-                            <p>NID / Birth Certificate এর সামনের দিকের clear ছবি দাও</p>
-                            <small>JPG, PNG — max 5MB</small>
-                            <input type="file" id="idDocFile" accept="image/jpeg,image/png,image/webp" />
+                            <p>NID / Birth Certificate Front side Image</p>
+                            <small>JPG, PNG, PDF — max 5MB</small>
+                            <input type="file" id="idDocFile" accept="image/*,.pdf" />
                         </div>
                         <div class="ocr-preview" id="ocrPreview">
                             <img src="" alt="ID preview" id="ocrPreviewImg" />
@@ -286,7 +286,7 @@
 
 <script>
 // ════════════════════════════════════════════════════════
-//  তোমার OCR.space API key এখানে বসাও
+
 const OCR_API_KEY = 'K83023065088957';
 // ════════════════════════════════════════════════════════
 
@@ -370,33 +370,39 @@ document.getElementById('idDocFile').addEventListener('change', async function()
 
     try {
         // base64 দিয়ে পাঠাও — free plan এ এটাই reliable
-        const formData = new FormData();
+        const base64 = await fileToBase64(file);
 
-        formData.append('apikey', OCR_API_KEY);
-        formData.append('language', 'eng');
-        formData.append('isOverlayRequired', false);
-        formData.append('detectOrientation', true);
-        formData.append('scale', true);
-        formData.append('OCREngine', 2);
-        formData.append('file', file);
+const res = await fetch('https://api.ocr.space/parse/image', {
+    method: 'POST',
+    headers: {
+        apikey: OCR_API_KEY,
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        base64Image: base64,
+        language: 'eng',
+        isOverlayRequired: false,
+        detectOrientation: true,
+        scale: true,
+        OCREngine: 2
+    })
+});
 
-        const res = await fetch('https://api.ocr.space/parse/image', {
-            method: 'POST',
-            body: formData
-        });
+const data = await res.json();
 
-        const data = await res.json();
+console.log(data);
 
-        console.log(data);
+document.getElementById('ocrScanOverlay').classList.remove('active');
 
-        document.getElementById('ocrScanOverlay').classList.remove('active');
-
-        if (data.IsErroredOnProcessing || !data.ParsedResults?.length) {
-            console.log(data);
-            showToast('Scan failed. Please try clearer image.', 'error');
-            return;
-        }
-
+if (
+    data.IsErroredOnProcessing ||
+    !data.ParsedResults ||
+    !data.ParsedResults.length
+) {
+    console.log(data);
+    showToast('OCR scan failed.', 'error');
+    return;
+}
         const text = data.ParsedResults[0].ParsedText || '';
 
         if (!text.trim()) {
@@ -470,6 +476,17 @@ function parseOcrText(text, idType) {
     return {name, idNumber};
 }
 function toTitleCase(s) { return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).trim(); }
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.readAsDataURL(file);
+
+        reader.onload = () => resolve(reader.result);
+
+        reader.onerror = error => reject(error);
+    });
+}
 
 // Step 1 Next
 document.getElementById('nextStep1Btn').addEventListener('click', function() {
