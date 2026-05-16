@@ -55,11 +55,24 @@
 
         .ai-summary-box { background:var(--accent-glow,#4f9eff10); border:1px solid var(--accent,#4f9eff); border-radius:10px; padding:15px 18px; margin:15px 0; text-align:left; font-size:13px; color:var(--text-secondary,#a0b4cc); line-height:1.6; }
         .ai-summary-box .ai-label { font-size:11px; font-weight:700; color:var(--accent,#4f9eff); text-transform:uppercase; letter-spacing:.8px; margin-bottom:6px; }
+
+        /* Anonymous notice box */
+        .anon-notice {
+            display:none;
+            background:#4f9eff10;
+            border:1px solid #4f9eff40;
+            border-radius:10px;
+            padding:12px 16px;
+            margin-top:12px;
+            font-size:13px;
+            color:#a0b4cc;
+            line-height:1.6;
+        }
+        .anon-notice.visible { display:block; }
+        .anon-notice i { color:#4f9eff; margin-right:6px; }
     </style>
 </head>
 <body>
-
-
 
 <div class="complaint-layout">
     <div class="complaint-container">
@@ -129,15 +142,29 @@
                 </div>
                 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
                 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
                 <div class="anonymous-toggle">
                     <div class="toggle-info">
                         <i class="fas fa-user-secret"></i>
-                        <div><h4>Anonymous Report</h4><p>Your name will be hidden from the report</p></div>
+                        <div><h4>Anonymous Report</h4><p>Your name and identity will be completely hidden</p></div>
                     </div>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="anonymousToggle" /><span class="slider"></span>
+                        <input type="checkbox" id="anonymousToggle" onchange="onAnonToggle()" /><span class="slider"></span>
                     </label>
                 </div>
+
+                <!-- Anonymous notice — toggle on হলে দেখাবে -->
+                <div class="anon-notice" id="anonNotice">
+                    <i class="fas fa-shield-alt"></i>
+                    <strong style="color:#4f9eff">Anonymous mode is ON.</strong><br>
+                    Your name, phone, and email will <strong>not</strong> be saved anywhere.
+                    Admin will only see the incident details — not who you are.
+                    If you later accept PI service, the PI will contact you directly via this platform.
+                    <strong style="color:#fbbf24;display:block;margin-top:6px;">
+                        ⚠️ Save your Complaint ID after submission — it's your only way to track this case.
+                    </strong>
+                </div>
+
                 <button class="btn-next" onclick="nextStep(2)">Next <i class="fas fa-arrow-right"></i></button>
             </div>
 
@@ -191,6 +218,12 @@
                     <div class="review-item"><span class="review-label">Description</span><span class="review-value" id="reviewDesc">—</span></div>
                 </div>
 
+                <!-- Anonymous reminder step 3 e -->
+                <div id="step3AnonWarning" style="display:none;background:#fbbf2410;border:1px solid #fbbf2440;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#fbbf24;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Anonymous submission.</strong> After submitting, copy your Complaint ID — it's the only way to track this case.
+                </div>
+
                 <div class="ai-summary-box" id="reviewAiSummary" style="display:none">
                     <div class="ai-label"><i class="fas fa-robot"></i> &nbsp;AI Assessment</div>
                     <div id="reviewAiText">—</div>
@@ -218,11 +251,23 @@
             <p>Save this ID to track your complaint</p>
             <button class="copy-id-btn" onclick="copyId()"><i class="fas fa-copy"></i> Copy ID</button>
         </div>
+
+        <!-- Anonymous specific message -->
+        <div id="anonSuccessMsg" style="display:none;background:#4f9eff10;border:1px solid #4f9eff40;border-radius:10px;padding:14px 18px;margin:14px 0;text-align:left;font-size:13px;color:#a0b4cc;line-height:1.7;">
+            <div style="font-size:11px;font-weight:700;color:#4f9eff;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">
+                <i class="fas fa-user-secret"></i> &nbsp;Anonymous Submission
+            </div>
+            Your identity is fully protected. Admin will review your case without knowing who you are.<br>
+            If admin assigns a PI and you choose to pay — the PI will contact you through this platform.<br>
+            <strong style="color:#fbbf24;">Your Complaint ID is your only tracking key. It has been saved to your browser.</strong>
+        </div>
+
         <div class="ai-summary-box" id="modalAiBox" style="display:none">
             <div class="ai-label"><i class="fas fa-robot"></i> &nbsp;What happens next</div>
             <div id="modalAiText">—</div>
         </div>
-        <!-- Additional Evidence Upload (after submission) -->
+
+        <!-- Additional Evidence Upload -->
         <div id="additionalEvidenceBox" style="margin:18px 0 10px;padding:16px;background:#0a0f1e;border:1px dashed #1e2d4a;border-radius:12px;text-align:left;">
             <p style="color:#4f9eff;font-size:13px;font-weight:600;margin:0 0 10px;"><i class="fas fa-paperclip"></i> &nbsp;Add More Evidence (Optional)</p>
             <input type="file" id="extraEvidenceFiles" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple style="display:none;" />
@@ -250,6 +295,12 @@
 let aiAnalysis = '';
 let aiTimer = null;
 
+// ── Anonymous toggle ─────────────────────────────────────────
+function onAnonToggle() {
+    const isAnon = document.getElementById('anonymousToggle').checked;
+    document.getElementById('anonNotice').classList.toggle('visible', isAnon);
+}
+
 function nextStep(step) {
     if (step === 2) {
         if (!document.getElementById('incidentType').value) { alert('Please select an incident type.'); return; }
@@ -276,8 +327,13 @@ function nextStep(step) {
         document.getElementById('reviewType').textContent     = type || '—';
         document.getElementById('reviewDate').textContent     = date ? new Date(date).toLocaleString() : '—';
         document.getElementById('reviewLocation').textContent = loc  || '—';
-        document.getElementById('reviewAnon').textContent     = anon ? 'Yes' : 'No';
+        document.getElementById('reviewAnon').innerHTML       = anon
+            ? '<span style="color:#4f9eff;font-weight:700"><i class="fas fa-user-secret"></i> Yes — Identity Hidden</span>'
+            : 'No';
         document.getElementById('reviewDesc').textContent     = desc.length > 120 ? desc.substring(0,120)+'…' : desc;
+
+        // Anonymous warning step 3 e
+        document.getElementById('step3AnonWarning').style.display = anon ? 'block' : 'none';
 
         if (aiAnalysis) {
             document.getElementById('reviewAiText').textContent = aiAnalysis;
@@ -336,26 +392,28 @@ async function runAiAnalysis(description) {
     }
 }
 
+// ── SUBMIT ───────────────────────────────────────────────────
 async function submitComplaint() {
-    const btn = document.getElementById('submitBtn');
+    const btn      = document.getElementById('submitBtn');
+    const isAnon   = document.getElementById('anonymousToggle').checked;
+    const svUser   = JSON.parse(localStorage.getItem('sv_user') || '{}');
+
     btn.classList.add('loading');
     btn.innerHTML = '<i class="fas fa-spinner"></i> Submitting...';
-
-    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
 
     const payload = {
         type:          document.getElementById('incidentType').value,
         incident_date: document.getElementById('incidentDate').value,
         location:      document.getElementById('incidentLocation').value,
         description:   document.getElementById('description').value.trim(),
-        is_anonymous:  document.getElementById('anonymousToggle').checked,
+        is_anonymous:  isAnon,
         user_id:       svUser.id || null
     };
 
-    let complaint_id = '';
+    let complaint_id    = '';
+    let anonymous_token = '';
 
     try {
-        // ── Real PHP backend call ──
         const res  = await fetch('/api/submit_complaint', {
             method: 'POST',
             credentials: 'include',
@@ -365,8 +423,37 @@ async function submitComplaint() {
         const data = await res.json();
 
         if (!data.success) throw new Error(data.message || 'Submission failed');
-        complaint_id = data.complaint_id;
+
+        complaint_id    = data.complaint_id;
+        anonymous_token = data.anonymous_token || '';
         window.lastComplaintId = complaint_id;
+
+        // ── Anonymous token localStorage e save koro ──────────
+        if (isAnon && anonymous_token) {
+            const anonList = JSON.parse(localStorage.getItem('sv_anon_complaints') || '[]');
+            // Same complaint_id thakle replace koro
+            const filtered = anonList.filter(c => c.complaint_id !== complaint_id);
+            filtered.push({
+                complaint_id:    complaint_id,
+                token:           anonymous_token,
+                submitted_at:    new Date().toISOString(),
+                type:            payload.type,
+                location:        payload.location,
+            });
+            localStorage.setItem('sv_anon_complaints', JSON.stringify(filtered));
+        }
+
+        // ── Normal (non-anonymous) complaints o save koro ──────
+        if (!isAnon) {
+            const myComplaints = JSON.parse(localStorage.getItem('sv_my_complaints') || '[]');
+            myComplaints.unshift({
+                complaint_id: complaint_id,
+                submitted_at: new Date().toISOString(),
+                type:         payload.type,
+                status:       'Submitted',
+            });
+            localStorage.setItem('sv_my_complaints', JSON.stringify(myComplaints.slice(0, 50)));
+        }
 
     } catch (err) {
         btn.classList.remove('loading');
@@ -375,7 +462,7 @@ async function submitComplaint() {
         return;
     }
 
-    // ── Upload evidence files if any ──
+    // ── Evidence upload ──────────────────────────────────────
     const fileInput = document.getElementById('evidenceFiles');
     if (fileInput && fileInput.files.length > 0) {
         btn.innerHTML = '<i class="fas fa-spinner"></i> Uploading evidence...';
@@ -390,16 +477,25 @@ async function submitComplaint() {
                 credentials: 'include',
                 body: formData
             });
-            // Evidence upload errors are non-fatal; complaint already saved
         } catch(e) {
             console.warn('Evidence upload failed:', e);
         }
     }
 
-    // Show success modal
+    // ── Success modal show ───────────────────────────────────
     document.getElementById('complaintId').textContent = complaint_id;
-    document.getElementById('modalAiText').textContent =
-        'Your complaint has been saved to our database and will be reviewed by the admin team within 24–48 hours.';
+
+    // Anonymous specific UI
+    if (isAnon) {
+        document.getElementById('anonSuccessMsg').style.display = 'block';
+        document.getElementById('modalAiText').textContent =
+            'Your anonymous complaint is saved. Admin will review it without knowing your identity. ' +
+            'If a PI is assigned and you accept, the PI will contact you through the platform using your Complaint ID.';
+    } else {
+        document.getElementById('anonSuccessMsg').style.display = 'none';
+        document.getElementById('modalAiText').textContent =
+            'Your complaint has been saved and will be reviewed by the admin team within 24–48 hours.';
+    }
     document.getElementById('modalAiBox').style.display = 'block';
 
     btn.classList.remove('loading');
@@ -437,7 +533,6 @@ function showSelectedFiles(files) {
     }
 }
 
-// Wire upload box click → hidden input, and input change → showSelectedFiles
 document.addEventListener('DOMContentLoaded', function() {
     var box   = document.getElementById('uploadBox');
     var input = document.getElementById('evidenceFiles');
@@ -447,9 +542,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ── Map Picker ──────────────────────────────────
+// ── Map Picker ───────────────────────────────────────────────
 let mapInstance = null;
 let mapMarker   = null;
 let mapSelectedLatLng = null;
@@ -459,7 +554,7 @@ function openMapPicker() {
     modal.style.display = 'flex';
     setTimeout(() => {
         if (!mapInstance) {
-            mapInstance = L.map('leafletMap').setView([23.8103, 90.4125], 12); // Default: Dhaka
+            mapInstance = L.map('leafletMap').setView([23.8103, 90.4125], 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(mapInstance);
@@ -468,7 +563,6 @@ function openMapPicker() {
             });
         }
         mapInstance.invalidateSize();
-        // Pre-center on existing location text if any
         const existing = document.getElementById('incidentLocation').value;
         if (existing && !mapMarker) {
             fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(existing) + '&format=json&limit=1')
@@ -493,7 +587,10 @@ function placeMapMarker(lat, lng, label) {
         document.getElementById('mapSelectedAddr').textContent = 'Fetching address...';
         fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json')
             .then(r => r.json())
-            .then(d => { document.getElementById('mapSelectedAddr').textContent = d.display_name || (lat.toFixed(5) + ', ' + lng.toFixed(5)); mapSelectedLatLng.address = d.display_name; })
+            .then(d => {
+                document.getElementById('mapSelectedAddr').textContent = d.display_name || (lat.toFixed(5) + ', ' + lng.toFixed(5));
+                mapSelectedLatLng.address = d.display_name;
+            })
             .catch(() => { document.getElementById('mapSelectedAddr').textContent = lat.toFixed(5) + ', ' + lng.toFixed(5); });
     }
 }
@@ -516,7 +613,7 @@ function confirmMapLocation() {
     closeMapPicker();
 }
 
-// ── Extra evidence upload (after submission) ──────────────────────────
+// ── Extra evidence upload ────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
     var extraInput = document.getElementById('extraEvidenceFiles');
     if (extraInput) {
@@ -525,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var btn   = document.getElementById('extraUploadBtn');
             if (this.files.length > 0) {
                 names.innerHTML = Array.from(this.files).map(f =>
-                    '<div style="padding:3px 0;color:#cbd5e0;"><i class="fas fa-file" style="color:#4f9eff;margin-right:6px;"></i>' + f.name + '</div>'
+                    '<div style="padding:3px 0;color:#cbd5e0;"><i class="fas fa-file" style="color:#4f9eff;margin-right:6px;"></i>' + esc(f.name) + '</div>'
                 ).join('');
                 btn.style.display = 'block';
             } else {
@@ -543,7 +640,7 @@ async function uploadExtraEvidence() {
     var btn    = document.getElementById('extraUploadBtn');
 
     if (!input.files.length || !complaint_id) {
-        status.innerHTML = '<span style="color:#e63946;"><i class="fas fa-exclamation-circle"></i> Error: Complaint ID পাওয়া যাচ্ছে না। Page reload করে আবার try করুন।</span>';
+        status.innerHTML = '<span style="color:#e63946;"><i class="fas fa-exclamation-circle"></i> Error: Complaint ID পাওয়া যাচ্ছে না।</span>';
         return;
     }
     btn.disabled = true;
@@ -576,7 +673,6 @@ async function uploadExtraEvidence() {
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-upload"></i> Upload Evidence';
 }
-
 </script>
 @endsection
 
