@@ -27,7 +27,7 @@ if (empty($email) || empty($password)) {
 }
 
 define('ADMIN_EMAIL',         'admin@safevoice.com');
-define('ADMIN_PASSWORD_HASH', '$2y$10$e0NRp/8E3PA1FvXFl7F0p.5YQ8XtGlRzKvBXuGl3TZWl.BvTnXKKu');
+define('ADMIN_PASSWORD_HASH', '$2y$12$oeCj3khhTjHhTR8N/F1XR.vUcIfdmX3wFLMeiJGzCEmF1mXPyGtTm');
 
 if ($email !== ADMIN_EMAIL) {
     http_response_code(401);
