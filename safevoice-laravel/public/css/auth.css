@@ -1,0 +1,386 @@
+
+.auth-section {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 450px;
+}
+
+.auth-card {
+    background: #0d1526;
+    border: 1px solid #1e2d4a;
+    border-radius: 20px;
+    padding: 40px;
+}
+
+/* header */
+.auth-header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.auth-header i {
+    font-size: 50px;
+    color: #4f9eff;
+    margin-bottom: 15px;
+}
+
+.auth-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.auth-header p {
+    color: #a0b4cc;
+    font-size: 15px;
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #a0b4cc;
+    margin-bottom: 8px;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper i {
+    position: absolute;
+    left: 14px;
+    color: #4f9eff;
+    font-size: 15px;
+}
+
+.input-wrapper input {
+    width: 100%;
+    background: #0a0f1e;
+    border: 1px solid #1e2d4a;
+    border-radius: 8px;
+    padding: 12px 14px 12px 40px;
+    color: #ffffff;
+    font-size: 15px;
+    outline: none;
+    transition: border 0.3s;
+}
+
+.input-wrapper input:focus {
+    border-color: #4f9eff;
+}
+
+.input-wrapper input::placeholder {
+    color: #4a5568;
+}
+
+.toggle-password {
+    position: absolute !important;
+    right: 14px !important;
+    left: auto !important;
+    cursor: pointer;
+    color: #a0b4cc !important;
+}
+
+/* Form Options */
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #a0b4cc;
+}
+
+.remember-me input {
+    accent-color: #4f9eff;
+    width: 15px;
+    height: 15px;
+}
+
+.forgot-password {
+    font-size: 14px;
+    color: #4f9eff;
+    transition: color 0.3s;
+}
+
+.forgot-password:hover {
+    color: #2d7dd2;
+}
+
+
+.btn-auth {
+    width: 100%;
+    background: #4f9eff;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.3s;
+}
+
+.btn-auth:hover {
+    background: #2d7dd2;
+}
+
+
+.auth-divider {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+}
+
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #1e2d4a;
+}
+
+.auth-divider span {
+    background: #0d1526;
+    padding: 0 15px;
+    color: #a0b4cc;
+    font-size: 14px;
+    position: relative;
+}
+
+/* Switch */
+.auth-switch {
+    text-align: center;
+    color: #a0b4cc;
+    font-size: 14px;
+}
+
+.auth-switch a {
+    color: #4f9eff;
+    font-weight: 600;
+    transition: color 0.3s;
+}
+
+.auth-switch a:hover {
+    color: #2d7dd2;
+}
+
+/* Register */
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+/* Upload box */
+.upload-box {
+    background: #0a0f1e;
+    border: 2px dashed #1e2d4a;
+    border-radius: 8px;
+    padding: 25px;
+    text-align: center;
+    cursor: pointer;
+    transition: border 0.3s;
+    position: relative;
+}
+
+.upload-box:hover {
+    border-color: #4f9eff;
+}
+
+.upload-box i {
+    font-size: 30px;
+    color: #4f9eff;
+    margin-bottom: 10px;
+}
+
+.upload-box p {
+    font-size: 14px;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+.upload-box span {
+    font-size: 12px;
+    color: #a0b4cc;
+}
+
+.upload-box input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+/* Terms modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-box {
+    background: #0d1526;
+    border: 1px solid #1e2d4a;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 550px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(-20px);
+    transition: transform 0.3s;
+}
+
+.modal-overlay.active .modal-box {
+    transform: translateY(0);
+}
+
+/* Moadal header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #1e2d4a;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-header h3 i {
+    color: #4f9eff;
+}
+
+.modal-close {
+    font-size: 18px;
+    color: #a0b4cc;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.modal-close:hover {
+    color: #ffffff;
+}
+
+/* Modal body */
+.modal-body {
+    padding: 25px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-body h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #4f9eff;
+    margin-bottom: 8px;
+    margin-top: 20px;
+}
+
+.modal-body h4:first-child {
+    margin-top: 0;
+}
+
+.modal-body p {
+    font-size: 14px;
+    color: #a0b4cc;
+    line-height: 1.7;
+}
+
+/* Modal footer */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    padding: 20px 25px;
+    border-top: 1px solid #1e2d4a;
+}
+
+.btn-decline {
+    background: transparent;
+    border: 1px solid #1e2d4a;
+    color: #a0b4cc;
+    padding: 10px 25px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-decline:hover {
+    border-color: #e63946;
+    color: #e63946;
+}
+
+.btn-accept {
+    background: #4f9eff;
+    border: none;
+    color: #ffffff;
+    padding: 10px 25px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-accept:hover {
+    background: #2d7dd2;
+}
