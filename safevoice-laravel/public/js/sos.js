@@ -1,6 +1,7 @@
 // ================================================================
-// SafeVoice — SOS Core
+// SafeVoice — SOS Core  (Laravel edition)
 // FLOW: Hold → Create SOS → Send Notification → Evidence Modal
+// All API paths now point to Laravel routes (/api/...)
 // ================================================================
 
 let holdTimer    = null;
@@ -20,23 +21,37 @@ window.addEventListener('DOMContentLoaded', () => {
     detectSOSLocation();
     startResponderScan();
     pollForIncomingAlerts();
+    bindSOSButton();
 });
+
+
+// ── SOS BUTTON — touch & mouse binding ───────────────────────────
+// Bind here in JS so we can call preventDefault() on touch events.
+// This prevents the browser from also firing mousedown after touchstart,
+// which used to cause startHold() → cancelHold() double-fire on mobile.
+function bindSOSButton() {
+    const btn = document.getElementById('sosBtn');
+    if (!btn) return;
+    btn.addEventListener('mousedown',  () => startHold());
+    btn.addEventListener('mouseup',    () => cancelHold());
+    btn.addEventListener('mouseleave', () => cancelHold());
+    btn.addEventListener('touchstart',  e => { e.preventDefault(); startHold();  }, { passive: false });
+    btn.addEventListener('touchend',    e => { e.preventDefault(); cancelHold(); }, { passive: false });
+    btn.addEventListener('touchcancel', e => { e.preventDefault(); cancelHold(); }, { passive: false });
+}
 
 
 // ── LOCATION ─────────────────────────────────────────────────────
 function detectSOSLocation() {
     const locText      = document.getElementById('locationText');
     const activatedLoc = document.getElementById('activatedLocation');
-
     if (!navigator.geolocation) {
         if (locText) locText.textContent = 'Location unavailable';
         return;
     }
-
     navigator.geolocation.getCurrentPosition(pos => {
         currentLat = pos.coords.latitude;
         currentLng = pos.coords.longitude;
-
         fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${currentLat}&lon=${currentLng}`)
             .then(r => r.json())
             .then(data => {
@@ -55,7 +70,7 @@ function detectSOSLocation() {
 }
 
 
-// ── RESPONDER SCAN UI (visual only) ──────────────────────────────
+// ── RESPONDER SCAN UI ─────────────────────────────────────────────
 function startResponderScan() {
     let count = 0;
     const nearbyCount = document.getElementById('nearbyCount');
@@ -70,24 +85,19 @@ function startResponderScan() {
 // ── HOLD START ───────────────────────────────────────────────────
 function startHold() {
     if (sosActive) return;
-
     const btn        = document.getElementById('sosBtn');
     const fill       = document.getElementById('holdFill');
     const statusText = document.getElementById('statusText');
     const statusBar  = document.getElementById('statusBar');
-
     if (btn) btn.classList.add('holding');
     if (statusText) statusText.textContent = 'Hold to activate SOS...';
     if (statusBar)  statusBar.className    = 'sos-status-bar active-status';
-
     const circumference = 452;
     holdProgress = 0;
-
     holdInterval = setInterval(() => {
         holdProgress += circumference / 60;
         if (fill) fill.style.strokeDashoffset = circumference - Math.min(holdProgress, circumference);
     }, HOLD_DURATION / 60);
-
     holdTimer = setTimeout(() => { activateSOS(); }, HOLD_DURATION);
 }
 
@@ -95,16 +105,13 @@ function startHold() {
 // ── HOLD CANCEL ──────────────────────────────────────────────────
 function cancelHold() {
     if (sosActive) return;
-
     clearTimeout(holdTimer);
     clearInterval(holdInterval);
     holdProgress = 0;
-
     const btn        = document.getElementById('sosBtn');
     const fill       = document.getElementById('holdFill');
     const statusText = document.getElementById('statusText');
     const statusBar  = document.getElementById('statusBar');
-
     if (btn)        btn.classList.remove('holding');
     if (fill)       fill.style.strokeDashoffset = 452;
     if (statusText) statusText.textContent = 'Ready to send alert';
@@ -112,11 +119,11 @@ function cancelHold() {
 }
 
 
-// ── ACTIVATE SOS — MAIN FLOW ─────────────────────────────────────
+// ── ACTIVATE SOS ─────────────────────────────────────────────────
 async function activateSOS() {
     sosActive = true;
-
-    const btn = document.getElementById('sosBtn');
+    const btn  = document.getElementById('sosBtn');
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     if (btn) {
         btn.classList.remove('holding');
         btn.classList.add('sending');
@@ -124,29 +131,32 @@ async function activateSOS() {
         btn.querySelector('small').textContent = 'Broadcasting alert';
     }
     updateStatusBar('Sending SOS alert...', true);
-
     try {
-        // STEP 1: Create SOS record
-        const createRes  = await fetch('../api/create_sos.php', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ latitude: currentLat, longitude: currentLng, location: currentLocation })
+        // STEP 1: Create SOS
+        const createRes  = await fetch('/api/sos/create', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ latitude: currentLat, longitude: currentLng, location: currentLocation }),
         });
+        if (!createRes.ok) {
+            console.error('SOS create HTTP error:', createRes.status);
+            showError('Server error (' + createRes.status + '). Please try again.');
+            resetSOS(); return;
+        }
         const createData = await createRes.json();
-
-        if (!createData.success) { showError('Failed to create SOS.'); resetSOS(); return; }
+        if (!createData.success) { showError('Failed to create SOS: ' + (createData.message||'')); resetSOS(); return; }
         currentSOSId = createData.sos_id;
 
-        // STEP 2: Notify nearby users FIRST
-        const notifRes  = await fetch('../api/send_sos_notification.php', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ sos_id: currentSOSId, latitude: currentLat, longitude: currentLng, location: currentLocation })
+        // STEP 2: Notify nearby users
+        const notifRes  = await fetch('/api/sos/notify', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ sos_id: currentSOSId, latitude: currentLat, longitude: currentLng, location: currentLocation }),
         });
-        const notifData = await notifRes.json();
+        const notifData     = await notifRes.json();
         const notifiedCount = notifData.notified_count || 0;
 
-        // STEP 3: Update button to SENT
+        // STEP 3: Update button
         if (btn) {
             btn.classList.remove('sending');
             btn.classList.add('sent');
@@ -154,11 +164,7 @@ async function activateSOS() {
             btn.querySelector('small').textContent = 'Help is coming';
         }
         updateStatusBar('Alert sent to ' + notifiedCount + ' people nearby!', false);
-
-        // Show responder UI + overlay
         showFakeResponders(notifiedCount);
-
-        // STEP 4: After 1.5s, open evidence modal for victim to add details
         setTimeout(() => { openEvidenceModal(); }, 1500);
 
     } catch (err) {
@@ -178,7 +184,7 @@ function updateStatusBar(message, isActive) {
 }
 
 
-// ── FAKE RESPONDER UI ─────────────────────────────────────────────
+// ── FAKE RESPONDERS ───────────────────────────────────────────────
 const fakeResponders = [
     { name: 'Rakib Hassan', dist: '120m away', status: 'helping'  },
     { name: 'Nadia Islam',  dist: '180m away', status: 'notified' },
@@ -193,20 +199,16 @@ function showFakeResponders(notifiedCount) {
     const alertLog        = document.getElementById('alertLog');
     const logList         = document.getElementById('logList');
     const alertedCount    = document.getElementById('alertedCount');
-
     if (scanPlaceholder) scanPlaceholder.style.display = 'none';
     if (alertLog)        alertLog.style.display = 'block';
-
     fakeResponders.forEach((r, i) => {
         setTimeout(() => {
             if (responderList) {
                 const card = document.createElement('div');
                 card.className = 'responder-card-item';
-                card.innerHTML = `
-                    <div class="resp-avatar"><i class="fas fa-user"></i></div>
+                card.innerHTML = `<div class="resp-avatar"><i class="fas fa-user"></i></div>
                     <div class="resp-info"><h5>${r.name}</h5><p>${r.dist}</p></div>
-                    <span class="resp-status ${r.status}">${r.status === 'helping' ? 'Responding' : 'Notified'}</span>
-                `;
+                    <span class="resp-status ${r.status}">${r.status === 'helping' ? 'Responding' : 'Notified'}</span>`;
                 responderList.appendChild(card);
             }
             if (logList) {
@@ -218,7 +220,6 @@ function showFakeResponders(notifiedCount) {
             if (alertedCount) alertedCount.textContent = Math.max(notifiedCount, i + 1);
         }, i * 500);
     });
-
     setTimeout(() => {
         const overlay = document.getElementById('activatedOverlay');
         if (overlay) overlay.classList.add('active');
@@ -246,7 +247,6 @@ function handleFileSelect(input) {
     const file    = input.files[0];
     if (!file || !preview) return;
     preview.innerHTML = '';
-
     if (file.type.startsWith('image/')) {
         const img = document.createElement('img');
         img.src   = URL.createObjectURL(file);
@@ -254,8 +254,7 @@ function handleFileSelect(input) {
         preview.appendChild(img);
     } else if (file.type.startsWith('video/')) {
         const vid = document.createElement('video');
-        vid.src      = URL.createObjectURL(file);
-        vid.controls = true;
+        vid.src = URL.createObjectURL(file); vid.controls = true;
         vid.style.cssText = 'max-width:100%;border-radius:8px;margin-top:8px;';
         preview.appendChild(vid);
     } else {
@@ -267,28 +266,24 @@ function handleFileSelect(input) {
 }
 
 
-// ── SUBMIT EVIDENCE ───────────────────────────────────────────────
+// ── SUBMIT SOS EVIDENCE ───────────────────────────────────────────
 async function submitEvidence() {
     const crimeType = document.getElementById('crimeType').value;
     const desc      = document.getElementById('crimeDesc').value.trim();
     const fileInput = document.getElementById('evidenceFile');
     const submitBtn = document.getElementById('submitEvidenceBtn');
-    const msgEl     = document.getElementById('modalMsg');
-
     if (!crimeType) { showModalMsg('Please select a crime type', 'error'); return; }
-
     const formData = new FormData();
     formData.append('sos_id',      currentSOSId);
     formData.append('crime_type',  crimeType);
     formData.append('description', desc);
-    if (fileInput && fileInput.files[0]) formData.append('evidence', fileInput.files[0]);
-
+    if (fileInput && fileInput.files[0]) formData.append('evidence[]', fileInput.files[0]);
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    if (csrf) formData.append('_token', csrf);
     if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...'; }
-
     try {
-        const res  = await fetch('../api/upload_sos_evidence.php', { method: 'POST', body: formData });
+        const res  = await fetch('/api/upload_sos_evidence', { method: 'POST', credentials: 'include', body: formData });
         const data = await res.json();
-
         if (data.success) {
             showModalMsg('Evidence submitted! Responders can now see your full details.', 'success');
             setTimeout(() => closeEvidenceModal(), 2500);
@@ -308,9 +303,9 @@ function showModalMsg(msg, type) {
 }
 
 
-// ── INCOMING SOS NOTIFICATIONS (Responder Side) ───────────────────
-let pollingInterval   = null;
-let lastSeenSosId     = null;
+// ── INCOMING ALERTS (Responder Side) ─────────────────────────────
+let pollingInterval = null;
+let lastSeenSosId   = null;
 
 function pollForIncomingAlerts() {
     checkIncomingAlerts();
@@ -319,9 +314,9 @@ function pollForIncomingAlerts() {
 
 async function checkIncomingAlerts() {
     try {
-        const res  = await fetch('../api/get_my_sos_notifications.php');
+        const res  = await fetch('/api/sos/my-notifications', { credentials: 'include' });
         const data = await res.json();
-        if (data.success && data.count > 0) {
+        if (data.success && data.notifications && data.notifications.length > 0) {
             const newest = data.notifications[0];
             if (newest.sos_id !== lastSeenSosId) {
                 lastSeenSosId = newest.sos_id;
@@ -333,14 +328,11 @@ async function checkIncomingAlerts() {
 
 function showIncomingAlert(notif) {
     const panel = document.getElementById('incomingAlertPanel');
-    if (!panel) return;
-    if (panel.classList.contains('visible')) return;
-
-    document.getElementById('incomingVictimName').textContent = notif.victim_name  || 'Unknown';
+    if (!panel || panel.classList.contains('visible')) return;
+    document.getElementById('incomingVictimName').textContent = notif.victim_name   || 'Unknown';
     document.getElementById('incomingLocation').textContent   = notif.location_text || 'Location unknown';
-    document.getElementById('incomingCrimeType').textContent  = notif.crime_type   || 'Not specified yet';
+    document.getElementById('incomingCrimeType').textContent  = notif.crime_type    || 'Not specified yet';
     document.getElementById('incomingTime').textContent       = formatTime(notif.sos_time);
-
     panel.dataset.sosId = notif.sos_id;
     panel.classList.add('visible');
     playAlertSound();
@@ -350,13 +342,12 @@ function viewSOSDetails() {
     const panel = document.getElementById('incomingAlertPanel');
     const sosId = panel?.dataset.sosId;
     if (!sosId) return;
-
-    fetch('../api/respond_to_sos.php', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ sos_id: parseInt(sosId), action: 'respond' })
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    fetch('/api/sos/respond', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body:    JSON.stringify({ sos_id: parseInt(sosId), action: 'respond' }),
     });
-
     openSOSDetailsModal(sosId);
     dismissIncomingAlert();
 }
@@ -372,9 +363,8 @@ async function openSOSDetailsModal(sosId) {
     modal.style.display = 'flex';
     document.getElementById('sosDetailsContent').innerHTML =
         '<p style="color:#a0b4cc;text-align:center;padding:20px;">Loading victim details...</p>';
-
     try {
-        const res  = await fetch(`../api/get_sos_alert.php?sos_id=${sosId}`);
+        const res  = await fetch(`/api/sos/alerts?sos_id=${sosId}`, { credentials: 'include' });
         const data = await res.json();
         if (data.success) renderSOSDetails(data.sos, data.evidence);
     } catch (e) {
@@ -386,50 +376,33 @@ async function openSOSDetailsModal(sosId) {
 function renderSOSDetails(sos, evidence) {
     const el = document.getElementById('sosDetailsContent');
     if (!el) return;
-
     const evidenceHtml = evidence && evidence.length > 0
         ? evidence.map(e => {
             if (e.file_type && e.file_type.startsWith('image/'))
-                return `<img src="../${e.file_path}" style="max-width:100%;border-radius:8px;margin-top:8px;" />`;
+                return `<img src="/${e.file_path}" style="max-width:100%;border-radius:8px;margin-top:8px;" />`;
             if (e.file_type && e.file_type.startsWith('video/'))
-                return `<video src="../${e.file_path}" controls style="max-width:100%;border-radius:8px;margin-top:8px;"></video>`;
-            return `<a href="../${e.file_path}" target="_blank" style="color:#4fc3f7;">View Evidence File</a>`;
+                return `<video src="/${e.file_path}" controls style="max-width:100%;border-radius:8px;margin-top:8px;"></video>`;
+            return `<a href="/${e.file_path}" target="_blank" style="color:#4fc3f7;">View Evidence File</a>`;
         }).join('')
         : '<p style="color:#666;font-size:13px;margin-top:4px;">No evidence uploaded yet</p>';
-
     el.innerHTML = `
-        <div class="sos-detail-row">
-            <i class="fas fa-user-circle"></i>
-            <div><label>Victim Name</label><strong>${sos.victim_name || 'Anonymous'}</strong></div>
-        </div>
-        <div class="sos-detail-row">
-            <i class="fas fa-map-marker-alt"></i>
-            <div><label>Location</label><strong>${sos.location_text || 'Not available'}</strong></div>
-        </div>
-        <div class="sos-detail-row">
-            <i class="fas fa-exclamation-triangle"></i>
-            <div><label>Crime Type</label><strong class="crime-badge">${sos.crime_type || 'Not specified yet'}</strong></div>
-        </div>
-        <div class="sos-detail-row">
-            <i class="fas fa-align-left"></i>
-            <div><label>Description</label><p>${sos.description || 'No description provided'}</p></div>
-        </div>
-        <div class="sos-detail-row">
-            <i class="fas fa-clock"></i>
-            <div><label>Alert Time</label><strong>${formatTime(sos.created_at)}</strong></div>
-        </div>
-        <div class="sos-detail-evidence">
-            <label><i class="fas fa-paperclip"></i> Evidence</label>
-            <div>${evidenceHtml}</div>
-        </div>
+        <div class="sos-detail-row"><i class="fas fa-user-circle"></i>
+            <div><label>Victim Name</label><strong>${sos.victim_name || 'Anonymous'}</strong></div></div>
+        <div class="sos-detail-row"><i class="fas fa-map-marker-alt"></i>
+            <div><label>Location</label><strong>${sos.location_text || 'Not available'}</strong></div></div>
+        <div class="sos-detail-row"><i class="fas fa-exclamation-triangle"></i>
+            <div><label>Crime Type</label><strong class="crime-badge">${sos.crime_type || 'Not specified yet'}</strong></div></div>
+        <div class="sos-detail-row"><i class="fas fa-align-left"></i>
+            <div><label>Description</label><p>${sos.description || 'No description provided'}</p></div></div>
+        <div class="sos-detail-row"><i class="fas fa-clock"></i>
+            <div><label>Alert Time</label><strong>${formatTime(sos.created_at)}</strong></div></div>
+        <div class="sos-detail-evidence"><label><i class="fas fa-paperclip"></i> Evidence</label><div>${evidenceHtml}</div></div>
         <div class="sos-detail-actions">
             <a href="https://maps.google.com?q=${sos.latitude},${sos.longitude}" target="_blank" class="btn-navigate">
-                <i class="fas fa-directions"></i> Navigate to Location
-            </a>
+                <i class="fas fa-directions"></i> Navigate to Location</a>
             ${sos.victim_phone ? `<a href="tel:${sos.victim_phone}" class="btn-call-victim"><i class="fas fa-phone"></i> Call Victim</a>` : ''}
             <a href="tel:999" class="btn-call-police"><i class="fas fa-shield-alt"></i> Call Police</a>
-        </div>
-    `;
+        </div>`;
 }
 
 function closeSOSDetailsModal() {
@@ -477,24 +450,19 @@ function resetSOS() {
     updateStatusBar('Ready to send alert', false);
 }
 
-
-// ── CANCEL SOS ────────────────────────────────────────────────────
 function cancelSOS() {
-    sosActive = false;
+    sosActive    = false;
     currentSOSId = null;
-
     const overlay = document.getElementById('activatedOverlay');
     if (overlay) overlay.classList.remove('active');
-
     resetSOS();
-
-    ['responderList','logList'].forEach(id => {
+    ['responderList', 'logList'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '';
     });
     const alertLog = document.getElementById('alertLog');
     if (alertLog) alertLog.style.display = 'none';
-    ['alertedCount','nearbyCount'].forEach(id => {
+    ['alertedCount', 'nearbyCount'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = 0;
     });

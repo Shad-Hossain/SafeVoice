@@ -162,3 +162,55 @@ table td{
 .btn-view:hover{
     background: #1d4ed8;
 }
+/* ── Dashboard Layout (missing class fix) ── */
+.dashboard-layout {
+    display: flex;
+    min-height: calc(100vh - 70px);
+}
+
+.sidebar {
+    width: 240px;
+    min-height: calc(100vh - 70px);
+    background: #0f1a2e;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    padding: 20px 12px;
+    position: sticky;
+    top: 70px;
+    flex-shrink: 0;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-menu li a {
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    transition: 0.3s;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.sidebar-menu li a:hover { background: #1e3a8a; color: white; }
+.sidebar-menu li.active a { background: #2563eb; color: white; }
+
+.main-content {
+    flex: 1;
+    padding: 25px;
+    overflow-x: hidden;
+}
+
+body.light-mode .sidebar { background: #f1f5f9; border-right-color: #e2e8f0; }
+body.light-mode .sidebar-menu li a { color: #475569; }
+body.light-mode .sidebar-menu li a:hover { background: #dbeafe; color: #1e40af; }
+body.light-mode .sidebar-menu li.active a { background: #2563eb; color: #fff; }
+body.light-mode .main-content { background: #f8fafc; }

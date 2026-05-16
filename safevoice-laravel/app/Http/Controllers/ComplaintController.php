@@ -51,7 +51,11 @@ class ComplaintController extends Controller
     // POST /api/complaints/submit
     public function submit(Request $request)
     {
-        if (!$request->session()->has('user_id')) {
+        // Session থেকে user_id নাও, না পেলে request body থেকে নাও
+        $userId = $request->session()->get('user_id')
+                ?? $request->input('user_id');
+
+        if (!$userId) {
             return response()->json(['success' => false, 'message' => 'Please login first.'], 401);
         }
 
@@ -60,7 +64,6 @@ class ComplaintController extends Controller
             'description' => 'required|string',
         ]);
 
-        $userId      = $request->session()->get('user_id');
         $complaintId = 'SV-' . date('Y') . '-' . str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT);
 
         $incidentDate = null;
@@ -70,14 +73,14 @@ class ComplaintController extends Controller
         }
 
         $complaint = Complaint::create([
-            'complaint_id' => $complaintId,
-            'user_id'      => $userId,
-            'type'         => $request->type,
-            'incident_date'=> $incidentDate,
-            'location'     => $request->location ?? '',
-            'description'  => $request->description,
-            'is_anonymous' => $request->boolean('is_anonymous'),
-            'status'       => 'Submitted',
+            'complaint_id'  => $complaintId,
+            'user_id'       => $userId,
+            'type'          => $request->type,
+            'incident_date' => $incidentDate,
+            'location'      => $request->location ?? '',
+            'description'   => $request->description,
+            'is_anonymous'  => $request->boolean('is_anonymous'),
+            'status'        => 'Submitted',
         ]);
 
         User::where('id', $userId)->increment('complaints_count');
@@ -102,7 +105,6 @@ class ComplaintController extends Controller
             return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
         }
 
-        // Blind officer assignment
         if ($request->status === 'Private Investigator Assigned') {
             $officer = Officer::where('is_active', true)->orderBy('assigned_cases')->first();
             if (!$officer) {
@@ -113,25 +115,31 @@ class ComplaintController extends Controller
                 'assigned_officer_code' => $officer->officer_code,
             ]);
             $officer->increment('assigned_cases');
-
             return response()->json(['success' => true, 'message' => 'Status updated. Payment notification sent to user.']);
         }
 
-        $complaint->update(['status' => $request->status]);
-        return response()->json(['success' => true, 'message' => 'Status updated to ' . $request->status]);
+      $complaint->update([
+    'status'        => $request->status,
+    'admin_message' => $request->input('admin_message', ''),
+]);
+return response()->json(['success' => true, 'message' => 'Status updated to ' . $request->status]);
+       
     }
 
     // GET /api/my-complaints
     public function myComplaints(Request $request)
-    {
-        if (!$request->session()->has('user_id')) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
+{
+    $userId = $request->session()->get('user_id')
+            ?? $request->query('user_id')
+            ?? $request->input('user_id');
 
-        $complaints = Complaint::where('user_id', $request->session()->get('user_id'))
-            ->orderByDesc('submitted_at')
-            ->get();
-
-        return response()->json(['success' => true, 'complaints' => $complaints]);
+    if (!$userId) {
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
     }
-}
+
+    $complaints = Complaint::where('user_id', $userId)
+        ->orderByDesc('submitted_at')
+        ->get();
+
+    return response()->json(['success' => true, 'complaints' => $complaints]);
+}}

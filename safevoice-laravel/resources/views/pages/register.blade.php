@@ -2,122 +2,692 @@
 @section('title', 'Register — SafeVoice')
 @section('styles')
 <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
+<link rel="stylesheet" href="{{ asset('css/theme.css') }}">
+<style>
+        .toast { position:fixed;bottom:30px;right:30px;padding:14px 22px;border-radius:10px;font-size:14px;font-weight:600;color:#fff;z-index:9999;display:flex;align-items:center;gap:10px;transform:translateY(100px);opacity:0;transition:all 0.4s ease;max-width:340px; }
+        .toast.show { transform:translateY(0);opacity:1; }
+        .toast.success { background:#1a7f4b; }
+        .toast.error   { background:#c0392b; }
+        .toast.info    { background:#1a5fa8; }
+        .btn-auth .spinner { width:18px;height:18px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;vertical-align:middle; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .btn-auth:disabled { opacity:0.7;cursor:not-allowed; }
+
+        .id-type-tabs { display:flex;gap:10px;margin-bottom:15px; }
+        .id-tab { flex:1;padding:10px;border-radius:8px;cursor:pointer;border:2px solid #1e2d4a;background:transparent;color:#a0b4cc;font-size:13px;font-weight:600;transition:all 0.2s;text-align:center;display:flex;align-items:center;justify-content:center;gap:7px; }
+        .id-tab.active { border-color:#4f9eff;background:rgba(79,158,255,0.1);color:#4f9eff; }
+        .id-tab:hover  { border-color:#4f9eff;color:#4f9eff; }
+
+        .ocr-upload-box { border:2px dashed #4f9eff;border-radius:12px;padding:30px 20px;text-align:center;cursor:pointer;transition:all 0.3s;position:relative;background:rgba(79,158,255,0.04); }
+        .ocr-upload-box:hover { background:rgba(79,158,255,0.1);border-style:solid; }
+        .ocr-upload-box .ocr-icon { font-size:38px;color:#4f9eff;margin-bottom:12px;display:block; }
+        .ocr-upload-box h4 { color:#fff;font-size:15px;margin:0 0 6px; }
+        .ocr-upload-box p  { color:#a0b4cc;font-size:13px;margin:0 0 4px; }
+        .ocr-upload-box small { color:#4a5568;font-size:12px; }
+        .ocr-upload-box input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
+
+        .ocr-preview { display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid #1e2d4a;position:relative; }
+        .ocr-preview img { width:100%;max-height:170px;object-fit:cover;display:block; }
+
+        .ocr-scanning-overlay { display:none;position:absolute;inset:0;background:rgba(10,15,30,0.82);align-items:center;justify-content:center;flex-direction:column;gap:12px; }
+        .ocr-scanning-overlay.active { display:flex; }
+        .scan-line { width:75%;height:2px;background:#4f9eff;animation:scanMove 1.4s ease-in-out infinite;border-radius:2px;box-shadow:0 0 10px #4f9eff; }
+        @keyframes scanMove { 0%{transform:translateY(-35px);opacity:0.4} 50%{transform:translateY(35px);opacity:1} 100%{transform:translateY(-35px);opacity:0.4} }
+        .ocr-scanning-overlay span { color:#4f9eff;font-size:13px;font-weight:600; }
+
+        .ocr-success-badge { display:none;margin-top:10px;padding:10px 14px;background:rgba(46,204,113,0.1);border:1px solid #2ecc71;border-radius:8px;font-size:13px;color:#2ecc71;align-items:center;gap:8px; }
+        .ocr-success-badge.show { display:flex; }
+
+        .upload-box { border:2px dashed #1e2d4a;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border 0.3s;position:relative; }
+        .upload-box:hover { border-color:#4f9eff; }
+        .upload-box i { font-size:28px;color:#4f9eff;margin-bottom:8px;display:block; }
+        .upload-box p { color:#a0b4cc;font-size:13px;margin:0 0 3px; }
+        .upload-box span { color:#4a5568;font-size:12px; }
+        .upload-box input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%; }
+        .upload-preview { display:none;margin-top:10px;border-radius:8px;overflow:hidden;max-height:120px;border:1px solid #1e2d4a; }
+        .upload-preview img { width:100%;height:120px;object-fit:cover; }
+
+        .strength-bar { height:4px;border-radius:4px;background:#1e2d4a;margin-top:8px;overflow:hidden; }
+        .strength-fill { height:100%;width:0;transition:width 0.3s,background 0.3s;border-radius:4px; }
+        .strength-text { font-size:12px;color:#a0b4cc;margin-top:4px; }
+
+        .reg-progress { display:flex;justify-content:center;gap:0;margin-bottom:28px; }
+        .reg-step-dot { width:32px;height:32px;border-radius:50%;border:2px solid #1e2d4a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#4a5568;background:#0d1526;transition:all 0.3s;flex-shrink:0; }
+        .reg-step-dot.active { border-color:#4f9eff;color:#4f9eff; }
+        .reg-step-dot.done   { border-color:#2ecc71;background:#2ecc71;color:#fff; }
+        .reg-step-line { flex:1;height:2px;background:#1e2d4a;margin:auto;max-width:60px;transition:background 0.3s; }
+        .reg-step-line.done { background:#2ecc71; }
+        .reg-panel { display:none; }
+        .reg-panel.active { display:block; }
+        .form-row { display:grid;grid-template-columns:1fr 1fr;gap:15px; }
+        @media (max-width:480px) { .form-row { grid-template-columns:1fr; } }
+
+        .auto-filled { border-color:#2ecc71 !important;box-shadow:0 0 0 2px rgba(46,204,113,0.15); }
+        .auto-filled-note { color:#2ecc71;font-size:11px;margin-top:4px;display:none;align-items:center;gap:4px; }
+        .auto-filled-note.show { display:flex; }
+    </style>
 @endsection
 
 @section('content')
 <section class="auth-section">
-    <div class="auth-container">
+    <div class="auth-container" style="max-width:580px;">
         <div class="auth-card">
             <div class="auth-header">
                 <i class="fas fa-user-plus"></i>
                 <h2>Create Account</h2>
-                <p>Join SafeVoice to report and track incidents</p>
+                <p>Join SafeVoice and make your voice heard</p>
             </div>
+
+            <div class="reg-progress">
+                <div class="reg-step-dot active" id="dot1">1</div>
+                <div class="reg-step-line" id="line1"></div>
+                <div class="reg-step-dot" id="dot2">2</div>
+                <div class="reg-step-line" id="line2"></div>
+                <div class="reg-step-dot" id="dot3">3</div>
+            </div>
+
             <div class="auth-form">
-                <div id="regError" style="display:none;color:#e63946;font-size:13px;margin-bottom:10px;padding:10px;background:rgba(230,57,70,0.1);border-radius:8px;">
-                    <i class="fas fa-exclamation-circle"></i> <span id="regErrorMsg"></span>
+
+                <!-- PANEL 1: ID Upload + OCR -->
+                <div class="reg-panel active" id="panel1">
+                    <div class="form-group">
+                        <label style="font-size:15px;font-weight:700;color:#fff;display:block;margin-bottom:6px;">
+                            <i class="fas fa-id-card" style="color:#4f9eff;margin-right:7px;"></i>Verify Your Identity
+                        </label>
+                        <p style="color:#a0b4cc;font-size:13px;margin:0 0 14px;">
+                            NID বা Birth Certificate এর ছবি upload করো — নাম ও ID নম্বর automatically fill হয়ে যাবে।
+                        </p>
+                        <div class="id-type-tabs">
+                            <div class="id-tab active" data-type="nid" id="tabNid"><i class="fas fa-id-card"></i> NID Card</div>
+                            <div class="id-tab" data-type="birth_certificate" id="tabBirth"><i class="fas fa-certificate"></i> Birth Certificate</div>
+                        </div>
+                        <div class="ocr-upload-box" id="ocrUploadBox">
+                            <i class="fas fa-camera ocr-icon"></i>
+                            <h4>Upload ID Photo</h4>
+                            <p>NID / Birth Certificate Front side Image</p>
+                            <small>JPG, PNG, PDF — max 5MB</small>
+                            <input type="file" id="idDocFile" accept="image/*,.pdf" />
+                        </div>
+                        <div class="ocr-preview" id="ocrPreview">
+                            <img src="" alt="ID preview" id="ocrPreviewImg" />
+                            <div class="ocr-scanning-overlay" id="ocrScanOverlay">
+                                <div class="scan-line"></div>
+                                <span><i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Scanning document…</span>
+                            </div>
+                        </div>
+                        <div class="ocr-success-badge" id="ocrSuccessBadge">
+                            <i class="fas fa-check-circle" style="font-size:16px;"></i>
+                            <span id="ocrSuccessText">Document scanned!</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Full Name <span style="color:#e63946;">*</span>
+                            <span style="color:#4a5568;font-weight:400;font-size:12px;margin-left:6px;">(OCR থেকে auto-fill)</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="regName" placeholder="Upload ID photo to auto-fill" readonly style="cursor:not-allowed;opacity:0.7;" />
+                        </div>
+                        <div class="auto-filled-note" id="nameFilled"><i class="fas fa-magic"></i> Auto-filled from your ID</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>ID Number <span style="color:#e63946;">*</span>
+                            <span style="color:#4a5568;font-weight:400;font-size:12px;margin-left:6px;">(OCR থেকে auto-fill)</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-hashtag"></i>
+                            <input type="text" id="regIdNumber" placeholder="Upload ID photo to auto-fill" readonly style="cursor:not-allowed;opacity:0.7;" />
+                        </div>
+                        <div style="font-size:12px;color:#4a5568;margin-top:4px;" id="idHint">NID: 10 or 17 digits</div>
+                        <div class="auto-filled-note" id="idFilled"><i class="fas fa-magic"></i> Auto-filled from your ID</div>
+                    </div>
+
+                    <button class="btn-auth" id="nextStep1Btn">
+                        Next <i class="fas fa-arrow-right" style="margin-left:6px;"></i>
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="name" placeholder="Enter your full name">
+
+                <!-- PANEL 2: Contact Info -->
+                <div class="reg-panel" id="panel2">
+                    <div class="form-group">
+                        <label>Email Address <span style="color:#e63946;">*</span></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="regEmail" placeholder="Enter your email" autocomplete="email" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number <span style="color:#e63946;">*</span></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-phone"></i>
+                            <input type="tel" id="regPhone" placeholder="01700000000" maxlength="15" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Location <span style="color:var(--text-secondary);font-weight:400;">(Optional)</span></label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <input type="text" id="regLocation" placeholder="e.g. Dhaka, Bangladesh" />
+                            <i class="fas fa-crosshairs" id="detectLocation" style="position:absolute;right:14px;left:auto;color:#4f9eff;cursor:pointer;" title="Auto-detect location"></i>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn-auth" id="backStep2Btn" style="background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;flex:0 0 auto;width:auto;padding:12px 20px;">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn-auth" id="nextStep2Btn" style="flex:1;">
+                            Next <i class="fas fa-arrow-right" style="margin-left:6px;"></i>
+                        </button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="email" placeholder="Enter your email">
+
+                <!-- PANEL 3: Password & Photo -->
+                <div class="reg-panel" id="panel3">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Password <span style="color:#e63946;">*</span></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="regPwd1" placeholder="Min 8 characters" />
+                                <i class="fas fa-eye toggle-password" id="togPwd1"></i>
+                            </div>
+                            <div class="strength-bar"><div class="strength-fill" id="pwdStrengthFill"></div></div>
+                            <div class="strength-text" id="pwdStrengthText"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password <span style="color:#e63946;">*</span></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="regPwd2" placeholder="Confirm password" />
+                                <i class="fas fa-eye toggle-password" id="togPwd2"></i>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Phone</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-phone"></i>
-                        <input type="text" id="phone" placeholder="01XXXXXXXXX">
+                    <div class="form-group">
+                        <label>Profile Photo <span style="color:var(--text-secondary);font-weight:400;">(Optional — JPG/PNG, max 2MB)</span></label>
+                        <div class="upload-box">
+                            <i class="fas fa-camera"></i>
+                            <p>Click to upload your photo</p>
+                            <span>JPG, PNG up to 2MB</span>
+                            <input type="file" id="profilePhotoFile" accept="image/jpeg,image/png,image/webp" />
+                        </div>
+                        <div class="upload-preview" id="photoPreview">
+                            <img src="" alt="preview" id="photoPreviewImg" />
+                        </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="password" placeholder="Minimum 8 characters">
+                    <div class="form-group">
+                        <label class="remember-me">
+                            <input type="checkbox" id="termsCheckbox" />
+                            <span>I agree to the <a href="#" id="termsLink" style="color:#4f9eff;">Terms &amp; Conditions</a></span>
+                        </label>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>ID Type</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-id-card"></i>
-                        <select id="id_type">
-                            <option value="">Select ID Type</option>
-                            <option value="nid">National ID (NID)</option>
-                            <option value="birth_certificate">Birth Certificate</option>
-                        </select>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn-auth" id="backStep3Btn" style="background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;flex:0 0 auto;width:auto;padding:12px 20px;">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn-auth" id="registerBtn" style="flex:1;">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
                     </div>
+                    <div class="auth-divider"><span>or</span></div>
+                    <p class="auth-switch">Already have an account? <a href="/login">Login here</a></p>
                 </div>
-                <div class="form-group">
-                    <label>ID Number</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-hashtag"></i>
-                        <input type="text" id="id_number" placeholder="Enter ID number">
-                    </div>
-                </div>
-                <button class="btn-auth" id="regBtn" onclick="doRegister()">
-                    <i class="fas fa-user-plus"></i> Register
-                </button>
-                <p style="text-align:center;margin-top:15px;">
-                    Already have an account? <a href="{{ route('login') }}">Login</a>
-                </p>
+
             </div>
         </div>
     </div>
 </section>
+
+<!-- Terms Modal -->
+<div class="modal-overlay" id="termsModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-contract"></i> Terms &amp; Conditions</h3>
+            <i class="fas fa-times modal-close" onclick="closeTerms()"></i>
+        </div>
+        <div class="modal-body">
+            <h4>1. Acceptance of Terms</h4><p>By registering on SafeVoice, you agree to these terms and conditions.</p>
+            <h4>2. User Responsibilities</h4><p>You are responsible for providing accurate information when submitting complaints. False information may result in account suspension.</p>
+            <h4>3. Anonymous Complaints</h4><p>SafeVoice allows anonymous reporting. Misuse for harassment is strictly prohibited.</p>
+            <h4>4. Privacy Policy</h4><p>Your personal data and ID documents are securely stored and will never be shared with third parties.</p>
+            <h4>5. Emergency SOS</h4><p>The SOS feature is for genuine emergencies only. Misuse may result in legal action.</p>
+            <h4>6. Content Policy</h4><p>Users must not upload offensive, illegal, or misleading content.</p>
+            <h4>7. Account Security</h4><p>You are responsible for maintaining the confidentiality of your account credentials.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-decline" onclick="closeTerms()">Decline</button>
+            <button class="btn-accept" onclick="acceptTerms()">Accept</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+// ════════════════════════════════════════════════════════
+// OCR — OCR.Space free API (free signup at ocr.space/ocrapi/freekey)
+// ════════════════════════════════════════════════════════
+
+const API_BASE = '/api';
+let selectedIdType = 'nid';
+let currentStep    = 1;
+
+function showToast(msg, type='info', dur=4000) {
+    const icons = {success:'fa-check-circle',error:'fa-exclamation-circle',info:'fa-info-circle'};
+    const t = document.getElementById('toast');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fas ${icons[type]}"></i> ${msg}`;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+function btnLoading(btn, text) { btn.disabled=true;  btn.innerHTML=`<span class="spinner"></span> ${text}`; }
+function btnReset(btn, html)   { btn.disabled=false; btn.innerHTML=html; }
+
+// Password toggle
+['togPwd1','togPwd2'].forEach((id,i) => {
+    const inp = document.getElementById(['regPwd1','regPwd2'][i]);
+    document.getElementById(id).addEventListener('click', function() {
+        inp.type = inp.type==='password' ? 'text' : 'password';
+        this.classList.toggle('fa-eye'); this.classList.toggle('fa-eye-slash');
+    });
+});
+
+// Step navigation
+function goStep(n) {
+    document.querySelectorAll('.reg-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel${n}`).classList.add('active');
+    currentStep = n;
+    for (let i=1; i<=3; i++) {
+        const dot = document.getElementById(`dot${i}`);
+        dot.classList.remove('active','done');
+        if      (i < n)  { dot.classList.add('done');   dot.innerHTML='<i class="fas fa-check" style="font-size:11px;"></i>'; }
+        else if (i === n) { dot.classList.add('active'); dot.textContent=i; }
+        else              { dot.textContent=i; }
+    }
+    for (let i=1; i<=2; i++) document.getElementById(`line${i}`).classList.toggle('done', i<n);
+    window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ID Type tabs
+document.querySelectorAll('.id-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.id-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        selectedIdType = this.dataset.type;
+        document.getElementById('idHint').textContent =
+            selectedIdType==='nid' ? 'NID: 10 or 17 digits' : 'Birth Certificate: 17 digits';
+        // Reset
+        ['regName','regIdNumber'].forEach(id => document.getElementById(id).value='');
+        document.getElementById('ocrPreview').style.display = 'none';
+        document.getElementById('ocrSuccessBadge').classList.remove('show');
+        document.getElementById('nameFilled').classList.remove('show');
+        document.getElementById('idFilled').classList.remove('show');
+        document.getElementById('idDocFile').value = '';
+    });
+});
+
+// ── Smart ID document handler: PDF.js for PDFs, OCR for images ──
+document.getElementById('idDocFile').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file) return;
+    if (file.size > 5*1024*1024) { showToast('File must be under 5MB.','error'); this.value=''; return; }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('ocrPreviewImg').src = e.target.result;
+        document.getElementById('ocrPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+
+    // Start scan animation
+    document.getElementById('ocrScanOverlay').classList.add('active');
+    document.getElementById('ocrSuccessBadge').classList.remove('show');
+    ['regName','regIdNumber'].forEach(id => {
+        const el = document.getElementById(id);
+        el.value = '';
+        el.classList.remove('auto-filled');
+    });
+    document.getElementById('nameFilled').classList.remove('show');
+    document.getElementById('idFilled').classList.remove('show');
+
+    try {
+        let text = '';
+        const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+        if (isPDF) {
+            // ── PDF: extract embedded text directly via PDF.js (no OCR needed) ──
+            showToast('Reading PDF… please wait', 'info', 15000);
+            text = await extractTextFromPDF(file);
+            console.log('PDF extracted text:', text);
+        } else {
+            // ── Image: send to server-side OCR proxy ──
+            showToast('Scanning image… please wait', 'info', 20000);
+            const fd = new FormData();
+            fd.append('idfile', file, file.name);
+            const res  = await fetch('/api/ocr', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.success && data.text) {
+                text = data.text;
+            } else {
+                console.warn('OCR error:', data.message);
+            }
+            console.log('RAW OCR TEXT:', text);
+        }
+
+        document.getElementById('ocrScanOverlay').classList.remove('active');
+
+        if (!text || text.trim().length < 5) {
+            showToast('⚠️ Could not read document. Try a clearer image.', 'error', 6000);
+            return;
+        }
+
+        const {name, idNumber} = parseOcrText(text, selectedIdType);
+        const nameInp = document.getElementById('regName');
+        const idInp   = document.getElementById('regIdNumber');
+
+        if (name) {
+            nameInp.value = name;
+            nameInp.classList.add('auto-filled');
+            document.getElementById('nameFilled').classList.add('show');
+        }
+        if (idNumber) {
+            idInp.value = idNumber;
+            idInp.classList.add('auto-filled');
+            document.getElementById('idFilled').classList.add('show');
+        }
+
+        const parts = [name ? `Name: ${name}` : '', idNumber ? `ID: ${idNumber}` : ''].filter(Boolean);
+        document.getElementById('ocrSuccessText').textContent =
+            parts.length ? parts.join('  |  ') : 'Scanned! Please fill missing fields.';
+        document.getElementById('ocrSuccessBadge').classList.add('show');
+
+        showToast(
+            (name && idNumber) ? '✅ Details auto-filled! Correct if needed.' :
+            'Partial scan — please fill the missing fields manually.',
+            (name && idNumber) ? 'success' : 'info', 5000
+        );
+
+    } catch(err) {
+        document.getElementById('ocrScanOverlay').classList.remove('active');
+        showToast('Scan error. Try a clearer photo.', 'error');
+        console.error('ID scan error:', err);
+    }
+});
+
+// ── PDF text extraction using PDF.js ──
+async function extractTextFromPDF(file) {
+    // Load PDF.js from CDN if not already loaded
+    if (!window.pdfjsLib) {
+        await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page    = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+    }
+
+    return fullText;
+}
+
+
+// toTitleCase helper
+function parseOcrText(rawText, idType) {
+    // Fix common OCR character errors
+    const text = rawText
+        .replace(/[Oo](?=\d)/g, '0')   // O before digit → 0
+        .replace(/(?<=\d)[Oo]/g, '0')   // O after digit → 0
+        .replace(/l(?=\d)/g, '1')       // l before digit → 1
+        .replace(/(?<=\d)l/g, '1');     // l after digit → 1
+
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    let name = '', idNumber = '';
+
+    // ══════════════════════════════════════════════════
+    // ID NUMBER — search after "ID NO:" / "ID No:" keyword FIRST
+    // Bangladesh NID format: "ID NO: 9592239041" or "ID NO: 19901234567890123"
+    // ══════════════════════════════════════════════════
+    if (idType === 'nid') {
+        // Priority 1: Explicitly after "ID NO:" or "ID No:" keyword
+        const idNoMatch = text.match(/ID\s*NO\s*[:\.\-]?\s*(\d[\d\s]{8,18}\d)/i);
+        if (idNoMatch) {
+            idNumber = idNoMatch[1].replace(/\s/g, '');
+            // Validate: must be 10 or 17 digits
+            if (!/^(\d{10}|\d{17})$/.test(idNumber)) idNumber = '';
+        }
+
+        // Priority 2: After "NID" keyword
+        if (!idNumber) {
+            const nidMatch = text.match(/NID\s*[:\.\-#]?\s*(\d[\d\s]{8,18}\d)/i);
+            if (nidMatch) {
+                idNumber = nidMatch[1].replace(/\s/g, '');
+                if (!/^(\d{10}|\d{17})$/.test(idNumber)) idNumber = '';
+            }
+        }
+
+        // Priority 3: Any 17-digit number (new NID format)
+        if (!idNumber) {
+            const all17 = [...text.matchAll(/\b(\d{17})\b/g)].map(m => m[1]);
+            // Exclude birth years and dates (not a standalone 4-digit year)
+            idNumber = all17[0] || '';
+        }
+
+        // Priority 4: 10-digit number, but NOT a date (avoid "09 May 2004" type)
+        if (!idNumber) {
+            const all10 = [...text.matchAll(/\b(\d{10})\b/g)].map(m => m[1]);
+            // Filter out anything that looks like a date fragment
+            idNumber = all10.find(n => !/^(0[1-9]|[12]\d|3[01])/.test(n.slice(0,2))) || all10[0] || '';
+        }
+
+    } else {
+        // Birth Certificate: always 17 digits
+        const bcMatch = text.match(/(?:birth\s*cert|certificate|no|number|নম্বর)[^\d]*(\d[\d\s]{14,18}\d)/i);
+        if (bcMatch) {
+            idNumber = bcMatch[1].replace(/\s/g, '');
+            if (idNumber.length !== 17) idNumber = '';
+        }
+        if (!idNumber) {
+            const m17 = [...text.matchAll(/\b(\d{17})\b/g)];
+            idNumber = m17[0]?.[1] || '';
+        }
+    }
+
+    // ══════════════════════════════════════════════════
+    // NAME — search for English name after "Name:" label
+    // Bangladesh NID format: "Name: HOSSAIN TANVIR MAHATAB SHAD"
+    // ══════════════════════════════════════════════════
+
+    // Strategy 1: "Name: HOSSAIN TANVIR MAHATAB SHAD" — exact Bangladesh NID pattern
+    // Works for both line-by-line (image OCR) and space-joined (PDF.js) formats
+    for (const line of lines) {
+        const m = line.match(/^Name\s*[:\-]\s*([A-Z][A-Z\s\.]{3,50})$/);
+        if (m) { name = toTitleCase(m[1].trim()); break; }
+        const m2 = line.match(/Name\s*[:\-]\s*([A-Z][A-Z\s\.]{3,50})(?:\s*$)/);
+        if (m2) { name = toTitleCase(m2[1].trim()); break; }
+    }
+    // Also try on full text (for PDF.js space-joined output)
+    if (!name) {
+        const m = rawText.match(/Name\s*[:\-]\s*([A-Z][A-Z\s\.]{3,55?})(?=\s+[A-Z][a-z]|\s*পিতা|\s*Father|\s*Date|\s*ID|$)/);
+        if (m) name = toTitleCase(m[1].trim());
+    }
+
+    // Strategy 2: All-caps line with 2–5 words (standalone English name line)
+    if (!name) {
+        const skipWords = /^(NATIONAL|ID|CARD|DATE|BIRTH|BLOOD|GROUP|FATHER|MOTHER|DISTRICT|BANGLADESH|GOVERNMENT|REPUBLIC|PEOPLES|PEOPLE|SIGNATURE|ISSUED|VALID)/i;
+        for (const line of lines) {
+            const words = line.trim().split(/\s+/);
+            if (
+                words.length >= 2 && words.length <= 5 &&
+                words.every(w => /^[A-Z]{2,}$/.test(w)) &&
+                line.length >= 5 && line.length <= 55 &&
+                !skipWords.test(line)
+            ) {
+                name = toTitleCase(line); break;
+            }
+        }
+    }
+
+    // Strategy 3: MD./MOST./MST. prefix — very common Bangladesh names
+    if (!name) {
+        for (const line of lines) {
+            if (/^(MD\.?|MOST\.?|MST\.?|SK\.?|A\.K\.M\.?)\s+[A-Z]{2}/i.test(line) && line.length < 60) {
+                name = toTitleCase(line.trim()); break;
+            }
+        }
+    }
+
+    // Strategy 4: "name" keyword anywhere in line, grab rest
+    if (!name) {
+        for (const line of lines) {
+            const m = line.match(/\bname\b\s*[:\-]?\s*([A-Za-z][A-Za-z\s\.]{4,50})/i);
+            if (m) {
+                const candidate = m[1].trim();
+                if (/\s/.test(candidate)) { // at least 2 words
+                    name = toTitleCase(candidate); break;
+                }
+            }
+        }
+    }
+
+    name = name.replace(/\s+/g, ' ').trim();
+    return { name, idNumber };
+}
+function toTitleCase(s) { return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).trim(); }
+
+// Step 1 Next
+document.getElementById('nextStep1Btn').addEventListener('click', function() {
+    const idFile = document.getElementById('idDocFile').files[0];
+    const name   = document.getElementById('regName').value.trim();
+    const idNum  = document.getElementById('regIdNumber').value.trim();
+
+    if (!idFile) { showToast('Please upload your ID document photo.','error'); return; }
+    if (!name)   { showToast('Name not detected. Please type your full name.','error'); return; }
+    if (!idNum)  { showToast('ID number not detected. Please type it manually.','error'); return; }
+    if (selectedIdType==='nid' && !/^\d{10}(\d{7})?$/.test(idNum)) { showToast('NID must be 10 or 17 digits.','error'); return; }
+    if (selectedIdType==='birth_certificate' && !/^\d{17}$/.test(idNum)) { showToast('Birth Certificate must be 17 digits.','error'); return; }
+    goStep(2);
+});
+
+// Step 2
+document.getElementById('backStep2Btn').addEventListener('click', ()=>goStep(1));
+document.getElementById('nextStep2Btn').addEventListener('click', function() {
+    const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.replace(/\D/g,'');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Enter a valid email.','error'); return; }
+    const cp = phone.length===13?phone.slice(2):phone;
+    if (!/^01[3-9]\d{8}$/.test(cp)) { showToast('Enter a valid Bangladesh phone number.','error'); return; }
+    goStep(3);
+});
+
+// Step 3
+document.getElementById('backStep3Btn').addEventListener('click', ()=>goStep(2));
+
+document.getElementById('profilePhotoFile').addEventListener('change', function() {
+    const file=this.files[0]; if (!file) return;
+    if (file.size>2*1024*1024) { showToast('Photo must be under 2MB.','error'); this.value=''; return; }
+    const reader=new FileReader();
+    reader.onload=e=>{ document.getElementById('photoPreviewImg').src=e.target.result; document.getElementById('photoPreview').style.display='block'; };
+    reader.readAsDataURL(file);
+});
+
+document.getElementById('regPwd1').addEventListener('input', function() {
+    const v=this.value, s=[v.length>=8,/[A-Z]/.test(v),/[0-9]/.test(v),/[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
+    const cfg=[['','',''],['25%','#e63946','Weak'],['50%','#f4a261','Fair'],['75%','#f1c40f','Good'],['100%','#2ecc71','Strong']];
+    document.getElementById('pwdStrengthFill').style.cssText=`width:${cfg[s][0]};background:${cfg[s][1]}`;
+    document.getElementById('pwdStrengthText').style.color=cfg[s][1];
+    document.getElementById('pwdStrengthText').textContent=cfg[s][2];
+});
+
+document.getElementById('termsLink').addEventListener('click', e=>{ e.preventDefault(); document.getElementById('termsModal').classList.add('active'); });
+function closeTerms()  { document.getElementById('termsModal').classList.remove('active'); }
+function acceptTerms() { document.getElementById('termsCheckbox').checked=true; closeTerms(); }
+document.getElementById('termsModal').addEventListener('click', e=>{ if(e.target.id==='termsModal') closeTerms(); });
+
+document.getElementById('detectLocation').addEventListener('click', function() {
+    if (!navigator.geolocation) { showToast('Geolocation not supported.','error'); return; }
+    navigator.geolocation.getCurrentPosition(async pos => {
+        try {
+            const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=10`);
+            const d=await r.json();
+            const loc=d.address?.city||d.address?.town||d.address?.village||'Unknown';
+            document.getElementById('regLocation').value=`${loc}, ${d.address?.country||''}`;
+        } catch { showToast('Could not detect location.','error'); }
+    }, ()=>showToast('Location access denied.','error'));
+});
+
+// Register Submit
+document.getElementById('registerBtn').addEventListener('click', async function() {
+    const name  = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.replace(/\D/g,'');
+    const loc   = document.getElementById('regLocation').value.trim();
+    const idNum = document.getElementById('regIdNumber').value.trim();
+    const pwd1  = document.getElementById('regPwd1').value;
+    const pwd2  = document.getElementById('regPwd2').value;
+    const terms = document.getElementById('termsCheckbox').checked;
+    const cp    = phone.length===13?phone.slice(2):phone;
+
+    if (pwd1.length<8) { showToast('Password must be at least 8 characters.','error'); return; }
+    if (pwd1!==pwd2)   { showToast('Passwords do not match.','error'); return; }
+    if (!terms)        { showToast('Please accept the Terms & Conditions.','error'); return; }
+
+    btnLoading(this, 'Creating account…');
+
+    const formData = new FormData();
+    formData.append('name',      name);
+    formData.append('email',     email);
+    formData.append('phone',     cp);
+    formData.append('password',  pwd1);
+    formData.append('id_type',   selectedIdType);
+    formData.append('id_number', idNum);
+    formData.append('location',  loc);
+
+    const idFile    = document.getElementById('idDocFile').files[0];
+    const photoFile = document.getElementById('profilePhotoFile').files[0];
+    if (idFile)    formData.append('id_document',   idFile);
+    if (photoFile) formData.append('profile_photo', photoFile);
+
+    try {
+        const res  = await fetch(`/api/register`, {method:'POST', credentials:'include', body:formData});
+        const data = await res.json();
+
+        if (data.success) {
+            localStorage.setItem('sv_user',    JSON.stringify(data.user));
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userName',   data.user.name);
+            showToast('Account created! Welcome to SafeVoice 🎉', 'success', 2500);
+            setTimeout(()=>window.location.href='/dashboard', 1500);
+        } else {
+            showToast(data.message||'Registration failed.','error');
+            btnReset(this,'<i class="fas fa-user-plus"></i> Create Account');
+        }
+    } catch(e) {
+        showToast('Server error. Check your connection.','error');
+        btnReset(this,'<i class="fas fa-user-plus"></i> Create Account');
+    }
+});
+
+</script>
+<script src="{{ asset('js/main.js') }}"></script>
+<script src="{{ asset('js/theme.js') }}"></script>
 @endsection
 
 @section('scripts')
-<script>
-const API = '{{ url("/api") }}';
-async function doRegister() {
-    const btn      = document.getElementById('regBtn');
-    const errorBox = document.getElementById('regError');
-    const errorMsg = document.getElementById('regErrorMsg');
-
-    errorBox.style.display = 'none';
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
-
-    const formData = new FormData();
-    formData.append('name',      document.getElementById('name').value.trim());
-    formData.append('email',     document.getElementById('email').value.trim());
-    formData.append('phone',     document.getElementById('phone').value.trim());
-    formData.append('password',  document.getElementById('password').value.trim());
-    formData.append('id_type',   document.getElementById('id_type').value);
-    formData.append('id_number', document.getElementById('id_number').value.trim());
-
-    try {
-        const res  = await fetch(`${API}/register`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-            body: formData
-        });
-        const data = await res.json();
-        if (data.success) {
-            localStorage.setItem('user', JSON.stringify(data.user));
-            window.location.href = '{{ route("dashboard") }}';
-        } else {
-            errorMsg.textContent = data.message;
-            errorBox.style.display = 'block';
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-user-plus"></i> Register';
-        }
-    } catch(e) {
-        errorMsg.textContent = 'Server error.';
-        errorBox.style.display = 'block';
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-user-plus"></i> Register';
-    }
-}
-</script>
+<script src="{{ asset('js/theme.js') }}"></script>
 @endsection
