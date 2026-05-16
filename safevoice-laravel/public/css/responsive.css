@@ -1,243 +1,195 @@
+/* ================================================================
+   SafeVoice — Complete Responsive CSS
+   Covers: navbar, home, dashboard, SOS, auth, complaint, admin
+   Breakpoints: 1024px | 768px | 480px | 360px
+================================================================ */
 
+/* ── HAMBURGER ─────────────────────────────────────────────── */
 .hamburger {
     display: none;
     flex-direction: column;
     gap: 5px;
     cursor: pointer;
-    padding: 5px;
+    padding: 6px;
     z-index: 1100;
+    flex-shrink: 0;
 }
 
 .hamburger span {
     display: block;
-    width: 25px;
+    width: 24px;
     height: 3px;
     background: #4f9eff;
     border-radius: 3px;
     transition: all 0.3s;
 }
 
-.hamburger.active span:nth-child(1) {
-    transform: translateY(8px) rotate(45deg);
-}
-.hamburger.active span:nth-child(2) {
-    opacity: 0;
-}
-.hamburger.active span:nth-child(3) {
-    transform: translateY(-8px) rotate(-45deg);
-}
+.hamburger.active span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.hamburger.active span:nth-child(2) { opacity: 0; }
+.hamburger.active span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
 
+/* ── NAV OVERLAY ───────────────────────────────────────────── */
+.nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 1040;
+    backdrop-filter: blur(2px);
+}
+.nav-overlay.active { display: block; }
 
+/* ================================================================
+   1024px — Tablet landscape
+================================================================ */
 @media (max-width: 1024px) {
-
-    /* Summary cards 4 → 2 */
-    .summary-cards {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
 
     /* Hero */
     .hero {
-        padding: 60px 20px;
+        padding: 70px 20px;
         gap: 30px;
     }
+    .hero-content h1 { font-size: 42px; }
 
-    .hero-content h1 {
-        font-size: 42px;
-    }
-
-    /* Dashboard sidebar */
-    .sidebar {
-        width: 200px !important;
-    }
-
-    /* Admin sidebar */
-    .complaints-table {
-        overflow-x: auto;
-    }
-
-    /* Steps wrap  */
-    .steps-container {
+    /* Summary cards 4→2 */
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 15px;
     }
 
-    .step {
-        width: 150px;
-    }
+    /* Sidebar narrower */
+    .sidebar { width: 210px !important; }
+
+    /* Admin topbar */
+    .ac-topbar { gap: 16px; }
+    .ac-stats-mini { flex-wrap: wrap; gap: 10px; }
+
+    /* Steps */
+    .steps-container { gap: 12px; }
+    .step { width: 155px; }
+
+    /* Table scroll */
+    .complaints-table { overflow-x: auto; }
 }
 
-
+/* ================================================================
+   768px — Tablet portrait / Large phone
+================================================================ */
 @media (max-width: 768px) {
 
-    /*  NAVBAR  */
-    .hamburger {
-        display: flex;
-    }
+    /* ── NAVBAR ───────────────────────────────────────────── */
+    .hamburger { display: flex; }
 
     .nav-links {
         position: fixed;
         top: 0;
         right: -100%;
-        width: 75%;
-        max-width: 300px;
+        width: 78%;
+        max-width: 290px;
         height: 100vh;
-        background: #0d1526;
+        background: #0a0f1e;
         border-left: 1px solid #1e2d4a;
         flex-direction: column;
         align-items: flex-start;
-        padding: 80px 25px 30px;
-        gap: 8px !important;
-        transition: right 0.35s ease;
+        padding: 75px 24px 30px;
+        gap: 4px !important;
+        transition: right 0.32s ease;
         z-index: 1050;
         overflow-y: auto;
+        box-shadow: -4px 0 30px rgba(0,0,0,0.5);
     }
+    .nav-links.open { right: 0; }
 
-    .nav-links.open {
-        right: 0;
-    }
-
-    .nav-links li {
-        width: 100%;
-    }
+    .nav-links li { width: 100%; }
 
     .nav-links a {
         display: block;
-        padding: 12px 0;
+        padding: 13px 0;
         font-size: 16px;
-        border-bottom: 1px solid #1e2d4a;
+        border-bottom: 1px solid #1e2d4a20;
         width: 100%;
+        color: #e0e8f0;
     }
 
     .btn-login,
     .btn-register {
-        display: inline-block;
-        margin-top: 8px;
-        text-align: center;
-    }
-
-    
-    .nav-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1040;
-    }
-
-    .nav-overlay.active {
         display: block;
+        margin-top: 6px;
+        text-align: center;
+        padding: 11px 20px !important;
     }
 
-    /*  HERO */
+    /* ── HERO ─────────────────────────────────────────────── */
     .hero {
         flex-direction: column;
-        padding: 50px 20px;
+        padding: 50px 18px 40px;
         text-align: center;
-        gap: 30px;
+        gap: 28px;
     }
-
-    .hero-content h1 {
-        font-size: 32px;
-    }
-
-    .hero-content p {
-        font-size: 15px;
-    }
+    .hero-content h1 { font-size: 30px; line-height: 1.25; }
+    .hero-content p  { font-size: 15px; margin-bottom: 28px; }
 
     .hero-buttons {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
         gap: 12px;
     }
-
     .btn-primary,
     .btn-sos {
         width: 100%;
         justify-content: center;
         font-size: 15px;
-        padding: 13px 20px;
+        padding: 14px 20px;
     }
 
+    .hero-image { width: 100%; }
     .hero-card {
-        padding: 35px 40px;
+        padding: 30px 40px;
         width: 100%;
-        max-width: 320px;
+        max-width: 300px;
+        margin: 0 auto;
     }
+    .hero-card i { font-size: 60px; }
 
-    .hero-card i {
-        font-size: 55px;
-    }
-
-    /*  STATS  */
+    /* ── STATS ────────────────────────────────────────────── */
     .stats-container {
-        gap: 20px;
+        gap: 22px;
         justify-content: center;
     }
+    .stat-card h2 { font-size: 36px; }
 
-    .stat-card h2 {
-        font-size: 34px;
-    }
-
-    /*  HOW IT WORKS  */
-    .how-it-works h2 {
-        font-size: 26px;
-        margin-bottom: 35px;
-    }
-
+    /* ── HOW IT WORKS ─────────────────────────────────────── */
+    .how-it-works { padding: 55px 18px; }
+    .how-it-works h2 { font-size: 26px; margin-bottom: 36px; }
     .steps-container {
         flex-direction: column;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
     }
+    .step-arrow { transform: rotate(90deg); }
+    .step { width: 100%; max-width: 280px; }
 
-    .step-arrow {
-        transform: rotate(90deg);
-    }
-
-    .step {
-        width: 100%;
-        max-width: 280px;
-    }
-
-    /* RESPONDERS */
-    .responders h2 {
-        font-size: 26px;
-        margin-bottom: 30px;
-    }
-
+    /* ── RESPONDERS ───────────────────────────────────────── */
+    .responders { padding: 55px 18px; }
+    .responders h2 { font-size: 26px; margin-bottom: 30px; }
     .responders-container {
         flex-direction: column;
         align-items: center;
-        gap: 15px;
+        gap: 14px;
     }
+    .responder-card { width: 100%; max-width: 300px; }
 
-    .responder-card {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    /* FOOTER  */
+    /* ── FOOTER ───────────────────────────────────────────── */
+    .footer { padding: 40px 18px 16px; }
     .footer-container {
         flex-direction: column;
-        gap: 25px;
-        padding-bottom: 25px;
+        gap: 22px;
+        padding-bottom: 22px;
     }
+    .footer-brand, .footer-links, .footer-contact { width: 100%; }
 
-    .footer-brand,
-    .footer-links,
-    .footer-contact {
-        width: 100%;
-    }
-
-    /* SUMMARY CARDS → 1 column*/
-    .summary-cards {
-        grid-template-columns: 1fr !important;
-        gap: 12px;
-    }
-
-    /*  DASHBOARD LAYOUT */
-    .dashboard-layout {
-        flex-direction: column;
-    }
+    /* ── DASHBOARD LAYOUT ─────────────────────────────────── */
+    .dashboard-layout { flex-direction: column; }
 
     .sidebar {
         width: 100% !important;
@@ -249,14 +201,14 @@
         overflow: hidden;
         max-height: 0;
         transition: max-height 0.3s ease;
-        padding: 0;
+        padding: 0 !important;
     }
-
     .sidebar.sidebar-open {
-        max-height: 400px;
-        padding: 10px 0;
+        max-height: 500px;
+        padding: 8px 0 !important;
     }
 
+    /* Sidebar toggle button */
     .sidebar-toggle-btn {
         display: flex !important;
         align-items: center;
@@ -270,177 +222,279 @@
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
+        transition: background 0.2s;
     }
+    .sidebar-toggle-btn:hover { background: #1e2d4a; color: #fff; }
+    .sidebar-toggle-btn i { color: #4f9eff; }
 
-    .sidebar-toggle-btn i {
-        color: #4f9eff;
+    .main-content { padding: 20px 16px !important; }
+
+    /* Summary cards 4→1 */
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px;
+        margin-bottom: 22px;
     }
+    .summary-card { padding: 18px; gap: 14px; }
+    .card-icon { width: 46px; height: 46px; font-size: 18px; }
+    .card-info h3 { font-size: 26px; }
 
-    .sidebar-toggle-btn {
-        display: flex;
-    }
-
-    .main-content {
-        padding: 20px 15px !important;
-    }
-
-    /* WELCOME BAR */
+    /* Welcome bar */
     .welcome-bar {
         flex-direction: column;
         align-items: flex-start;
-        gap: 15px;
+        gap: 14px;
+        margin-bottom: 22px;
     }
+    .welcome-bar h1 { font-size: 21px !important; }
+    .btn-new-complaint { width: 100%; justify-content: center; }
 
-    .welcome-bar h1 {
-        font-size: 20px !important;
-    }
-
-    .btn-new-complaint {
-        width: 100%;
-        justify-content: center;
-    }
-
-    /*  QUICK ACTIONS */
+    /* Quick actions — 2-column grid */
     .quick-actions {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 10px;
+        margin-bottom: 22px;
     }
-
     .action-card {
-        width: 100%;
+        padding: 16px 14px;
+        font-size: 14px;
         justify-content: center;
-        padding: 16px 20px;
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
     }
+    .action-card i { font-size: 20px; }
 
-    /* TABLE SCROLL */
+    /* Table scroll */
     .complaints-table {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        border-radius: 12px;
     }
+    .complaints-table table { min-width: 560px; }
+    .complaints-table th,
+    .complaints-table td { padding: 12px 14px; font-size: 13px; }
 
-    .complaints-table table {
-        min-width: 600px;
-    }
-
-    /*  AUTH PAGES */
+    /* ── AUTH ─────────────────────────────────────────────── */
     .auth-section {
-        padding: 20px 15px;
+        padding: 24px 16px;
         align-items: flex-start;
+        min-height: calc(100vh - 70px);
     }
+    .auth-card { padding: 28px 20px; border-radius: 16px; }
+    .auth-header h2 { font-size: 22px; }
+    .auth-header i  { font-size: 40px; }
+    .form-row { flex-direction: column !important; gap: 0; }
 
-    .auth-card {
-        padding: 25px 20px;
-    }
-
-    .auth-header h2 {
-        font-size: 22px;
-    }
-
-    .form-row {
-        flex-direction: column !important;
-        gap: 0;
-    }
-
-    /* COMPLAINT FORM*/
-    .complaint-layout {
-        padding: 20px 15px;
-    }
-
-    .complaint-form {
-        padding: 20px 15px;
-    }
-
-    .complaint-header h1 {
-        font-size: 22px;
-    }
+    /* ── COMPLAINT FORM ───────────────────────────────────── */
+    .complaint-layout { padding: 20px 16px; }
+    .complaint-form   { padding: 22px 16px; border-radius: 14px; }
+    .complaint-header h1 { font-size: 20px; }
 
     .progress-bar {
         gap: 0;
         overflow-x: auto;
         justify-content: flex-start;
-        padding-bottom: 5px;
+        padding-bottom: 6px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .progress-line  { width: 36px; flex-shrink: 0; }
+    .step-circle    { width: 32px; height: 32px; font-size: 13px; flex-shrink: 0; }
+    .progress-step span { font-size: 11px; }
+
+    .btn-row { flex-direction: column; gap: 10px; }
+    .btn-back, .btn-submit { width: 100%; justify-content: center; }
+
+    .location-input { flex-direction: column; gap: 8px; }
+    .btn-locate { width: 100%; padding: 12px; justify-content: center; }
+
+    /* ── MODAL ────────────────────────────────────────────── */
+    .modal-box { max-height: 88vh; margin: 10px; }
+    .modal-footer { flex-direction: column; gap: 10px; }
+    .btn-decline, .btn-accept { width: 100%; justify-content: center; }
+
+    /* ── SOS PAGE ─────────────────────────────────────────── */
+    .sos-layout { flex-direction: column; }
+    .sos-panel {
+        border-right: none;
+        border-bottom: 1px solid #1e2d4a;
+        padding: 28px 18px;
+        gap: 22px;
+    }
+    .responders-panel { width: 100%; padding: 24px 18px; }
+
+    .sos-heading h1  { font-size: 28px; }
+    .sos-quick-actions { gap: 8px; }
+    .quick-action-btn { padding: 12px 14px; min-width: 78px; }
+
+    .sos-location-bar { font-size: 12px; padding: 10px 14px; }
+
+    /* Evidence + details modals */
+    .sv-modal { padding: 18px; gap: 14px; }
+    .crime-type-grid { grid-template-columns: repeat(2, 1fr); }
+
+    /* Incoming alert */
+    .incoming-alert-panel {
+        right: 10px;
+        left: 10px;
+        width: auto;
+        top: 75px;
     }
 
-    .progress-line {
-        width: 40px;
-        flex-shrink: 0;
-    }
+    /* Activated overlay */
+    .activated-box { padding: 28px 20px; }
+    .activated-actions { flex-direction: column; gap: 10px; }
+    .btn-cancel-sos, .btn-call-police { width: 100%; justify-content: center; }
 
-    .step-circle {
-        width: 34px;
-        height: 34px;
-        font-size: 13px;
-        flex-shrink: 0;
-    }
+    /* ── LEADERBOARD ──────────────────────────────────────── */
+    .leaderboard-layout,
+    .lb-container { padding: 20px 16px; }
+    .lb-podium    { gap: 10px; }
+    .lb-table th,
+    .lb-table td  { padding: 11px 12px; font-size: 13px; }
 
-    .btn-row {
+    /* ── TRACK ────────────────────────────────────────────── */
+    .track-layout  { padding: 24px 16px; }
+    .track-result  { padding: 20px 16px; border-radius: 14px; }
+
+    /* ── LEGAL ────────────────────────────────────────────── */
+    .legal-layout  { padding: 24px 16px; flex-direction: column; gap: 20px; }
+    .legal-sidebar { width: 100% !important; }
+
+    /* ── ADMIN ────────────────────────────────────────────── */
+    .admin-layout { flex-direction: column; }
+    .admin-sidebar { width: 100% !important; }
+
+    .ac-topbar {
         flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    .ac-stats-mini {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
+    .mini-stat { text-align: center; padding: 12px; }
 
-    .btn-back,
-    .btn-submit {
-        width: 100%;
-        justify-content: center;
+    .filter-bar { flex-direction: column; align-items: stretch; gap: 10px; }
+    .filter-left,
+    .filter-right { width: 100%; flex-wrap: wrap; gap: 8px; }
+    .filter-select { flex: 1; min-width: 130px; }
+    .search-wrap   { width: 100%; }
+    .search-wrap input { width: 100%; }
+
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-modal { max-width: 100%; }
+}
+
+/* ================================================================
+   480px — Small phones
+================================================================ */
+@media (max-width: 480px) {
+
+    /* Navbar */
+    .navbar { padding: 12px 0; }
+    .logo span { font-size: 18px; }
+    .logo i    { font-size: 20px; }
+
+    /* Hero */
+    .hero { padding: 36px 16px 30px; }
+    .hero-content h1 { font-size: 26px; }
+    .hero-card { padding: 24px 30px; }
+
+    /* Stats */
+    .stat-card h2 { font-size: 30px; }
+    .stat-card p  { font-size: 14px; }
+
+    /* Dashboard summary → 2 col small */
+    .summary-cards {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px;
     }
+    .summary-card { padding: 14px 12px; gap: 10px; border-radius: 12px; }
+    .card-icon { width: 40px; height: 40px; font-size: 16px; border-radius: 8px; }
+    .card-info h3 { font-size: 22px; }
+    .card-info p  { font-size: 12px; }
 
-    .location-input {
-        flex-direction: column;
+    /* Quick actions → 2 col */
+    .quick-actions { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .action-card   { padding: 14px 10px; font-size: 13px; gap: 6px; }
+    .action-card i { font-size: 18px; }
+
+    /* Auth */
+    .auth-card    { padding: 22px 16px; border-radius: 14px; }
+    .auth-header h2 { font-size: 20px; }
+
+    /* Tables */
+    .complaints-table table { min-width: 480px; }
+    table th, table td { padding: 10px 12px !important; font-size: 12px !important; }
+    .btn-view { padding: 5px 10px; font-size: 11px; }
+
+    /* SOS button */
+    .sos-btn-wrapper { width: 185px; height: 185px; }
+    .sos-btn { width: 130px; height: 130px; }
+    .sos-btn i    { font-size: 26px; }
+    .sos-btn span { font-size: 18px; }
+    .hold-progress { width: 130px; height: 130px; }
+    .sos-ring-1, .sos-ring-2, .sos-ring-3 { width: 185px; height: 185px; }
+    .sos-heading h1 { font-size: 24px; }
+
+    /* Evidence modal */
+    .crime-type-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .crime-chip span { padding: 8px 4px; font-size: 10px; }
+    .sv-modal { padding: 16px; }
+    .sv-modal-actions { flex-direction: column; }
+    .btn-skip, .btn-submit-evidence { width: 100%; }
+
+    /* Admin stats */
+    .ac-stats-mini { grid-template-columns: repeat(2, 1fr); }
+
+    /* Modal */
+    .modal-box { border-radius: 14px; }
+
+    /* Complaint progress */
+    .step-circle { width: 30px; height: 30px; font-size: 12px; }
+    .progress-line { width: 28px; }
+}
+
+/* ================================================================
+   360px — Very small phones (Galaxy A series etc.)
+================================================================ */
+@media (max-width: 360px) {
+
+    .hero-content h1 { font-size: 22px; }
+    .hero-card       { padding: 20px; }
+
+    .summary-cards {
+        grid-template-columns: 1fr !important;
         gap: 8px;
     }
 
-    .btn-locate {
-        width: 100%;
-        padding: 12px;
-    }
+    .quick-actions { grid-template-columns: 1fr; }
+    .action-card   { flex-direction: row; text-align: left; padding: 14px 16px; }
 
-    /*  MODAL  */
-    .modal-box {
-        max-height: 90vh;
-    }
+    .auth-card { padding: 18px 14px; }
 
-    /* ADMIN DASHBOARD  */
-    .admin-layout {
-        flex-direction: column;
-    }
+    .sos-btn-wrapper { width: 165px; height: 165px; }
+    .sos-btn { width: 115px; height: 115px; }
+    .hold-progress { width: 115px; height: 115px; }
+    .sos-ring-1, .sos-ring-2, .sos-ring-3 { width: 165px; height: 165px; }
 
-    .admin-sidebar {
-        width: 100% !important;
-    }
+    .sos-quick-actions { flex-direction: column; gap: 8px; }
+    .quick-action-btn  { width: 100%; flex-direction: row; justify-content: center; gap: 12px; padding: 12px 16px; }
+
+    .incoming-alert-panel { right: 8px; left: 8px; }
+    .crime-type-grid { grid-template-columns: 1fr 1fr; }
+
+    table th, table td { padding: 8px 10px !important; font-size: 11px !important; }
 }
 
-
-@media (max-width: 480px) {
-
-    .hero-content h1 {
-        font-size: 26px;
-    }
-
-    .stat-card h2 {
-        font-size: 28px;
-    }
-
-    .how-it-works h2,
-    .responders h2 {
-        font-size: 22px;
-    }
-
-    .hero-card {
-        padding: 25px;
-    }
-
-    .card-info h3 {
-        font-size: 24px !important;
-    }
-
-    .auth-card {
-        border-radius: 12px;
-        padding: 20px 15px;
-    }
-
-    table th,
-    table td {
-        padding: 10px 12px !important;
-        font-size: 13px !important;
-    }
+/* ================================================================
+   UTILITY — sidebar toggle button hidden on desktop
+================================================================ */
+.sidebar-toggle-btn {
+    display: none;
 }

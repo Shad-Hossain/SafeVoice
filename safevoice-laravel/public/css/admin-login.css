@@ -1,80 +1,116 @@
+/* Admin Login Page — overrides for centered card layout */
 body {
-
-    margin: 0;
-    padding: 0;
+    min-height: 100vh;
     background: #07111f;
-    height: 100vh;
+}
 
+.auth-section {
+    min-height: calc(100vh - 70px);
     display: flex;
-    justify-content: center;
     align-items: center;
-
-    font-family: Arial, sans-serif;
+    justify-content: center;
+    padding: 40px 20px;
 }
 
-.login-container {
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+}
 
-    width: 360px;
-
-    background: #111c2d;
-
-    padding: 40px;
-
+.auth-card {
+    background: #0d1526;
+    border: 1px solid #1e2d4a;
     border-radius: 20px;
-
-    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    padding: 40px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5);
 }
 
-.login-container h1 {
-
-    color: white;
-
+.auth-header {
     text-align: center;
-
     margin-bottom: 30px;
 }
 
-.login-container input {
+.auth-header i {
+    font-size: 52px;
+    color: #4f9eff;
+    margin-bottom: 14px;
+    display: block;
+}
 
+.auth-header h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 6px;
+}
+
+.auth-header p {
+    color: #a0b4cc;
+    font-size: 14px;
+}
+
+.auth-form .form-group {
+    margin-bottom: 18px;
+}
+
+.auth-form .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #a0b4cc;
+    margin-bottom: 7px;
+}
+
+.auth-form .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.auth-form .input-wrapper i {
+    position: absolute;
+    left: 13px;
+    color: #4f9eff;
+    font-size: 14px;
+}
+
+.auth-form .input-wrapper input {
     width: 100%;
+    background: #0a0f1e;
+    border: 1px solid #1e2d4a;
+    border-radius: 8px;
+    padding: 11px 14px 11px 38px;
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: border 0.3s;
+}
 
-    padding: 14px;
+.auth-form .input-wrapper input:focus {
+    border-color: #4f9eff;
+}
 
-    margin-bottom: 20px;
+.auth-form .input-wrapper input::placeholder {
+    color: #4a5568;
+}
 
+.btn-auth {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #2563eb, #4f9eff);
+    color: #ffffff;
     border: none;
-
     border-radius: 10px;
-
-    background: #1a2940;
-
-    color: white;
-
     font-size: 15px;
-}
-
-.login-container button {
-
-    width: 100%;
-
-    padding: 14px;
-
-    border: none;
-
-    border-radius: 10px;
-
-    background: #00b894;
-
-    color: white;
-
+    font-weight: 600;
     cursor: pointer;
-
-    font-size: 16px;
-
-    transition: 0.3s;
+    transition: opacity 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
 }
 
-.login-container button:hover {
-
-    background: #00d2a8;
-}
+.btn-auth:hover { opacity: 0.9; }
+.btn-auth:disabled { opacity: 0.7; cursor: not-allowed; }

@@ -6,7 +6,7 @@ class Complaint extends Model
 {
     protected $fillable = [
         'complaint_id','type','incident_date','location','description',
-        'is_anonymous','status','assigned_officer_code','submitted_at',
+       'is_anonymous','status','admin_message','assigned_officer_code',
         'user_name','user_phone','user_email','user_address',
         'assigned_pi_id','pi_assigned_at','pi_email_sent','user_id','evidence_files',
     ];

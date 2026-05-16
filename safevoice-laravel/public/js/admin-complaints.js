@@ -1,4 +1,4 @@
-const API = '../api';
+const API = '/api';
 let complaints = [];
 let activeId   = null;
 
@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => { loadComplaints(); });
 
 async function loadComplaints() {
     try {
-        const res  = await fetch(`${API}/complaints.php`, { credentials: 'include' });
+        const res  = await fetch(`${API}/complaints`, { credentials: 'include' });
         const data = await res.json();
         complaints = (data.success && data.complaints) ? data.complaints : [];
     } catch (e) {
@@ -19,8 +19,13 @@ async function loadComplaints() {
 function renderTable(data) {
     const tbody = document.getElementById('complaintsBody');
     const empty = document.getElementById('emptyState');
-    if (!data || data.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
-    empty.style.display = 'none';
+    if (!tbody) return;
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '';
+        if (empty) empty.style.display = 'block';
+        return;
+    }
+    if (empty) empty.style.display = 'none';
     tbody.innerHTML = data.map(c => {
         const anon      = c.is_anonymous == 1;
         const reporter  = anon ? '<div class="reporter-cell"><div class="anon-icon"><i class="fas fa-user-secret"></i></div><span>Anonymous</span></div>'
@@ -88,7 +93,7 @@ async function loadEvidence(complaint_id) {
     const box = document.getElementById('evidenceList');
     box.innerHTML = '<p style="color:#4a5568;font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Loading evidence...</p>';
     try {
-        const res  = await fetch(`${API}/get_complaints_evidence.php?complaint_id=${encodeURIComponent(complaint_id)}`, { credentials: 'include' });
+        const res  = await fetch(`${API}/get_complaints_evidence?complaint_id=${encodeURIComponent(complaint_id)}`, { credentials: 'include' });
         const data = await res.json();
         if (!data.success || !data.files || data.files.length === 0) {
             box.innerHTML = '<p style="color:#4a5568;font-size:13px;"><i class="fas fa-folder-open"></i> No evidence files uploaded yet.</p>';
@@ -97,7 +102,7 @@ async function loadEvidence(complaint_id) {
         box.innerHTML = data.files.map(f => {
             const isPdf = f.file_name.toLowerCase().endsWith('.pdf');
             const icon  = isPdf ? 'fa-file-pdf' : 'fa-file-image';
-            const url   = `../${f.file_path}`;
+            const url   = `/${f.file_path}`;
             const date  = new Date(f.uploaded_at).toLocaleString('en-GB');
             return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;margin-bottom:8px;">
                 <i class="fas ${icon}" style="color:#4f9eff;font-size:22px;flex-shrink:0;"></i>
@@ -123,7 +128,7 @@ async function saveChanges() {
     const status = document.getElementById('statusUpdate').value;
     const msg    = document.getElementById('adminMsgInput').value.trim();
     try {
-        const res  = await fetch(`${API}/complaints.php`, {
+        const res  = await fetch(`${API}/complaints/update-status`, {
             method:'POST', credentials:'include',
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ complaint_id: activeId, status, admin_message: msg })
@@ -139,7 +144,21 @@ async function saveChanges() {
     showToast();
 }
 
-function closeModal() { document.getElementById('detailModal').classList.remove('active'); activeId = null; }
-document.getElementById('detailModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-function showToast() { const t = document.getElementById('toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+function closeModal() {
+    const m = document.getElementById('detailModal');
+    if (m) m.classList.remove('active');
+    activeId = null;
+}
+function showToast() {
+    const t = document.getElementById('toast');
+    if (t) { t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+}
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Safe init — DOM ready হলে event bind করো
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('detailModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+    }
+});

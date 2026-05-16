@@ -22,7 +22,6 @@ class AuthController extends Controller
         $cleanPhone = preg_replace('/\D/', '', $request->phone);
         if (strlen($cleanPhone) === 13) $cleanPhone = substr($cleanPhone, 2);
 
-        // Handle file uploads
         $idDocPath    = null;
         $profilePhoto = null;
 
@@ -52,14 +51,12 @@ class AuthController extends Controller
             'profile_photo'    => $profilePhoto,
         ]);
 
-        $request->session()->regenerate();
-        $request->session()->put('user_id',    $user->id);
-        $request->session()->put('user_email', $user->email);
-        $request->session()->put('user_name',  $user->name);
+        $token = base64_encode($user->id . '|' . $user->email . '|' . time());
 
         return response()->json([
             'success' => true,
             'message' => 'Registration successful!',
+            'token'   => $token,
             'user'    => [
                 'id'    => $user->id,
                 'name'  => $user->name,
@@ -91,14 +88,17 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'message' => 'Your account is suspended.'], 403);
         }
 
-        $request->session()->regenerate();
+        $token = base64_encode($user->id . '|' . $user->email . '|' . time());
+
+        // Session-এ user info রাখো — API calls-এ লাগবে
         $request->session()->put('user_id',    $user->id);
-        $request->session()->put('user_email', $user->email);
         $request->session()->put('user_name',  $user->name);
+        $request->session()->put('user_email', $user->email);
 
         return response()->json([
             'success' => true,
             'message' => 'Login successful!',
+            'token'   => $token,
             'user'    => [
                 'id'               => $user->id,
                 'name'             => $user->name,
@@ -123,11 +123,15 @@ class AuthController extends Controller
     {
         if ($request->session()->has('user_id')) {
             return response()->json([
-                'success' => true,
-                'user_id' => $request->session()->get('user_id'),
-                'name'    => $request->session()->get('user_name'),
+                'success'  => true,
+                'loggedIn' => true,
+                'user'     => [
+                    'id'    => $request->session()->get('user_id'),
+                    'name'  => $request->session()->get('user_name'),
+                    'email' => $request->session()->get('user_email'),
+                ],
             ]);
         }
-        return response()->json(['success' => false], 401);
+        return response()->json(['success' => false, 'loggedIn' => false], 401);
     }
 }

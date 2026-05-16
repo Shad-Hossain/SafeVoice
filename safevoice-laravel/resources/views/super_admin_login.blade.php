@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Login — SafeVoice</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-card" style="max-width:420px;">
+        <div class="auth-logo">
+            <i class="fas fa-crown" style="font-size:40px;color:#fbbf24;"></i>
+        </div>
+        <div style="text-align:center;">
+            <div class="sa-badge"><i class="fas fa-shield-alt"></i> Super Admin Portal</div>
+        </div>
+        <h1 style="text-align:center;color:#fbbf24;margin-bottom:6px;">SafeVoice Owner</h1>
+        <p style="text-align:center;color:#a0b4cc;font-size:13px;margin-bottom:24px;">
+            Restricted access — PI recruitment & management only
+        </p>
+
+        <div class="warning-box">
+            <i class="fas fa-exclamation-triangle" style="margin-top:1px;"></i>
+            <span>This portal is for the platform owner only. Regular admins do not have access here. All PI identities are protected.</span>
+        </div>
+
+        <div id="errorBox" style="display:none;background:#ef444415;border:1px solid #ef444440;border-radius:10px;padding:12px 16px;color:#f87171;font-size:13px;margin-bottom:16px;"></div>
+
+        <div class="form-group">
+            <label class="form-label"><i class="fas fa-user-shield"></i> Super Admin Username</label>
+            <input type="text" id="username" class="form-input" placeholder="Enter username" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label class="form-label"><i class="fas fa-lock"></i> Password</label>
+            <div style="position:relative;">
+                <input type="password" id="password" class="form-input" placeholder="Enter password" style="padding-right:44px;">
+                <i class="fas fa-eye" id="togglePass" onclick="togglePassword()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#a0b4cc;cursor:pointer;"></i>
+            </div>
+        </div>
+
+        <button class="btn-auth" id="loginBtn" onclick="doLogin()" style="width:100%;margin-top:8px;">
+            <i class="fas fa-sign-in-alt"></i> Access Super Admin Panel
+        </button>
+
+        <p style="text-align:center;margin-top:20px;font-size:12px;color:#4a5568;">
+            <a href="/admin/dashboard" style="color:#a0b4cc;text-decoration:none;">← Back to Admin Dashboard</a>
+        </p>
+    </div>
+</div>
+
+<script src="{{ asset('js/theme.js') }}"></script>
+<script>
+function togglePassword() {
+    const p = document.getElementById('password');
+    const i = document.getElementById('togglePass');
+    if (p.type === 'password') { p.type = 'text'; i.className = 'fas fa-eye-slash'; }
+    else { p.type = 'password'; i.className = 'fas fa-eye'; }
+}
+
+document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const errBox   = document.getElementById('errorBox');
+    const btn      = document.getElementById('loginBtn');
+
+    errBox.style.display = 'none';
+    if (!username || !password) {
+        errBox.textContent = 'Please enter username and password.';
+        errBox.style.display = 'block';
+        return;
+    }
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+    btn.disabled  = true;
+
+    try {
+        const res  = await fetch('/api/super_admin_auth', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            localStorage.setItem('isSuperAdminLoggedIn', 'true');
+localStorage.setItem('sa_username', username);
+localStorage.setItem('sa_password', password);
+window.location.href = '/super-admin/dashboard';
+        } else {
+            errBox.textContent   = data.message || 'Invalid credentials';
+            errBox.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Access Super Admin Panel';
+            btn.disabled  = false;
+        }
+    } catch (err) {
+        // Demo fallback
+        if (username === 'superadmin' && password === 'SafeVoice@SA2026') {
+            localStorage.setItem('isSuperAdminLoggedIn', 'true');
+localStorage.setItem('sa_username', username);
+localStorage.setItem('sa_password', password);
+window.location.href = '/super-admin/dashboard';
+        } else {
+            errBox.textContent   = 'Authentication failed. Check credentials.';
+            errBox.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Access Super Admin Panel';
+            btn.disabled  = false;
+        }
+    }
+}
+</script>
+</body>
+</html>
