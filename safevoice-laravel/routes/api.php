@@ -14,6 +14,7 @@ use App\Http\Controllers\EvidenceController;
 Route::post('/register',         [AuthController::class, 'register']);
 Route::post('/login',            [AuthController::class, 'login']);
 Route::post('/logout',           [AuthController::class, 'logout']);
+Route::post('/forget_password',  [AuthController::class, 'forgotPassword']);
 Route::get('/check-session',     [AuthController::class, 'checkSession']);
 Route::get('/check_session',     [AuthController::class, 'checkSession']); // legacy
 
