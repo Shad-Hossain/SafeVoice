@@ -8,6 +8,7 @@ use App\Models\Complaint;
 use App\Models\PiNotification;
 use App\Models\PiPayment;
 use App\Models\User;
+use App\Models\ComplaintEvidence;
 
 class PrivateInvestigatorController extends Controller
 {
@@ -95,7 +96,7 @@ class PrivateInvestigatorController extends Controller
         return response()->json(['success' => true, 'notifications' => $complaints]);
     }
 
-    // POST /api/pi/payment — user submits payment details
+    // POST /api/pi/payment — auto confirm, auto assign PI, email both parties
     public function payment(Request $request)
     {
         $request->validate([
@@ -116,30 +117,65 @@ class PrivateInvestigatorController extends Controller
             return response()->json(['success' => false, 'message' => 'Transaction ID already used.'], 422);
         }
 
+       $userId = $request->session()->get('user_id')
+    ?? $request->input('user_id')
+    ?? $complaint->user_id;
+
+        // Save as confirmed immediately — no admin step needed
         PiPayment::create([
             'complaint_id'   => $request->complaint_id,
-            'user_id'        => $request->session()->get('user_id'),
+            'user_id'        => $userId,
             'payment_method' => $request->payment_method,
             'sender_number'  => $request->sender_number,
             'txn_id'         => $request->txn_id,
             'amount'         => 1000.00,
-            'status'         => 'pending',
+            'status'         => 'confirmed',
+            'confirmed_at'   => now(),
         ]);
 
-        $complaint->update(['status' => 'PI Payment Pending Confirmation']);
+        // Auto-assign PI with lowest workload
+        $pi = PrivateInvestigator::where('is_active', true)
+            ->orderBy('active_cases')
+            ->first();
+
+        if (!$pi) {
+            $complaint->update(['status' => 'PI Payment Pending Confirmation']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment received. PI will be assigned shortly.',
+            ]);
+        }
+
+        $complaint->update([
+            'assigned_pi_id' => $pi->id,
+            'pi_assigned_at' => now(),
+            'status'         => 'Private Investigator Assigned',
+        ]);
+
+        $pi->increment('active_cases');
+        $pi->increment('total_cases');
+
+        PiNotification::where('complaint_id', $request->complaint_id)
+            ->update(['status' => 'payment_confirmed', 'responded_at' => now()]);
+
+        // Email PI with full case details
+        $this->sendPiAssignmentEmail($pi, $complaint);
+
+        // Email User with confirmation
+        $this->sendUserConfirmationEmail($complaint, $pi, $userId);
 
         return response()->json([
             'success' => true,
-            'message' => 'Payment submitted. Admin will confirm within 24 hours.',
+            'message' => 'Payment confirmed! PI assigned. Check your email for details.',
+            'pi_code' => $pi->pi_code,
         ]);
     }
 
-    // GET /api/admin/payments — admin sees pending payments
+    // GET /api/admin/payments — admin sees all payments (case ID + TXN only, no user info)
     public function pendingPayments()
     {
-        $payments = PiPayment::where('status', 'pending')
-            ->orderByDesc('initiated_at')
-            ->get();
+        $payments = PiPayment::orderByDesc('initiated_at')
+            ->get(['id','complaint_id','payment_method','txn_id','amount','status','initiated_at','confirmed_at']);
         return response()->json(['success' => true, 'payments' => $payments]);
     }
 
@@ -185,23 +221,70 @@ class PrivateInvestigatorController extends Controller
         ]);
     }
 
-    // POST /api/pi/reject-payment — user rejects/declines PI service
-    public function rejectPayment(Request $request)
+    public function update(Request $request)
     {
-        $request->validate(['complaint_id' => 'required|string']);
-
-        $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
-        if (!$complaint) return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
-
-        PiNotification::where('complaint_id', $request->complaint_id)
-            ->update(['status' => 'dismissed']);
-
-        return response()->json([
-            'success'  => true,
-            'message'  => 'Noted. You can still pay within the deadline.',
-            'deadline' => $complaint->payment_deadline,
-        ]);
+        $request->validate(['id' => 'required|integer']);
+        $pi = PrivateInvestigator::findOrFail($request->id);
+        $pi->update(array_filter([
+            'full_name'    => $request->full_name,
+            'phone'        => $request->phone,
+            'email'        => $request->email,
+            'nid_number'   => $request->nid_number,
+            'address'      => $request->address,
+            'photo_url'    => $request->photo_url,
+            'nid_photo_url'=> $request->nid_photo_url,
+            'notes'        => $request->notes,
+        ], fn($v) => $v !== null));
+        return response()->json(['success' => true, 'message' => 'PI updated.', 'pi' => $pi]);
     }
+
+    public function toggle(Request $request)
+    {
+        $request->validate(['id' => 'required|integer']);
+        $pi = PrivateInvestigator::findOrFail($request->id);
+        $pi->update(['is_active' => !$pi->is_active]);
+        return response()->json(['success' => true, 'is_active' => $pi->is_active]);
+    }
+
+    public function destroy(Request $request)
+    {
+        $request->validate(['id' => 'required|integer']);
+        PrivateInvestigator::findOrFail($request->id)->delete();
+        return response()->json(['success' => true, 'message' => 'PI removed.']);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate(['id' => 'required|integer', 'new_password' => 'required|min:8']);
+        $pi = PrivateInvestigator::findOrFail($request->id);
+        $pi->update(['password' => \Illuminate\Support\Facades\Hash::make($request->new_password)]);
+        return response()->json(['success' => true, 'message' => 'Password updated.']);
+    }
+
+    public function rejectPayment(Request $request)
+{
+    $request->validate(['complaint_id' => 'required|string']);
+
+    $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
+    if (!$complaint) return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
+
+    $deadlinePassed = $complaint->payment_deadline && now()->isAfter($complaint->payment_deadline);
+
+    PiNotification::where('complaint_id', $request->complaint_id)
+        ->update(['status' => 'dismissed', 'responded_at' => now()]);
+
+    $newStatus = $deadlinePassed ? 'Rejected' : 'PI Payment Pending';
+    $complaint->update(['status' => $newStatus]);   // ← এই line টা আছে কিনা check করুন
+
+    return response()->json([
+        'success'  => true,
+        'message'  => $deadlinePassed
+            ? 'Payment deadline passed. Complaint rejected.'
+            : 'Noted. You can still pay before the deadline.',
+        'status'   => $newStatus,
+        'deadline' => $complaint->payment_deadline,
+    ]);
+}
 
     // PHPMailer helper
     private function sendPiAssignmentEmail(PrivateInvestigator $pi, Complaint $complaint): array
@@ -273,6 +356,37 @@ class PrivateInvestigatorController extends Controller
                     </tr></table></td></tr>";
         }
 
+        // Evidence files section
+        $evidenceFiles = ComplaintEvidence::where('complaint_id', $complaint->complaint_id)->get();
+        $evidenceSection = '';
+        if ($evidenceFiles->isNotEmpty()) {
+            $appUrl = env('APP_URL', 'http://127.0.0.1:8000');
+            $fileRows = $evidenceFiles->map(function($f) use ($appUrl) {
+                $isPdf = strtolower(substr($f->file_name, -4)) === '.pdf';
+                $icon  = $isPdf ? '📄' : '🖼️';
+                $url   = $appUrl . '/' . ltrim($f->file_path, '/');
+                return "<tr><td style='padding:8px 0;border-bottom:1px solid #1e2d4a;'>
+                    <table width='100%'><tr>
+                        <td style='color:#a0b4cc;font-size:13px;width:24px;'>{$icon}</td>
+                        <td style='color:#fff;font-size:13px;'>" . htmlspecialchars($f->file_name) . "</td>
+                        <td style='text-align:right;'>
+                            <a href='{$url}' style='color:#4f9eff;font-size:12px;font-weight:600;text-decoration:none;background:#1e2d4a;border:1px solid #4f9eff40;padding:4px 10px;border-radius:6px;'>View</a>
+                        </td>
+                    </tr></table>
+                </td></tr>";
+            })->join('');
+
+            $evidenceSection = "
+<tr><td style='padding:0 32px 20px;'>
+  <div style='background:#070d1a;border:1px solid #1e2d4a;border-radius:12px;padding:20px 24px;'>
+    <div style='font-size:12px;color:#4f9eff;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:14px;'>📎 Evidence Files ({$evidenceFiles->count()})</div>
+    <table width='100%' cellpadding='0' cellspacing='0'>
+      {$fileRows}
+    </table>
+  </div>
+</td></tr>";
+        }
+
         return <<<HTML
 <!DOCTYPE html><html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#070d1a;font-family:'Segoe UI',Arial,sans-serif;">
@@ -336,6 +450,7 @@ class PrivateInvestigatorController extends Controller
     <p style="color:#a0b4cc;font-size:14px;line-height:1.8;margin:0;">{$desc}</p>
   </div>
 </td></tr>
+{$evidenceSection}
 <tr><td style="padding:0 32px 24px;">
   <div style="background:#f59e0b10;border-left:4px solid #f59e0b;border-radius:8px;padding:14px 18px;">
     <p style="color:#fbbf24;font-size:13px;margin:0;font-weight:600;">
@@ -361,5 +476,77 @@ HTML;
             . "Location: {$complaint->location}\n"
             . "Description: {$complaint->description}\n\n"
             . "Contact the victim within 48 hours.\n\n— SafeVoice System";
+    }
+
+    // Send confirmation email to user after PI assigned
+    private function sendUserConfirmationEmail(Complaint $complaint, PrivateInvestigator $pi, $userId): void
+    {
+        if (!$userId) return;
+        $user = User::find($userId);
+        if (!$user || !$user->email) return;
+
+        try {
+            $mailerPath = base_path('PHPMailer-master/src');
+            require_once $mailerPath . '/Exception.php';
+            require_once $mailerPath . '/PHPMailer.php';
+            require_once $mailerPath . '/SMTP.php';
+
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = env('MAIL_HOST', 'smtp.gmail.com');
+            $mail->SMTPAuth   = true;
+            $mail->Username   = env('MAIL_USERNAME', '');
+            $mail->Password   = env('MAIL_PASSWORD', '');
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = env('MAIL_PORT', 587);
+            $mail->setFrom(env('MAIL_FROM_ADDRESS', env('MAIL_USERNAME', '')), 'SafeVoice System');
+            $mail->addAddress($user->email, $user->name);
+            $mail->isHTML(true);
+            $mail->Subject = "SafeVoice — PI Assigned for {$complaint->complaint_id}";
+
+            $type = ucfirst(str_replace('_', ' ', $complaint->type));
+            $mail->Body = <<<HTML
+<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#070d1a;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr><td align="center" style="padding:40px 20px;">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#0d1526;border-radius:16px;border:1px solid #1e2d4a;max-width:560px;">
+<tr><td style="background:linear-gradient(135deg,#1a3a6e,#0d1f42);padding:28px 32px;border-radius:16px 16px 0 0;text-align:center;">
+  <div style="font-size:28px;margin-bottom:6px;">🛡️</div>
+  <h1 style="color:#fff;margin:0;font-size:20px;font-weight:700;">SafeVoice</h1>
+  <p style="color:#a0b4cc;margin:4px 0 0;font-size:13px;">Private Investigator Assigned</p>
+</td></tr>
+<tr><td style="padding:28px 32px 0;">
+  <p style="color:#a0b4cc;font-size:15px;margin:0 0 10px;">Dear <strong style="color:#fff;">{$user->name}</strong>,</p>
+  <p style="color:#a0b4cc;font-size:14px;line-height:1.7;margin:0 0 20px;">
+    Your payment has been received and a <strong style="color:#c084fc;">Private Investigator</strong>
+    has been assigned to your case. They will contact you directly on your registered email.
+  </p>
+</td></tr>
+<tr><td style="padding:0 32px 20px;">
+  <div style="background:#a855f710;border:1px solid #a855f740;border-radius:12px;padding:18px 22px;text-align:center;">
+    <div style="font-size:11px;color:#a0b4cc;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Your Case ID</div>
+    <div style="font-size:22px;font-weight:800;color:#4f9eff;font-family:monospace;">{$complaint->complaint_id}</div>
+    <div style="font-size:13px;color:#a0b4cc;margin-top:6px;">Type: {$type}</div>
+  </div>
+</td></tr>
+<tr><td style="padding:0 32px 24px;">
+  <div style="background:#2ecc7110;border-left:4px solid #2ecc71;border-radius:8px;padding:14px 18px;">
+    <p style="color:#2ecc71;font-size:13px;margin:0;font-weight:600;">
+      ✅ Your PI will reach out to you via email. Please check your inbox regularly.
+    </p>
+  </div>
+</td></tr>
+<tr><td style="border-top:1px solid #1e2d4a;padding:20px 32px;text-align:center;">
+  <p style="color:#3a4a5e;font-size:12px;margin:0;">© 2026 SafeVoice · Protecting voices, securing futures.</p>
+</td></tr>
+</table></td></tr></table>
+</body></html>
+HTML;
+            $mail->AltBody = "Dear {$user->name}, your PI has been assigned for case {$complaint->complaint_id}. They will contact you via email.";
+            $mail->send();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('User confirmation email failed: ' . $e->getMessage());
+        }
     }
 }

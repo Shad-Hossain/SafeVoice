@@ -79,12 +79,16 @@ Route::post('/pi/reject-payment',        [PrivateInvestigatorController::class, 
 Route::get('/pi_management',             [PrivateInvestigatorController::class, 'index']); // legacy
 
 // ── Admin Payment Management ─────────────────────────────────
-Route::get('/admin/payments',            [PrivateInvestigatorController::class, 'pendingPayments']);
-Route::post('/admin/payments/confirm',   [PrivateInvestigatorController::class, 'confirmPayment']);
-
+// ── Admin Payments (READ ONLY — case_id + txn_id only, no user info) ──
+Route::get('/admin/payments', [PrivateInvestigatorController::class, 'pendingPayments']);
+// NOTE: /admin/payments/confirm is REMOVED — system auto-confirms on user payment
 // ── Super Admin PI visibility ─────────────────────────────────
 Route::get('/super-admin/pi-cases',      [SuperAdminController::class, 'piCases']);
 Route::post('/super-admin/add-pi',       [PrivateInvestigatorController::class, 'store']);
+Route::post('/super-admin/pi/update',    [PrivateInvestigatorController::class, 'update']);
+Route::post('/super-admin/pi/toggle',    [PrivateInvestigatorController::class, 'toggle']);
+Route::post('/super-admin/pi/delete',    [PrivateInvestigatorController::class, 'destroy']);
+Route::post('/super-admin/pi/password',  [PrivateInvestigatorController::class, 'changePassword']);
 
 // ── Track complaint ───────────────────────────────────────────
 Route::get('/track_complaint',           [ComplaintController::class, 'track']);

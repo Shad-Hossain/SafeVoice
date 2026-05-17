@@ -219,6 +219,7 @@ async function loadComplaints() {
                     <a href="/track?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> View</a>
                     &nbsp;
                     <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
+                    ${(c.status === 'PI Payment Pending' || c.status === 'PI Notification Sent') && (!c.payment_deadline || new Date(c.payment_deadline) > new Date()) ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
                 </td>
             </tr>`).join('');
     } catch(e) {
@@ -260,6 +261,7 @@ async function loadAllComplaints() {
                     <a href="/track?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> Track</a>
                     &nbsp;
                     <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
+                    ${(c.status === 'PI Payment Pending' || c.status === 'PI Notification Sent') && (!c.payment_deadline || new Date(c.payment_deadline) > new Date()) ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
                 </td>
             </tr>`).join('');
     } catch(e) {
@@ -316,7 +318,7 @@ function formatDate(d) {
     return date.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
 }
 function statusBadge(s) {
-    const map = { 'Submitted':'<span class="status review">Submitted</span>', 'Under Review':'<span class="status pending">Under Review</span>', 'Resolved':'<span class="status resolved">Resolved</span>', 'Rejected':'<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>', 'Private Investigator Assigned':'<span class="status" style="background:#a855f715;color:#c084fc;border:1px solid #a855f740;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">PI Assigned</span>' };
+    const map = { 'Submitted':'<span class="status review">Submitted</span>', 'Under Review':'<span class="status pending">Under Review</span>', 'Resolved':'<span class="status resolved">Resolved</span>', 'Rejected':'<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>', 'PI Notification Sent':'<span class="status" style="background:#fbbf2415;color:#fbbf24;border:1px solid #fbbf2440;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;">PI Review Pending</span>', 'PI Payment Pending':'<span class="status" style="background:#e2146c15;color:#e2146c;border:1px solid #e2146c40;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;">💳 Payment Pending</span>', 'Private Investigator Assigned':'<span class="status" style="background:#a855f715;color:#c084fc;border:1px solid #a855f740;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;">PI Assigned</span>' };
     return map[s] || `<span class="status">${s}</span>`;
 }
 
@@ -350,31 +352,56 @@ document.addEventListener('DOMContentLoaded', () => {
     checkPINotifications();
 });
 
+// ── "Pay Now" button — decline করার পরেও deadline এর মধ্যে pay করা যাবে ──
+function openPaymentForComplaint(complaintId) {
+    currentPIComplaintId = complaintId;
+    document.getElementById('bkashComplaintRef').textContent = complaintId;
+    document.getElementById('bkashModal').style.display = 'flex';
+}
+
 // ── PI Notification System ─────────────────────
 let currentPIComplaintId = null;
 
 async function checkPINotifications() {
-    // 1. localStorage check (same device / demo mode)
+    // Dismissed list — user যেগুলো decline করেছে সেগুলো আর দেখাব না
+    const dismissed = JSON.parse(localStorage.getItem('sv-pi-dismissed') || '[]');
+
+    // ১. localStorage check (same device / demo mode)
     const lsNotifs  = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
-    const lsPending = lsNotifs.find(n => n.status === 'pending_payment');
+    const lsPending = lsNotifs.find(n =>
+        n.status === 'pending_payment' && !dismissed.includes(n.complaint_id)
+    );
     if (lsPending) {
         currentPIComplaintId = lsPending.complaint_id;
         document.getElementById('piNotifyComplaintId').textContent = lsPending.complaint_id;
         document.getElementById('piUserModal').style.display = 'flex';
         return;
     }
-    // 2. DB poll — works across devices
+
+    // ২. DB poll — works across devices / after logout-login
     try {
         const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
         const userId = svUser.id || svUser.user_id || '';
         const url    = userId ? `/api/my-complaints?user_id=${userId}` : '/api/my-complaints';
         const res    = await fetch(url, { credentials: 'include' });
-        const data = await res.json();
+        const data   = await res.json();
         const complaints = data.complaints || [];
+
         for (const c of complaints) {
-            if (c.status === 'PI Notification Sent') {
+            // Status 'PI Notification Sent' + deadline এখনো পার হয়নি + dismissed নয়
+            if (
+                c.status === 'PI Notification Sent' &&
+                !dismissed.includes(c.complaint_id) &&
+                (!c.payment_deadline || new Date(c.payment_deadline) > new Date())
+            ) {
                 currentPIComplaintId = c.complaint_id;
                 document.getElementById('piNotifyComplaintId').textContent = c.complaint_id;
+                // Deadline বাকি কত দিন দেখাও
+                if (c.payment_deadline) {
+                    const days = Math.ceil((new Date(c.payment_deadline) - new Date()) / 86400000);
+                    const deadlineEl = document.getElementById('piDeadlineNote');
+                    if (deadlineEl) deadlineEl.textContent = `Deadline: ${days} day(s) remaining`;
+                }
                 document.getElementById('piUserModal').style.display = 'flex';
                 return;
             }
@@ -382,14 +409,49 @@ async function checkPINotifications() {
     } catch(e) { /* backend offline — demo mode */ }
 }
 
-function rejectPINotify() {
-    // Remove notification, mark as dismissed
+async function rejectPINotify() {
+    const cid = currentPIComplaintId;
+
+    // ১. DB-তে dismissed হিসেবে mark করো
+    let deadline = null;
+    try {
+        const res = await fetch('/api/pi/reject-payment', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body:    JSON.stringify({ complaint_id: cid })
+        });
+        const data = await res.json();
+        deadline = data.deadline || null;
+    } catch(e) { /* offline */ }
+
+    // ২. localStorage notification queue থেকে সরাও
     const notifications = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
-    const updated = notifications.filter(n => n.complaint_id !== currentPIComplaintId);
-    localStorage.setItem('sv-pi-notifications', JSON.stringify(updated));
+    localStorage.setItem('sv-pi-notifications',
+        JSON.stringify(notifications.filter(n => n.complaint_id !== cid)));
+
+    // ৩. Dismissed list এ রাখো
+    const dismissed = JSON.parse(localStorage.getItem('sv-pi-dismissed') || '[]');
+    if (!dismissed.includes(cid)) dismissed.push(cid);
+    localStorage.setItem('sv-pi-dismissed', JSON.stringify(dismissed));
+
     document.getElementById('piUserModal').style.display = 'none';
-    showToast('<i class="fas fa-times-circle"></i> Private Investigator request declined. No further inquiry.');
+
+    // Deadline info সহ toast দেখাও
+    let deadlineMsg = '';
+    if (deadline) {
+        const d = new Date(deadline);
+        const days = Math.ceil((d - new Date()) / 86400000);
+        if (days > 0) deadlineMsg = ` You have <strong>${days} day(s)</strong> to pay before the deadline.`;
+    }
+    showToast('<i class="fas fa-times-circle"></i> PI request declined.' + deadlineMsg);
     currentPIComplaintId = null;
+
+    // Complaint list reload — "Pay for PI" button এখন দেখা যাবে
+    await loadComplaints();
+    if (document.getElementById('view-mycomplaints').style.display !== 'none') {
+        await loadAllComplaints();
+    }
 }
 
 function acceptPINotify() {
@@ -425,30 +487,46 @@ async function processBkashPayment() {
     btn.disabled  = true;
 
     try {
-        // Call PI auto-assignment engine — picks lowest workload PI, sends email
-        const res  = await fetch('/api/pi_assign', {
+        // ✅ সঠিক route: /api/pi/payment — auto-confirm, auto-assign PI, email both
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const res  = await fetch('/api/pi/payment', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body:    JSON.stringify({
                 complaint_id:   currentPIComplaintId,
                 txn_id:         txnId,
                 payment_method: method,
-                sender_number:  number
+                sender_number:  number,
+                user_id:        svUser.id || svUser.user_id || ''
             })
         });
         const data = await res.json();
-        if (!data.success) console.warn('PI assign:', data.message);
+        if (!data.success) {
+            btn.innerHTML = '<i class="fas fa-lock"></i> Pay ৳1,000';
+            btn.disabled  = false;
+            alert(data.message || 'Payment failed. Please try again.');
+            return;
+        }
     } catch(e) {
-        console.log('PI assign (demo mode):', e.message);
+        btn.innerHTML = '<i class="fas fa-lock"></i> Pay ৳1,000';
+        btn.disabled  = false;
+        alert('Could not connect. Please check your connection and try again.');
+        return;
     }
 
-    // Clear notification from queue
-    const notifs   = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
+    // Clear notification from queue (localStorage + dismissed list)
+    const notifs = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
     localStorage.setItem('sv-pi-notifications',
         JSON.stringify(notifs.filter(n => n.complaint_id !== currentPIComplaintId)));
 
-    document.getElementById('txnId').textContent              = txnId;
-    document.getElementById('bkashModal').style.display       = 'none';
+    // Dismissed list থেকেও সরাও (payment হয়ে গেছে, আর দরকার নেই)
+    const dismissed = JSON.parse(localStorage.getItem('sv-pi-dismissed') || '[]');
+    localStorage.setItem('sv-pi-dismissed',
+        JSON.stringify(dismissed.filter(id => id !== currentPIComplaintId)));
+
+    document.getElementById('txnId').textContent                 = txnId;
+    document.getElementById('bkashModal').style.display          = 'none';
     document.getElementById('paymentSuccessModal').style.display = 'flex';
 
     btn.innerHTML = '<i class="fas fa-lock"></i> Pay ৳1,000';
@@ -472,7 +550,8 @@ function closePaymentSuccess() {
         <p style="text-align:center;color:#a0b4cc;font-size:14px;line-height:1.6;margin-bottom:6px;">
             After reviewing your complaint <strong id="piNotifyComplaintId" style="color:#4f9eff;"></strong>, our admin team has determined that a <strong style="color:#c084fc;">Private Investigator</strong> is needed for further action.
         </p>
-        <p style="text-align:center;color:#a0b4cc;font-size:13px;margin-bottom:20px;">Would you like to proceed? A one-time service fee applies.</p>
+        <p style="text-align:center;color:#a0b4cc;font-size:13px;margin-bottom:8px;">Would you like to proceed? A one-time service fee applies.</p>
+        <p id="piDeadlineNote" style="text-align:center;color:#fbbf24;font-size:12px;margin-bottom:20px;font-weight:600;"></p>
         <div style="background:#a855f710;border:1px solid #a855f740;border-radius:12px;padding:16px 20px;text-align:center;margin-bottom:22px;">
             <div style="font-size:12px;color:#a0b4cc;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Service Fee</div>
             <div style="font-size:30px;font-weight:800;color:#c084fc;">৳1,000</div>

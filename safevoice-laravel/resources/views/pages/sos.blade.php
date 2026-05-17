@@ -3,6 +3,12 @@
 @section('styles')
 <link rel="stylesheet" href="{{ asset('css/sos.css') }}">
 <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
+<style>
+/* SOS page সবসময় dark mode এ থাকবে */
+body { background: #070d1a !important; color: #fff !important; }
+body.light-mode { background: #070d1a !important; color: #fff !important; }
+.theme-toggle { display: none !important; }
+</style>
 @endsection
 
 @section('content')
@@ -291,5 +297,5 @@ function showModalMsg(msg, type) {
 @endsection
 
 @section('scripts')
-<script src="{{ asset('js/theme.js') }}"></script>
+{{-- SOS page এ theme toggle নেই, সবসময় dark mode --}}
 @endsection

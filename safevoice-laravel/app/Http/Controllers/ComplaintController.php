@@ -13,7 +13,8 @@ class ComplaintController extends Controller
     {
         $query = Complaint::query()
             ->select('id','complaint_id','type','incident_date','location',
-                     'description','is_anonymous','status','submitted_at','updated_at');
+                     'description','is_anonymous','status','submitted_at','updated_at',
+                     'assigned_pi_id','pi_assigned_at','payment_deadline','user_id');
 
         if ($request->filled('status')) $query->where('status', $request->status);
         if ($request->filled('type'))   $query->where('type',   $request->type);
@@ -124,11 +125,25 @@ class ComplaintController extends Controller
             return response()->json(['success' => true, 'message' => 'Status updated. Payment notification sent to user.']);
         }
 
-      $complaint->update([
-    'status'        => $request->status,
-    'admin_message' => $request->input('admin_message', ''),
-]);
-return response()->json(['success' => true, 'message' => 'Status updated to ' . $request->status]);
+        $oldStatus = $complaint->status;
+
+        $complaint->update([
+            'status'        => $request->status,
+            'admin_message' => $request->input('admin_message', ''),
+        ]);
+
+        // Case Resolved বা Rejected হলে assigned PI এর active_cases কমাও
+        // (total_cases assign এর সময়ই বেড়েছে, সেটা আর কমবে না)
+        if (in_array($request->status, ['Resolved', 'Rejected'])
+            && !in_array($oldStatus, ['Resolved', 'Rejected'])
+            && $complaint->assigned_pi_id)
+        {
+            \App\Models\PrivateInvestigator::where('id', $complaint->assigned_pi_id)
+                ->where('active_cases', '>', 0)
+                ->decrement('active_cases');
+        }
+
+        return response()->json(['success' => true, 'message' => 'Status updated to ' . $request->status]);
        
     }
 

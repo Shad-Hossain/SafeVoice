@@ -125,7 +125,7 @@
         .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1e2d4a; font-size: 14px; }
         body.light-mode .detail-row { border-bottom-color: #e2e8f0; }
         .detail-row:last-child { border-bottom: none; }
-        .detail-label { color: #a0b4cc; font-weight: 600; min-width: 150px; }
+        .detail-label { color: #a0b4cc; font-weight: 600; min-width: 130px; }
         .detail-value { color: #fff; text-align: right; flex: 1; }
         body.light-mode .detail-value { color: #0f172a; }
         .desc-box { background: #0a0f1e; border: 1px solid #1e2d4a; border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 13px; color: #a0b4cc; line-height: 1.7; }
@@ -150,10 +150,6 @@
         .pi-modal-btns .btn-send:hover { opacity:.85; }
         .pi-modal-btns .btn-cancel { background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:10px;padding:13px 20px;font-size:14px;cursor:pointer;transition:all .2s; }
         .pi-modal-btns .btn-cancel:hover { border-color:#4f9eff;color:#4f9eff; }
-
-        /* User details modal photo */
-        .user-photo-wrap { text-align:center; margin-top:16px; }
-        .user-photo-wrap img { width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #4f9eff; }
     </style>
 @endsection
 
@@ -162,12 +158,15 @@
     if (localStorage.getItem('isAdminLoggedIn') !== 'true') window.location.href = '/admin/login';
 </script>
 
+
+
 <div class="dashboard-layout">
     <aside class="sidebar">
         <ul class="sidebar-menu">
             <li id="nav-dashboard"><a href="#" onclick="showSection('dashboard')"><i class="fas fa-home"></i> Dashboard</a></li>
             <li id="nav-complaints"><a href="#" onclick="showSection('complaints')"><i class="fas fa-file-alt"></i> Complaints</a></li>
             <li id="nav-users"><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Users</a></li>
+            <li id="nav-payments"><a href="#" onclick="showSection('payments')"><i class="fas fa-credit-card"></i> Payments</a></li>
             <li id="nav-sos"><a href="#" onclick="showSection('sos')"><i class="fas fa-exclamation-triangle"></i> SOS Alerts</a></li>
         </ul>
         <div style="padding:14px 16px;border-top:1px solid #1e2d4a;margin-top:20px">
@@ -179,7 +178,6 @@
 
     <main class="main-content" id="mainContent">
 
-        <!-- DASHBOARD VIEW -->
         <div id="view-dashboard">
             <div class="welcome-bar">
                 <h1>Welcome Admin 👋</h1>
@@ -219,7 +217,6 @@
             </div>
         </div>
 
-        <!-- COMPLAINTS VIEW -->
         <div id="view-complaints" style="display:none">
             <div class="welcome-bar" style="margin-bottom:20px">
                 <h1><i class="fas fa-file-alt" style="font-size:22px;margin-right:10px"></i>All Complaints</h1>
@@ -230,9 +227,9 @@
                     <option value="">All Statuses</option>
                     <option value="Submitted">Submitted</option>
                     <option value="Under Review">Under Review</option>
-                    <option value="PI Notification Sent">PI Notification Sent</option>
-                    <option value="PI Payment Confirmed">PI Payment Confirmed</option>
-                    <option value="Private Investigator Assigned">PI Assigned</option>
+                   <option value="PI Notification Sent">PI Notification Sent</option>
+<option value="PI Payment Pending">PI Payment Pending</option>
+<option value="Private Investigator Assigned">PI Assigned</option>
                     <option value="Resolved">Resolved</option>
                     <option value="Rejected">Rejected</option>
                 </select>
@@ -270,34 +267,49 @@
             </div>
         </div>
 
-        <!-- USERS VIEW -->
         <div id="view-users" style="display:none">
             <div class="welcome-bar">
                 <h1><i class="fas fa-users" style="font-size:22px;margin-right:10px"></i>User Management</h1>
-                <p>View full user details, manage account status</p>
+                <p>Ban, suspend, or manage user accounts</p>
+            </div>
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Name</th><th>Email</th><th>Joined</th><th>Complaints</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PAYMENTS VIEW -->
+        <div id="view-payments" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-credit-card" style="font-size:22px;margin-right:10px"></i>Payments</h1>
+                <p>PI service payments submitted by users</p>
             </div>
             <div class="complaints-table">
                 <table>
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Complaints</th>
+                            <th>Case ID</th>
+                            <th>Method</th>
+                            <th>TXN ID</th>
+                            <th>Amount</th>
                             <th>Status</th>
-                            <th>Manage</th>
-                            <th>Details</th>
+                            <th>Date</th>
                         </tr>
                     </thead>
-                    <tbody id="users-tbody">
-                        <tr><td colspan="8" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
+                    <tbody id="payments-tbody">
+                        <tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- SOS VIEW -->
         <div id="view-sos" style="display:none">
             <div class="welcome-bar"><h1>SOS Alerts</h1><p>Emergency SOS signals</p></div>
             <div class="complaints-table">
@@ -315,18 +327,6 @@
     </main>
 </div>
 
-<!-- USER DETAILS MODAL -->
-<div class="view-modal-overlay" id="userModal">
-    <div class="view-modal">
-        <h3><i class="fas fa-user"></i> User Details</h3>
-        <div id="userModalContent"></div>
-        <button class="modal-close-btn" onclick="document.getElementById('userModal').classList.remove('active')">
-            <i class="fas fa-times"></i> Close
-        </button>
-    </div>
-</div>
-
-<!-- COMPLAINT DETAILS MODAL -->
 <div class="view-modal-overlay" id="viewModal">
     <div class="view-modal">
         <h3><i class="fas fa-file-alt"></i> Complaint Details</h3>
@@ -337,7 +337,8 @@
     </div>
 </div>
 
-<!-- PI NOTIFICATION MODAL -->
+
+<!-- PI Notification Modal (Admin sends to user) -->
 <div class="pi-modal-overlay" id="piNotifyModal">
     <div class="pi-modal">
         <div class="pi-modal-icon"><i class="fas fa-user-secret"></i></div>
@@ -363,7 +364,7 @@
 <script src="{{ asset('js/theme.js') }}"></script>
 <script>
 function showSection(section, preFilter) {
-    ['dashboard','complaints','users','sos'].forEach(s => {
+    ['dashboard','complaints','users','payments','sos'].forEach(s => {
         document.getElementById('view-' + s).style.display = 'none';
         document.getElementById('nav-' + s)?.classList.remove('active');
     });
@@ -374,13 +375,45 @@ function showSection(section, preFilter) {
         if (preFilter) document.getElementById('filterStatus').value = preFilter;
         loadComplaints();
     }
-    if (section === 'users') loadUsers();
+    if (section === 'users')    loadUsers();
+    if (section === 'payments') loadPayments();
 }
 
-// ── USER LIST ────────────────────────────────────────────────
+// ── PAYMENTS ─────────────────────────────────────────────────
+async function loadPayments() {
+    const tbody = document.getElementById('payments-tbody');
+    tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    try {
+        const res  = await fetch('/api/admin/payments');
+        const data = await res.json();
+        if (!data.success) throw new Error();
+        const list = data.payments || [];
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-inbox"></i> No payments yet.</td></tr>';
+            return;
+        }
+        const methodLabel = { bkash:'bKash', nagad:'Nagad', rocket:'Rocket', bank:'Bank Transfer' };
+        tbody.innerHTML = list.map((p, i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td><strong style="color:#4f9eff">${p.complaint_id}</strong></td>
+                <td><span style="font-weight:600;color:#a0b4cc">${methodLabel[p.payment_method] || p.payment_method}</span></td>
+                <td><code style="color:#fbbf24;font-size:13px;letter-spacing:1px">${p.txn_id}</code></td>
+                <td style="color:#2ecc71;font-weight:700">৳${parseFloat(p.amount).toLocaleString()}</td>
+                <td>${p.status === 'confirmed'
+                    ? '<span style="background:#2ecc7115;color:#2ecc71;border:1px solid #2ecc7140;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;">✅ Confirmed</span>'
+                    : '<span style="background:#fbbf2415;color:#fbbf24;border:1px solid #fbbf2440;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;">⏳ Pending</span>'
+                }</td>
+                <td style="color:var(--text-secondary);font-size:12px">${formatDate(p.initiated_at)}</td>
+            </tr>`).join('');
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="7" class="table-state">Could not load payments.</td></tr>';
+    }
+}
+
 async function loadUsers() {
     const tbody = document.getElementById('users-tbody');
-    tbody.innerHTML = '<tr><td colspan="8" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
     try {
         const res  = await fetch('/api/manage_user');
         const data = await res.json();
@@ -390,7 +423,7 @@ async function loadUsers() {
                 <td>${i+1}</td>
                 <td><strong>${u.name}</strong></td>
                 <td style="color:var(--text-secondary);font-size:13px">${u.email}</td>
-                <td style="color:var(--text-secondary);font-size:13px">${u.phone || '—'}</td>
+                <td style="color:var(--text-secondary);font-size:13px">${formatDate(u.joined_at)}</td>
                 <td style="text-align:center">${u.complaints_count}</td>
                 <td>${userStatusBadge(u.status)}</td>
                 <td>
@@ -401,14 +434,9 @@ async function loadUsers() {
                         <option ${u.status==='Banned'    ? 'selected':''} value="Banned">❌ Banned</option>
                     </select>
                 </td>
-                <td>
-                    <button class="btn-view" onclick='viewUserDetails(${JSON.stringify(u)})'>
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                </td>
             </tr>`).join('');
     } catch(e) {
-        tbody.innerHTML = '<tr><td colspan="8" class="table-state">Could not load users.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="table-state">Could not load users.</td></tr>';
     }
 }
 
@@ -438,66 +466,6 @@ function userStatusBadge(s) {
     return map[s] || `<span class="status">${s}</span>`;
 }
 
-function viewUserDetails(u) {
-    const idLabel = u.id_type === 'nid' ? 'NID Number' : 'Birth Certificate No.';
-    const idIcon  = u.id_type === 'nid' ? '🪪 NID' : '📄 Birth Certificate';
-
-    document.getElementById('userModalContent').innerHTML = `
-        <div class="detail-row">
-            <span class="detail-label">Full Name</span>
-            <span class="detail-value">${u.name}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Email</span>
-            <span class="detail-value">${u.email}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Phone</span>
-            <span class="detail-value">${u.phone || '—'}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Location / Address</span>
-            <span class="detail-value">${u.location || '—'}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">ID Type</span>
-            <span class="detail-value">${idIcon}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">${idLabel}</span>
-            <span class="detail-value" style="color:#4f9eff;font-weight:700;font-family:monospace;font-size:15px">${u.id_number || '—'}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Account Status</span>
-            <span class="detail-value">${userStatusBadge(u.status)}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Complaints Filed</span>
-            <span class="detail-value">${u.complaints_count}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-label">Joined At</span>
-            <span class="detail-value">${formatDate(u.joined_at)}</span>
-        </div>
-        ${u.id_document_path ? `
-        <div class="detail-row">
-            <span class="detail-label">ID Document</span>
-            <span class="detail-value">
-                <a href="/${u.id_document_path}" target="_blank"
-                   style="color:#4f9eff;text-decoration:none;font-size:13px;font-weight:600;">
-                    <i class="fas fa-eye"></i> View Document
-                </a>
-            </span>
-        </div>` : ''}
-        ${u.profile_photo ? `
-        <div class="user-photo-wrap">
-            <img src="/${u.profile_photo}" alt="Profile Photo">
-        </div>` : ''}
-    `;
-    document.getElementById('userModal').classList.add('active');
-}
-
-// ── DASHBOARD ────────────────────────────────────────────────
 async function loadDashboard() {
     document.getElementById('dashboard-loading').textContent = 'Loading...';
     try {
@@ -531,7 +499,6 @@ async function loadDashboard() {
     }
 }
 
-// ── COMPLAINTS ───────────────────────────────────────────────
 async function loadComplaints() {
     const status = document.getElementById('filterStatus').value;
     const type   = document.getElementById('filterType').value;
@@ -556,18 +523,16 @@ async function loadComplaints() {
                 <td>${formatType(c.type)}</td>
                 <td style="font-size:12px;color:var(--text-secondary)">${c.location || '—'}</td>
                 <td style="font-size:12px;color:var(--text-secondary)">${formatDate(c.submitted_at)}</td>
-                <td style="text-align:center">${c.is_anonymous
-                    ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>'
-                    : '<i class="fas fa-user" style="color:var(--text-secondary)"></i>'}</td>
+                <td style="text-align:center">${c.is_anonymous ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:var(--text-secondary)"></i>'}</td>
                 <td>
                     <select class="status-select ${statusClass(c.status)}" onchange="updateStatus('${c.complaint_id}', this)">
-                        <option ${c.status==='Submitted'                       ? 'selected':''}>Submitted</option>
-                        <option ${c.status==='Under Review'                    ? 'selected':''}>Under Review</option>
-                        <option ${c.status==='PI Notification Sent'            ? 'selected':''}>PI Notification Sent</option>
-                        <option ${c.status==='PI Payment Confirmed'            ? 'selected':''}>PI Payment Confirmed</option>
-                        <option ${c.status==='Private Investigator Assigned'   ? 'selected':''}>Private Investigator Assigned</option>
-                        <option ${c.status==='Resolved'                        ? 'selected':''}>Resolved</option>
-                        <option ${c.status==='Rejected'                        ? 'selected':''}>Rejected</option>
+                        <option ${c.status==='Submitted'        ? 'selected':''}>Submitted</option>
+                        <option ${c.status==='Under Review'     ? 'selected':''}>Under Review</option>
+                       <option ${c.status==='PI Notification Sent'          ? 'selected':''}>PI Notification Sent</option>
+<option ${c.status==='PI Payment Pending'            ? 'selected':''}>PI Payment Pending</option>
+<option ${c.status==='Private Investigator Assigned'  ? 'selected':''}>Private Investigator Assigned</option>
+                        <option ${c.status==='Resolved'         ? 'selected':''}>Resolved</option>
+                        <option ${c.status==='Rejected'         ? 'selected':''}>Rejected</option>
                     </select>
                 </td>
                 <td><button class="btn-view" onclick="viewComplaint(${JSON.stringify(c).replace(/"/g,'&quot;')})">
@@ -580,7 +545,7 @@ async function loadComplaints() {
     }
 }
 
-// ── PI NOTIFY ────────────────────────────────────────────────
+// PI notify state
 let piPendingComplaintId = null;
 let piPendingSelectEl    = null;
 let piPendingOldStatus   = null;
@@ -591,10 +556,12 @@ async function updateStatus(complaint_id, selectEl) {
     selectEl.dataset.prev = newStatus;
     selectEl.className = 'status-select ' + statusClass(newStatus);
 
+    // Intercept PI assignment — show notification modal first
     if (newStatus === 'Private Investigator Assigned') {
         piPendingComplaintId = complaint_id;
         piPendingSelectEl    = selectEl;
         piPendingOldStatus   = oldStatus;
+        // Revert select visually until user confirms
         selectEl.value = oldStatus;
         selectEl.className = 'status-select ' + statusClass(oldStatus);
         document.getElementById('piNotifyModal').classList.add('active');
@@ -603,10 +570,10 @@ async function updateStatus(complaint_id, selectEl) {
 
     try {
         const res  = await fetch('/api/complaints/update-status', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ complaint_id, status: newStatus })
-        });
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ complaint_id, status: newStatus })
+});
         const data = await res.json();
         if (!data.success) throw new Error(data.message);
         showToast('<i class="fas fa-check-circle"></i> Status updated to ' + newStatus);
@@ -625,31 +592,34 @@ function cancelPINotify() {
 async function confirmSendPINotify() {
     document.getElementById('piNotifyModal').classList.remove('active');
 
+    // 1. Store in localStorage so user dashboard sees it immediately
     const pending = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
+    // Remove any old notification for same complaint
     const updated = pending.filter(n => n.complaint_id !== piPendingComplaintId);
     updated.push({ complaint_id: piPendingComplaintId, timestamp: Date.now(), status: 'pending_payment' });
     localStorage.setItem('sv-pi-notifications', JSON.stringify(updated));
 
+    // 2. Also update DB via API
     try {
         await fetch('/api/pi_notification', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({ complaint_id: piPendingComplaintId })
         });
-    } catch(e) {}
+    } catch(e) { /* backend optional */ }
 
+    // 3. Update status dropdown visually
     if (piPendingSelectEl) {
         piPendingSelectEl.value = 'PI Notification Sent';
         piPendingSelectEl.className = 'status-select s-under-review';
         piPendingSelectEl.dataset.prev = 'PI Notification Sent';
     }
 
-    showToast('<i class="fas fa-paper-plane"></i> PI notification sent for ' + piPendingComplaintId);
+    showToast('<i class="fas fa-paper-plane"></i> PI notification sent to user for ' + piPendingComplaintId);
     piPendingComplaintId = piPendingSelectEl = piPendingOldStatus = null;
     loadComplaints();
 }
 
-// ── COMPLAINT DETAIL MODAL ───────────────────────────────────
 function viewComplaint(c) {
     if (typeof c === 'string') c = JSON.parse(c);
     document.getElementById('modalContent').innerHTML = `
@@ -703,7 +673,6 @@ async function loadAdminDashboardEvidence(complaint_id) {
     }
 }
 
-// ── HELPERS ──────────────────────────────────────────────────
 function formatType(t) {
     const map = { harassment:'Harassment', fare_overcharge:'Fare Overcharge', crime:'Crime', corruption:'Corruption', abuse:'Abuse', other:'Other' };
     return map[t] || t;
@@ -719,25 +688,25 @@ function formatDate(d) {
 
 function statusBadge(s) {
     const map = {
-        'Submitted':                      '<span class="status review">Submitted</span>',
-        'Under Review':                   '<span class="status pending">Under Review</span>',
-        'Private Investigator Assigned':  '<span class="status" style="background:#a855f715;color:#c084fc;border:1px solid #a855f740;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">PI Assigned</span>',
-        'Investigation':                  '<span class="status" style="background:#f9731615;color:#fb923c;border:1px solid #f9731640;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Investigation</span>',
-        'Resolved':                       '<span class="status resolved">Resolved</span>',
-        'Rejected':                       '<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>'
+        'Submitted':        '<span class="status review">Submitted</span>',
+        'Under Review':     '<span class="status pending">Under Review</span>',
+        'Private Investigator Assigned': '<span class="status" style="background:#a855f715;color:#c084fc;border:1px solid #a855f740;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Private Investigator Assigned</span>',
+        'Investigation':    '<span class="status" style="background:#f9731615;color:#fb923c;border:1px solid #f9731640;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Investigation</span>',
+        'Resolved':         '<span class="status resolved">Resolved</span>',
+        'Rejected':         '<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>'
     };
     return map[s] || `<span class="status">${s}</span>`;
 }
 
 function statusClass(s) {
     const map = {
-        'Submitted':                     's-submitted',
-        'Under Review':                  's-under-review',
+        'Submitted':        's-submitted',
+        'Under Review':     's-under-review',
         'Private Investigator Assigned': 's-officer-assigned',
-        'PI Notification Sent':          's-under-review',
-        'PI Payment Confirmed':          's-under-review',
-        'Resolved':                      's-resolved',
-        'Rejected':                      's-rejected'
+        'PI Notification Sent':         's-under-review',
+        'PI Payment Confirmed':         's-under-review',
+        'Resolved':         's-resolved',
+        'Rejected':         's-rejected'
     };
     return map[s] || '';
 }

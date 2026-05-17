@@ -715,10 +715,13 @@ const demoPIs = [
 
 async function loadPIs() {
     try {
-        const res = await fetch(`/api/pi_management.php?action=list&sa_username=${encodeURIComponent(SA_USER)}&sa_password=${encodeURIComponent(SA_PASS)}`);
+        const res  = await fetch('/api/pi');
         const data = await res.json();
-        if (data.success) { allPIs = data.investigators; }
-        else throw new Error();
+        if (data.success && data.investigators && data.investigators.length) {
+            allPIs = data.investigators;
+        } else {
+            throw new Error('no data');
+        }
     } catch(e) { allPIs = demoPIs; }
     renderPIs(allPIs);
     updateStats(allPIs);
@@ -830,18 +833,20 @@ async function recruitPI() {
     btn.disabled = true;
 
     try {
-        const res = await fetch('/api/pi_management', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({action:'create', sa_username:SA_USER, sa_password:SA_PASS, ...fields})
+        const res = await fetch('/api/super-admin/add-pi', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(fields)
         });
         const data = await res.json();
-        if (data.success) { showCredentials(data.pi_code, data.login_email, data.initial_password); }
-        else throw new Error(data.message);
+        if (data.success) {
+            showCredentials(data.pi.pi_code, fields.login_email, fields.initial_password);
+            await loadPIs(); // DB থেকে fresh list আনো
+        } else {
+            showToast('Error: ' + (data.message || 'Could not save PI'), true);
+        }
     } catch(e) {
-        const nextCode = 'PI-00' + (allPIs.length + 1);
-        allPIs.push({ id: allPIs.length+100, pi_code: nextCode, ...fields, is_active:1, active_cases:0, total_cases:0, joined_at: new Date().toISOString().split('T')[0] });
-        renderPIs(allPIs); updateStats(allPIs);
-        showCredentials(nextCode, fields.login_email, fields.initial_password);
+        showToast('Network error — PI not saved. Please try again.', true);
     }
 
     ['rf_name','rf_nid','rf_phone','rf_email','rf_address','rf_login_email','rf_password','rf_photo','rf_nid_photo','rf_notes']
@@ -881,7 +886,11 @@ async function saveEdit() {
         nid_photo_url: document.getElementById('edit_nid_photo').value.trim(),
         notes:         document.getElementById('edit_notes').value.trim(),
     };
-    try { await fetch('/api/pi_management', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); } catch(e){}
+    try {
+        const res = await fetch('/api/super-admin/pi/update', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        const data = await res.json();
+        if (!data.success) { showToast('Update failed: ' + (data.message||''), true); return; }
+    } catch(e) { showToast('Network error', true); return; }
     const idx = allPIs.findIndex(p => p.id == id);
     if (idx > -1) Object.assign(allPIs[idx], payload);
     renderPIs(allPIs); closeModal('editModal');
@@ -899,28 +908,52 @@ async function savePassword() {
     const id  = parseInt(document.getElementById('pass_pi_id').value);
     const pwd = document.getElementById('new_password').value.trim();
     if (pwd.length < 8) { showToast('Password must be at least 8 characters', true); return; }
-    try { await fetch('/api/pi_management', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'change_password',sa_username:SA_USER,sa_password:SA_PASS,id,new_password:pwd})}); } catch(e){}
+    try {
+        const res = await fetch('/api/super-admin/pi/password', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, new_password:pwd})});
+        const data = await res.json();
+        if (!data.success) { showToast('Failed: ' + (data.message||''), true); return; }
+    } catch(e) { showToast('Network error', true); return; }
     closeModal('passModal'); showToast('Password updated successfully');
 }
 
 async function togglePI(id) {
-    try { await fetch('/api/pi_management', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'toggle',sa_username:SA_USER,sa_password:SA_PASS,id})}); } catch(e){}
-    const pi = allPIs.find(p => p.id == id);
-    if (pi) pi.is_active = pi.is_active == 1 ? 0 : 1;
+    try {
+        const res = await fetch('/api/super-admin/pi/toggle', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+        const data = await res.json();
+        if (data.success) {
+            const pi = allPIs.find(p => p.id == id);
+            if (pi) pi.is_active = data.is_active ? 1 : 0;
+        }
+    } catch(e) { showToast('Network error', true); return; }
     renderPIs(allPIs); updateStats(allPIs);
     showToast('PI status updated');
 }
 
 async function deletePI(id, name) {
     if (!confirm(`Remove PI: ${name}?\n\nThis cannot be undone.`)) return;
-    try { await fetch('/api/pi_management', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',sa_username:SA_USER,sa_password:SA_PASS,id})}); } catch(e){}
+    try {
+        const res = await fetch('/api/super-admin/pi/delete', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+        const data = await res.json();
+        if (!data.success) { showToast('Delete failed: ' + (data.message||''), true); return; }
+    } catch(e) { showToast('Network error', true); return; }
     allPIs = allPIs.filter(p => p.id != id);
     renderPIs(allPIs); updateStats(allPIs);
     showToast('PI removed', true);
 }
 
-function loadOverview() {
-    if (!allPIs.length) loadPIs();
+async function loadOverview() {
+    // Fresh PI data নাও — allPIs already loaded থাকলেও re-fetch করো যাতে stats updated থাকে
+    try {
+        const res  = await fetch('/api/pi');
+        const data = await res.json();
+        if (data.success && data.investigators && data.investigators.length) {
+            allPIs = data.investigators;
+        }
+    } catch(e) { if (!allPIs.length) allPIs = demoPIs; }
+
+    // Top stats boxes আপডেট করো
+    updateStats(allPIs);
+
     const pis = allPIs.length ? allPIs : demoPIs;
     const maxLoad = Math.max(...pis.map(p=>parseInt(p.active_cases)||0), 1);
     document.getElementById('overviewContent').innerHTML = `
@@ -952,27 +985,41 @@ async function loadCases() {
     const el = document.getElementById('casesContent');
     el.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i>Loading cases...</div>';
     try {
-        const res  = await fetch('/api/complaints?status=Private%20Investigator%20Assigned');
-        const data = await res.json();
-        if (!data.success || !data.complaints.length) throw new Error();
+        // Real PI data + cases একসাথে নাও
+        const [cRes, piRes] = await Promise.all([
+            fetch('/api/complaints?status=Private%20Investigator%20Assigned'),
+            fetch('/api/pi')
+        ]);
+        const cData  = await cRes.json();
+        const piData = await piRes.json();
+
+        if (!cData.success || !cData.complaints.length) throw new Error();
+
+        // Real DB PI data দিয়ে map বানাও (id → pi object)
         const pMap = {};
-        allPIs.forEach(p => { pMap[p.id] = p; });
+        (piData.investigators || []).forEach(p => { pMap[p.id] = p; });
+
         el.innerHTML = `
             <div class="table-wrap">
             <table class="data-table">
                 <thead><tr>
                     <th>Complaint ID</th><th>Type</th><th>Location</th>
-                    <th>Assigned PI</th><th>Date</th><th>Email Sent</th>
+                    <th>Assigned PI</th><th>Date</th>
                 </tr></thead>
-                <tbody>${data.complaints.map(c=>`
+                <tbody>${cData.complaints.map(c => {
+                    const pi = c.assigned_pi_id ? pMap[c.assigned_pi_id] : null;
+                    const piLabel = pi
+                        ? `${pi.pi_code} — ${pi.full_name}`
+                        : (c.assigned_pi_id ? 'PI-???' : 'Unassigned');
+                    return `
                     <tr>
                         <td style="color:var(--blue);font-weight:700">${c.complaint_id}</td>
                         <td>${c.type}</td>
                         <td style="color:var(--text-2)">${c.location||'—'}</td>
-                        <td><span class="badge badge-purple">${c.assigned_pi_id?(pMap[c.assigned_pi_id]?.pi_code||'PI-???'):'Unassigned'}</span></td>
+                        <td><span class="badge badge-purple">${piLabel}</span></td>
                         <td style="color:var(--text-2)">${(c.pi_assigned_at||c.submitted_at||'').split(' ')[0]}</td>
-                        <td>${c.pi_email_sent==1?'<span class="badge badge-green">✅ Sent</span>':'<span class="badge badge-yellow">⏳ Pending</span>'}</td>
-                    </tr>`).join('')}
+                    </tr>`;
+                }).join('')}
                 </tbody>
             </table></div>`;
     } catch(e) {
@@ -990,7 +1037,18 @@ function showToast(msg, isError=false) {
     setTimeout(() => t.remove(), 3000);
 }
 
-document.addEventListener('DOMContentLoaded', () => { showSection('investigators'); });
+document.addEventListener('DOMContentLoaded', async () => {
+    // Page load এই PI data আগে load করো যাতে সব section এ stats ready থাকে
+    try {
+        const res  = await fetch('/api/pi');
+        const data = await res.json();
+        if (data.success && data.investigators && data.investigators.length) {
+            allPIs = data.investigators;
+            updateStats(allPIs);
+        }
+    } catch(e) {}
+    showSection('investigators');
+});
 </script>
 </body>
 </html>
