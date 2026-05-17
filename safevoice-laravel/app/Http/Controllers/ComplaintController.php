@@ -72,24 +72,30 @@ class ComplaintController extends Controller
             if ($dt) $incidentDate = $dt->format('Y-m-d H:i:s');
         }
 
+        $isAnonymous = $request->boolean('is_anonymous');
+
         $complaint = Complaint::create([
             'complaint_id'  => $complaintId,
-            'user_id'       => $userId,
+            'user_id'       => $isAnonymous ? null : $userId,  // anonymous হলে user_id hidden
             'type'          => $request->type,
             'incident_date' => $incidentDate,
             'location'      => $request->location ?? '',
             'description'   => $request->description,
-            'is_anonymous'  => $request->boolean('is_anonymous'),
+            'is_anonymous'  => $isAnonymous,
             'status'        => 'Submitted',
         ]);
 
-        User::where('id', $userId)->increment('complaints_count');
+        // Anonymous হলে count বাড়বে না — admin track করতে পারবে না
+        if (!$isAnonymous) {
+            User::where('id', $userId)->increment('complaints_count');
+        }
 
         return response()->json([
             'success'      => true,
             'complaint_id' => $complaintId,
             'message'      => 'Complaint submitted successfully',
         ]);
+       
     }
 
     // POST /api/complaints/update-status
@@ -142,4 +148,36 @@ return response()->json(['success' => true, 'message' => 'Status updated to ' . 
         ->get();
 
     return response()->json(['success' => true, 'complaints' => $complaints]);
-}}
+}
+// GET /api/track_complaint?id=SV-2026-XXXX
+public function track(Request $request)
+{
+    $id = strtoupper(trim($request->query('id', '')));
+
+    if (!$id) {
+        return response()->json(['success' => false, 'message' => 'Complaint ID required.'], 400);
+    }
+
+    $complaint = Complaint::where('complaint_id', $id)->first();
+
+    if (!$complaint) {
+        return response()->json(['success' => false, 'message' => 'No complaint found.'], 404);
+    }
+
+    return response()->json([
+        'success'   => true,
+        'complaint' => [
+            'complaint_id' => $complaint->complaint_id,
+            'type'         => $complaint->type,
+            'location'     => $complaint->location,
+            'status'       => $complaint->status,
+            'is_anonymous' => $complaint->is_anonymous,
+            'submitted_at' => $complaint->submitted_at,
+            'incident_date'=> $complaint->incident_date,
+        ],
+    ]);
+}
+
+
+
+}

@@ -67,11 +67,24 @@ Route::post('/officers',        [OfficerController::class, 'store']);
 Route::post('/officers/toggle', [OfficerController::class, 'toggle']);
 
 // ── Private Investigators ────────────────────────────────────
-Route::get('/pi',               [PrivateInvestigatorController::class, 'index']);
-Route::post('/add_pi',          [PrivateInvestigatorController::class, 'store']);
-Route::post('/pi/assign',       [PrivateInvestigatorController::class, 'assign']);
-Route::post('/pi_assign',       [PrivateInvestigatorController::class, 'assign']); // legacy
-Route::get('/pi/notifications', [PrivateInvestigatorController::class, 'notifications']);
-Route::get('/pi_notification',  [PrivateInvestigatorController::class, 'notifications']); // legacy
-Route::post('/pi/payment',      [PrivateInvestigatorController::class, 'payment']);
-Route::get('/pi_management',    [PrivateInvestigatorController::class, 'index']); // legacy
+Route::get('/pi',                        [PrivateInvestigatorController::class, 'index']);
+Route::post('/add_pi',                   [PrivateInvestigatorController::class, 'store']);
+Route::post('/pi/assign',                [PrivateInvestigatorController::class, 'assign']);
+Route::post('/pi_assign',                [PrivateInvestigatorController::class, 'assign']); // legacy
+Route::post('/pi/notify',                [PrivateInvestigatorController::class, 'sendNotification']);
+Route::post('/pi_notification',          [PrivateInvestigatorController::class, 'sendNotification']); // legacy
+Route::get('/pi/user-notifications',     [PrivateInvestigatorController::class, 'notifications']);
+Route::post('/pi/payment',               [PrivateInvestigatorController::class, 'payment']);
+Route::post('/pi/reject-payment',        [PrivateInvestigatorController::class, 'rejectPayment']);
+Route::get('/pi_management',             [PrivateInvestigatorController::class, 'index']); // legacy
+
+// ── Admin Payment Management ─────────────────────────────────
+Route::get('/admin/payments',            [PrivateInvestigatorController::class, 'pendingPayments']);
+Route::post('/admin/payments/confirm',   [PrivateInvestigatorController::class, 'confirmPayment']);
+
+// ── Super Admin PI visibility ─────────────────────────────────
+Route::get('/super-admin/pi-cases',      [SuperAdminController::class, 'piCases']);
+Route::post('/super-admin/add-pi',       [PrivateInvestigatorController::class, 'store']);
+
+// ── Track complaint ───────────────────────────────────────────
+Route::get('/track_complaint',           [ComplaintController::class, 'track']);

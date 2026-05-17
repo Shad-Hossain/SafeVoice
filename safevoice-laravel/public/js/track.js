@@ -42,7 +42,7 @@ async function trackComplaint() {
     btn.disabled  = true;
 
     try {
-        const res  = await fetch('../api/get_complaint.php?id=' + encodeURIComponent(id));
+        const res  = await fetch('/api/track_complaint?id=' + encodeURIComponent(id));
         const data = await res.json();
 
         if (!data.success) {

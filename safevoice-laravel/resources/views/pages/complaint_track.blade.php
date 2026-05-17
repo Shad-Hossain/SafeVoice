@@ -111,13 +111,10 @@
         </div>
     </div>
 
-    <script src="{{ asset('js/main.js') }}"></script>
+   <script src="{{ asset('js/main.js') }}"></script>
     <script src="{{ asset('js/track.js') }}"></script>
-    <script src="{{ asset('js/theme.js') }}"></script>
     <script src="{{ asset('js/theme.js') }}"></script>
 @endsection
 
 @section('scripts')
-<script src="{{ asset('js/track.js') }}"></script>
-<script src="{{ asset('js/theme.js') }}"></script>
 @endsection
