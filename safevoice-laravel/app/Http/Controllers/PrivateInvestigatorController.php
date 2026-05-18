@@ -133,16 +133,18 @@ class PrivateInvestigatorController extends Controller
             'confirmed_at'   => now(),
         ]);
 
-        // Auto-assign PI with lowest workload
+        // Auto-assign PI with lowest workload (max 10 active cases)
         $pi = PrivateInvestigator::where('is_active', true)
+            ->where('active_cases', '<', 10)
             ->orderBy('active_cases')
             ->first();
 
         if (!$pi) {
+            // সব PI এর case 10 — payment hold করো, admin manually assign করবে
             $complaint->update(['status' => 'PI Payment Pending Confirmation']);
             return response()->json([
                 'success' => true,
-                'message' => 'Payment received. PI will be assigned shortly.',
+                'message' => 'Payment received. All investigators are at full capacity. Admin will assign manually.',
             ]);
         }
 
@@ -189,12 +191,13 @@ class PrivateInvestigatorController extends Controller
 
         $payment->update(['status' => 'confirmed', 'confirmed_at' => now()]);
 
-        // Auto-assign PI with lowest active_cases
+        // Auto-assign PI with lowest active_cases (max 10)
         $pi = PrivateInvestigator::where('is_active', true)
+            ->where('active_cases', '<', 10)
             ->orderBy('active_cases')
             ->first();
 
-        if (!$pi) return response()->json(['success' => false, 'message' => 'No active PI available.'], 422);
+        if (!$pi) return response()->json(['success' => false, 'message' => 'All investigators are at full capacity (10 cases each). Please resolve some cases first.'], 422);
 
         $complaint = Complaint::where('complaint_id', $payment->complaint_id)->first();
         if (!$complaint) return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
