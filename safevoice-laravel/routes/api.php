@@ -14,6 +14,7 @@ use App\Http\Controllers\EvidenceController;
 Route::post('/register',         [AuthController::class, 'register']);
 Route::post('/login',            [AuthController::class, 'login']);
 Route::post('/logout',           [AuthController::class, 'logout']);
+Route::post('/forget_password',  [AuthController::class, 'forgotPassword']);
 Route::get('/check-session',     [AuthController::class, 'checkSession']);
 Route::get('/check_session',     [AuthController::class, 'checkSession']); // legacy
 
@@ -66,11 +67,32 @@ Route::post('/officers',        [OfficerController::class, 'store']);
 Route::post('/officers/toggle', [OfficerController::class, 'toggle']);
 
 // ── Private Investigators ────────────────────────────────────
-Route::get('/pi',               [PrivateInvestigatorController::class, 'index']);
-Route::post('/add_pi',          [PrivateInvestigatorController::class, 'store']);
-Route::post('/pi/assign',       [PrivateInvestigatorController::class, 'assign']);
-Route::post('/pi_assign',       [PrivateInvestigatorController::class, 'assign']); // legacy
-Route::get('/pi/notifications', [PrivateInvestigatorController::class, 'notifications']);
-Route::get('/pi_notification',  [PrivateInvestigatorController::class, 'notifications']); // legacy
-Route::post('/pi/payment',      [PrivateInvestigatorController::class, 'payment']);
-Route::get('/pi_management',    [PrivateInvestigatorController::class, 'index']); // legacy
+Route::get('/pi',                        [PrivateInvestigatorController::class, 'index']);
+Route::post('/add_pi',                   [PrivateInvestigatorController::class, 'store']);
+Route::post('/pi/assign',                [PrivateInvestigatorController::class, 'assign']);
+Route::post('/pi_assign',                [PrivateInvestigatorController::class, 'assign']); // legacy
+Route::post('/pi/notify',                [PrivateInvestigatorController::class, 'sendNotification']);
+Route::post('/pi_notification',          [PrivateInvestigatorController::class, 'sendNotification']); // legacy
+Route::get('/pi/user-notifications',     [PrivateInvestigatorController::class, 'notifications']);
+Route::post('/pi/payment',               [PrivateInvestigatorController::class, 'payment']);
+Route::post('/pi/reject-payment',        [PrivateInvestigatorController::class, 'rejectPayment']);
+Route::get('/pi_management',             [PrivateInvestigatorController::class, 'index']); // legacy
+
+// ── Admin Payment Management ─────────────────────────────────
+// ── Admin Payments (READ ONLY — case_id + txn_id only, no user info) ──
+Route::get('/admin/payments', [PrivateInvestigatorController::class, 'pendingPayments']);
+// NOTE: /admin/payments/confirm is REMOVED — system auto-confirms on user payment
+// ── Super Admin PI visibility ─────────────────────────────────
+Route::get('/super-admin/pi-cases',      [SuperAdminController::class, 'piCases']);
+Route::post('/super-admin/add-pi',       [PrivateInvestigatorController::class, 'store']);
+Route::post('/super-admin/pi/update',    [PrivateInvestigatorController::class, 'update']);
+Route::post('/super-admin/pi/toggle',    [PrivateInvestigatorController::class, 'toggle']);
+Route::post('/super-admin/pi/delete',    [PrivateInvestigatorController::class, 'destroy']);
+Route::post('/super-admin/pi/password',  [PrivateInvestigatorController::class, 'changePassword']);
+
+// ── Track complaint ───────────────────────────────────────────
+Route::get('/track_complaint',           [ComplaintController::class, 'track']);
+
+// AI
+Route::post('/ai/enhance-description',   [\App\Http\Controllers\AiController::class, 'enhanceDescription']);
+Route::post('/ai/analyze-complaint',     [\App\Http\Controllers\AiController::class, 'analyzeComplaint']);

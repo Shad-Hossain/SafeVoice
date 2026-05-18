@@ -166,6 +166,7 @@
             <li id="nav-dashboard"><a href="#" onclick="showSection('dashboard')"><i class="fas fa-home"></i> Dashboard</a></li>
             <li id="nav-complaints"><a href="#" onclick="showSection('complaints')"><i class="fas fa-file-alt"></i> Complaints</a></li>
             <li id="nav-users"><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Users</a></li>
+            <li id="nav-payments"><a href="#" onclick="showSection('payments')"><i class="fas fa-credit-card"></i> Payments</a></li>
             <li id="nav-sos"><a href="#" onclick="showSection('sos')"><i class="fas fa-exclamation-triangle"></i> SOS Alerts</a></li>
         </ul>
         <div style="padding:14px 16px;border-top:1px solid #1e2d4a;margin-top:20px">
@@ -226,9 +227,9 @@
                     <option value="">All Statuses</option>
                     <option value="Submitted">Submitted</option>
                     <option value="Under Review">Under Review</option>
-                    <option value="PI Notification Sent">PI Notification Sent</option>
-                    <option value="PI Payment Confirmed">PI Payment Confirmed</option>
-                    <option value="Private Investigator Assigned">PI Assigned</option>
+                   <option value="PI Notification Sent">PI Notification Sent</option>
+<option value="PI Payment Pending">PI Payment Pending</option>
+<option value="Private Investigator Assigned">PI Assigned</option>
                     <option value="Resolved">Resolved</option>
                     <option value="Rejected">Rejected</option>
                 </select>
@@ -278,6 +279,32 @@
                     </thead>
                     <tbody id="users-tbody">
                         <tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PAYMENTS VIEW -->
+        <div id="view-payments" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-credit-card" style="font-size:22px;margin-right:10px"></i>Payments</h1>
+                <p>PI service payments submitted by users</p>
+            </div>
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Case ID</th>
+                            <th>Method</th>
+                            <th>TXN ID</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payments-tbody">
+                        <tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -337,18 +364,51 @@
 <script src="{{ asset('js/theme.js') }}"></script>
 <script>
 function showSection(section, preFilter) {
-    ['dashboard','complaints','users','sos'].forEach(s => {
+    ['dashboard','complaints','users','payments','sos'].forEach(s => {
         document.getElementById('view-' + s).style.display = 'none';
         document.getElementById('nav-' + s)?.classList.remove('active');
     });
     document.getElementById('view-' + section).style.display = 'block';
     document.getElementById('nav-' + section)?.classList.add('active');
-    if (section === 'dashboard') loadDashboard();
+    if (section === 'dashboard')  loadDashboard();
     if (section === 'complaints') {
         if (preFilter) document.getElementById('filterStatus').value = preFilter;
         loadComplaints();
     }
-    if (section === 'users') loadUsers();
+    if (section === 'users')    loadUsers();
+    if (section === 'payments') loadPayments();
+}
+
+// ── PAYMENTS ─────────────────────────────────────────────────
+async function loadPayments() {
+    const tbody = document.getElementById('payments-tbody');
+    tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    try {
+        const res  = await fetch('/api/admin/payments');
+        const data = await res.json();
+        if (!data.success) throw new Error();
+        const list = data.payments || [];
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-inbox"></i> No payments yet.</td></tr>';
+            return;
+        }
+        const methodLabel = { bkash:'bKash', nagad:'Nagad', rocket:'Rocket', bank:'Bank Transfer' };
+        tbody.innerHTML = list.map((p, i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td><strong style="color:#4f9eff">${p.complaint_id}</strong></td>
+                <td><span style="font-weight:600;color:#a0b4cc">${methodLabel[p.payment_method] || p.payment_method}</span></td>
+                <td><code style="color:#fbbf24;font-size:13px;letter-spacing:1px">${p.txn_id}</code></td>
+                <td style="color:#2ecc71;font-weight:700">৳${parseFloat(p.amount).toLocaleString()}</td>
+                <td>${p.status === 'confirmed'
+                    ? '<span style="background:#2ecc7115;color:#2ecc71;border:1px solid #2ecc7140;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;">✅ Confirmed</span>'
+                    : '<span style="background:#fbbf2415;color:#fbbf24;border:1px solid #fbbf2440;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;">⏳ Pending</span>'
+                }</td>
+                <td style="color:var(--text-secondary);font-size:12px">${formatDate(p.initiated_at)}</td>
+            </tr>`).join('');
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="7" class="table-state">Could not load payments.</td></tr>';
+    }
 }
 
 async function loadUsers() {
@@ -468,9 +528,9 @@ async function loadComplaints() {
                     <select class="status-select ${statusClass(c.status)}" onchange="updateStatus('${c.complaint_id}', this)">
                         <option ${c.status==='Submitted'        ? 'selected':''}>Submitted</option>
                         <option ${c.status==='Under Review'     ? 'selected':''}>Under Review</option>
-                        <option ${c.status==='PI Notification Sent'          ? 'selected':''}>PI Notification Sent</option>
-                        <option ${c.status==='PI Payment Confirmed'           ? 'selected':''}>PI Payment Confirmed</option>
-                        <option ${c.status==='Private Investigator Assigned'  ? 'selected':''}>Private Investigator Assigned</option>
+                       <option ${c.status==='PI Notification Sent'          ? 'selected':''}>PI Notification Sent</option>
+<option ${c.status==='PI Payment Pending'            ? 'selected':''}>PI Payment Pending</option>
+<option ${c.status==='Private Investigator Assigned'  ? 'selected':''}>Private Investigator Assigned</option>
                         <option ${c.status==='Resolved'         ? 'selected':''}>Resolved</option>
                         <option ${c.status==='Rejected'         ? 'selected':''}>Rejected</option>
                     </select>

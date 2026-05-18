@@ -1,19 +1,22 @@
 // ── Progress steps 
 const steps = [
-    { label: 'Submitted',        desc: 'Complaint received by SafeVoice' },
-    { label: 'Under Review',     desc: 'Being reviewed by the admin team' },
-    { label: 'Officer Assigned', desc: 'An officer is handling your case' },
-    { label: 'Investigation',    desc: 'Active investigation ongoing' },
-    { label: 'Resolved',         desc: 'Case has been closed' }
+    { label: 'Submitted',               desc: 'Complaint received by SafeVoice' },
+    { label: 'Under Review',            desc: 'Being reviewed by the admin team' },
+    { label: 'PI Service',              desc: 'Private Investigator service in progress' },
+    { label: 'Investigation',           desc: 'Active investigation ongoing' },
+    { label: 'Resolved',               desc: 'Case has been closed' }
 ];
 
 const statusStepMap = {
-    'Submitted':        1,
-    'Under Review':     2,
-    'Officer Assigned': 3,
-    'Investigation':    4,
-    'Resolved':         5,
-    'Rejected':         5
+    'Submitted':                      1,
+    'Under Review':                   2,
+    'Officer Assigned':               2,
+    'PI Notification Sent':           3,
+    'PI Payment Pending':             3,
+    'Private Investigator Assigned':  4,
+    'Investigation':                  4,
+    'Resolved':                       5,
+    'Rejected':                       5
 };
 
 // ── Tab switch 
@@ -42,7 +45,7 @@ async function trackComplaint() {
     btn.disabled  = true;
 
     try {
-        const res  = await fetch('../api/get_complaint.php?id=' + encodeURIComponent(id));
+        const res  = await fetch('/api/track_complaint?id=' + encodeURIComponent(id));
         const data = await res.json();
 
         if (!data.success) {
@@ -114,24 +117,30 @@ function formatDate(d) {
 
 function statusClass(s) {
     const map = {
-        'Submitted':        'review',
-        'Under Review':     'pending',
-        'Officer Assigned': 'pending',
-        'Investigation':    'pending',
-        'Resolved':         'resolved',
-        'Rejected':         'rejected'
+        'Submitted':                     'review',
+        'Under Review':                  'pending',
+        'Officer Assigned':              'pending',
+        'PI Notification Sent':          'pending',
+        'PI Payment Pending':            'pending',
+        'Private Investigator Assigned': 'pending',
+        'Investigation':                 'pending',
+        'Resolved':                      'resolved',
+        'Rejected':                      'rejected'
     };
     return map[s] || 'review';
 }
 
 function getStatusMessage(s) {
     const map = {
-        'Submitted':        'Your complaint has been received. It will be reviewed by our team shortly.',
-        'Under Review':     'Your complaint is currently being reviewed by our admin team.',
-        'Officer Assigned': 'An officer has been assigned to your case by the system and will begin investigation soon.',
-        'Investigation':    'Your case is currently under active investigation.',
-        'Resolved':         'Your complaint has been resolved. Thank you for reporting.',
-        'Rejected':         'Your complaint could not be processed. Please contact support for details.'
+        'Submitted':                     'Your complaint has been received. It will be reviewed by our team shortly.',
+        'Under Review':                  'Your complaint is currently being reviewed by our admin team.',
+        'Officer Assigned':              'An officer has been assigned to your case and will begin investigation soon.',
+        'PI Notification Sent':          'Our admin team has determined that a Private Investigator is needed for your case. Please check your dashboard to accept the service.',
+        'PI Payment Pending':            'PI service fee is pending. Please log in to your dashboard and click "Pay Now" to proceed.',
+        'Private Investigator Assigned': 'A Private Investigator has been assigned to your case. They will contact you via email shortly.',
+        'Investigation':                 'Your case is currently under active investigation.',
+        'Resolved':                      'Your complaint has been resolved. Thank you for reporting.',
+        'Rejected':                      'Your complaint could not be processed. Please contact support for details.'
     };
     return map[s] || 'Status update pending.';
 }

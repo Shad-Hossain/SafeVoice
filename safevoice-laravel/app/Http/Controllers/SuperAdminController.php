@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\SuperAdmin;
 use App\Models\User;
 use App\Models\Complaint;
+use App\Models\PrivateInvestigator;
 
 class SuperAdminController extends Controller
 {
@@ -62,6 +63,31 @@ class SuperAdminController extends Controller
     {
         $complaints = Complaint::orderByDesc('submitted_at')->get();
         return response()->json(['success' => true, 'complaints' => $complaints]);
+    }
+
+    // GET /api/super-admin/pi-cases — kon PI kon case peyeche
+    public function piCases()
+    {
+        $pis = PrivateInvestigator::with([])->orderBy('pi_code')->get();
+
+        $result = $pis->map(function($pi) {
+            $cases = Complaint::where('assigned_pi_id', $pi->id)
+                ->orderByDesc('pi_assigned_at')
+                ->get(['complaint_id','type','location','status','pi_assigned_at','is_anonymous']);
+
+            return [
+                'pi_code'      => $pi->pi_code,
+                'full_name'    => $pi->full_name,
+                'email'        => $pi->email,
+                'phone'        => $pi->phone,
+                'is_active'    => $pi->is_active,
+                'active_cases' => $pi->active_cases,
+                'total_cases'  => $pi->total_cases,
+                'cases'        => $cases,
+            ];
+        });
+
+        return response()->json(['success' => true, 'pi_list' => $result]);
     }
 
     // POST /api/super-admin/update-status
