@@ -92,3 +92,7 @@ Route::post('/super-admin/pi/password',  [PrivateInvestigatorController::class, 
 
 // ── Track complaint ───────────────────────────────────────────
 Route::get('/track_complaint',           [ComplaintController::class, 'track']);
+
+// AI
+Route::post('/ai/enhance-description',   [\App\Http\Controllers\AiController::class, 'enhanceDescription']);
+Route::post('/ai/analyze-complaint',     [\App\Http\Controllers\AiController::class, 'analyzeComplaint']);

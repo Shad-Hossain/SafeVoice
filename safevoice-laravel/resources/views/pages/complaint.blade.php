@@ -173,18 +173,22 @@
                 <div class="form-group">
                     <label><i class="fas fa-align-left"></i> Description</label>
                     <textarea class="form-textarea" id="description" placeholder="Describe the incident in detail..." oninput="onDescriptionInput()"></textarea>
+                    <div id="aiEnhanceBar" style="display:none;margin-top:8px;">
+                        <button type="button" id="aiEnhanceBtn" onclick="enhanceWithAI()" style="
+                            background: linear-gradient(135deg,#6c3fc5,#a855f7);
+                            border:none; border-radius:8px; color:#fff;
+                            padding:7px 16px; font-size:13px; font-weight:600;
+                            cursor:pointer; display:inline-flex; align-items:center; gap:7px;
+                            transition:opacity .2s;">
+                            <i class="fas fa-magic"></i> AI দিয়ে সাজাও
+                        </button>
+                        <span id="aiEnhanceStatus" style="font-size:12px;color:#a0b4cc;margin-left:10px;"></span>
+                    </div>
                 </div>
 
-                <!-- AI Analysis Panel -->
-                <div class="ai-panel" id="aiPanel">
-                    <div class="ai-panel-header">
-                        <i class="fas fa-robot"></i>
-                        <h4>AI Analysis</h4>
-                        <span class="ai-badge">BETA</span>
-                    </div>
-                    <div id="aiContent">
-                        <div class="ai-loading"><div class="ai-dots"><span></span><span></span><span></span></div>Analyzing your report...</div>
-                    </div>
+                <!-- AI Analysis Panel removed -->
+                <div class="ai-panel" id="aiPanel" style="display:none!important">
+                    <div id="aiContent"></div>
                 </div>
 
                 <div class="form-group">
@@ -357,7 +361,17 @@ function detectLocation() {
 
 function onDescriptionInput() {
     const desc = document.getElementById('description').value.trim();
+    const wordCount = desc.split(/\s+/).filter(Boolean).length;
     clearTimeout(aiTimer);
+
+    // 30+ character হলে AI enhance button দেখাও
+    const enhanceBar = document.getElementById('aiEnhanceBar');
+    if (desc.length >= 30) {
+        enhanceBar.style.display = 'block';
+    } else {
+        enhanceBar.style.display = 'none';
+    }
+
     if (desc.length < 30) {
         document.getElementById('aiPanel').classList.remove('visible');
         aiAnalysis = '';
@@ -368,18 +382,59 @@ function onDescriptionInput() {
     aiTimer = setTimeout(() => runAiAnalysis(desc), 1500);
 }
 
+async function enhanceWithAI() {
+    const textarea = document.getElementById('description');
+    const desc = textarea.value.trim();
+    const btn  = document.getElementById('aiEnhanceBtn');
+    const status = document.getElementById('aiEnhanceStatus');
+
+    if (!desc || desc.length < 30) {
+        status.textContent = 'কমপক্ষে ৩০ অক্ষর লিখুন।';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> সাজাচ্ছি...';
+    status.textContent = '';
+
+    try {
+        const res = await fetch('/api/ai/enhance-description', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                description: desc,
+                type:     document.getElementById('incidentType')?.value || '',
+                location: document.getElementById('incidentLocation')?.value || '',
+            })
+        });
+        const data = await res.json();
+        if (data.success && data.enhanced) {
+            textarea.value = data.enhanced;
+            status.innerHTML = '<span style="color:#2ecc71"><i class="fas fa-check-circle"></i> সাজানো হয়েছে!</span>';
+            onDescriptionInput(); // AI analysis re-trigger
+        } else {
+            status.innerHTML = '<span style="color:#e63946"><i class="fas fa-times-circle"></i> ' + (data.message || 'আবার চেষ্টা করুন') + '</span>';
+        }
+    } catch(e) {
+        status.innerHTML = '<span style="color:#e63946"><i class="fas fa-times-circle"></i> সংযোগ সমস্যা, আবার চেষ্টা করুন</span>';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-magic"></i> AI দিয়ে সাজাও';
+}
+
 async function runAiAnalysis(description) {
     const type     = document.getElementById('incidentType').value || 'unspecified';
     const location = document.getElementById('incidentLocation').value || 'unspecified';
-    const prompt   = 'You are a complaint analyst for SafeVoice, a citizen reporting platform in Bangladesh.\n\nA user submitted:\n- Type: ' + type + '\n- Location: ' + location + '\n- Description: "' + description + '"\n\nIn 2-3 concise sentences: state the Severity (High/Medium/Low) with a brief reason, then give one practical piece of advice (evidence to gather or immediate next step). Be supportive and professional. Start with the severity.';
     try {
-        const res  = await fetch('https://api.anthropic.com/v1/messages', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:200, messages:[{role:'user',content:prompt}] })
+        const res  = await fetch('/api/ai/analyze-complaint', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description, type, location })
         });
         const data = await res.json();
-        const text = (data.content || []).map(b => b.text||'').join('').trim();
-        if (!text) throw new Error();
+        if (!data.success || !data.analysis) throw new Error();
+        const text = data.analysis;
         aiAnalysis = text;
         const lower = text.toLowerCase();
         let tag = '';
