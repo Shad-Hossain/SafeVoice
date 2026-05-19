@@ -1064,6 +1064,29 @@ async function erSkipForNow() {
     setTimeout(erShowNext, 400);
 }
 
+async function rejectEvidenceRequest() {
+    if (!erCurrentRequestId) {
+        document.getElementById('evReqNotifModal').style.display = 'none';
+        return;
+    }
+    try {
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        await fetch('/api/evidence-request/reject', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                request_id: erCurrentRequestId,
+                user_id: svUser.id || svUser.user_id,
+            }),
+        });
+    } catch(e) { /* silent */ }
+
+    document.getElementById('evReqNotifModal').style.display = 'none';
+    erCurrentRequestId = null;
+    erQueueIndex++;
+    setTimeout(erShowNext, 400);
+}
+
 </script>
 @endsection
 

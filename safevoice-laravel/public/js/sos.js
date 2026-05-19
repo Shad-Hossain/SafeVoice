@@ -16,12 +16,21 @@ let currentLng      = null;
 let currentLocation = '';
 
 // ── INIT ─────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+// sos.js content block এর ভেতরে load হয় — DOM ততক্ষণে ready।
+// DOMContentLoaded already fired হয়ে গেছে, তাই callback কখনো
+// run হতো না। readyState check করে সরাসরি call করি।
+function initSOS() {
     detectSOSLocation();
     startResponderScan();
     pollForIncomingAlerts();
     bindSOSButton();
-});
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initSOS);
+} else {
+    initSOS();
+}
 
 
 // ── SOS BUTTON binding ───────────────────────────────────────────
@@ -276,7 +285,7 @@ async function submitEvidence() {
     formData.append('sos_id',      currentSOSId);
     formData.append('crime_type',  crimeType);
     formData.append('description', desc);
-    if (fileInput && fileInput.files[0]) formData.append('evidence[]', fileInput.files[0]);
+    if (fileInput && fileInput.files[0]) formData.append('evidence[0]', fileInput.files[0]);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     if (csrf) formData.append('_token', csrf);
     if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...'; }
@@ -378,7 +387,7 @@ async function openSOSDetailsModal(sosId) {
     try {
         const res  = await fetch(`/api/sos/alerts?sos_id=${sosId}`, { credentials: 'include' });
         const data = await res.json();
-        if (data.success) renderSOSDetails(data.sos, data.evidence, sosId);
+        if (data.success && data.sos) renderSOSDetails(data.sos, data.evidence || [], sosId);
     } catch (e) {
         document.getElementById('sosDetailsContent').innerHTML =
             '<p style="color:#e63946;text-align:center;">Could not load details.</p>';
@@ -570,6 +579,17 @@ function resetSOS() {
 }
 
 function cancelSOS() {
+    // DB te status = cancelled set koro
+    if (currentSOSId) {
+        const csrf   = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        fetch('/api/sos/cancel', {
+            method:      'POST',
+            credentials: 'include',
+            headers:     { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body:        JSON.stringify({ sos_id: currentSOSId, user_id: svUser.id || svUser.user_id }),
+        }).catch(() => {});
+    }
     sosActive    = false;
     currentSOSId = null;
     const overlay = document.getElementById('activatedOverlay');

@@ -4,7 +4,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SosEvidence extends Model
 {
-    protected $fillable = ['sos_id','file_path','file_type'];
+   protected $fillable = ['sos_id','user_id','file_path','file_type'];
     public $timestamps = false;
     const CREATED_AT = 'uploaded_at';
 }

@@ -63,10 +63,19 @@ Route::get('/get_sos_alert',        [SosController::class, 'alerts']); // legacy
 Route::get('/sos/my-notifications', [SosController::class, 'myNotifications']);
 Route::get('/get_my_sos_notifications', [SosController::class, 'myNotifications']); // legacy
 Route::post('/sos/respond',         [SosController::class, 'respond']);
+Route::post('/sos/cancel',          [SosController::class, 'cancelAlert']);
 Route::post('/respond_to_sos',      [SosController::class, 'respond']); // legacy
 
 // SOS Evidence Upload (user করবে respond করার পর)
 Route::post('/sos/upload-evidence',         [SosController::class, 'uploadEvidence']);
+// My SOS Responds — responder যে SOS গুলোতে respond করেছে সেগুলোর list
+Route::get('/sos/my-responds',              [SosController::class, 'myResponds']);
+
+// Victim Evidence — SOS request এর সাথে victim যে evidence submit করেছে সেটা দেখা
+Route::get('/sos/victim-evidence',          [SosController::class, 'victimEvidence']);
+
+// Responder Evidence Submit — responder evidence upload করবে
+Route::post('/sos/submit-responder-evidence', [SosController::class, 'submitResponderEvidence']);
 
 // Leaderboard
 Route::get('/leaderboard',                  [SosController::class, 'leaderboard']);

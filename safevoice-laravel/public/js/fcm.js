@@ -377,11 +377,22 @@ async function loadSosNotifications() {
                 </div>
                 ${n.location_text ? `<div class="sv-sos-loc">📍 ${n.location_text}</div>` : ''}
                 ${n.crime_type    ? `<span class="sv-sos-type">${n.crime_type}</span>` : ''}
-                <button class="sv-sos-respond-btn"
-                    onclick="respondToSos(${n.sos_id}, this)"
-                    ${n.status === 'responded' ? 'disabled' : ''}>
-                    ${n.status === 'responded' ? '✅ Already Responded' : '🤝 Respond Now'}
-                </button>
+                <div style="display:flex;gap:8px;margin-top:10px;">
+                    ${n.sos_status === 'cancelled'
+                        ? `<button class="sv-sos-respond-btn" disabled style="flex:1;opacity:.4;cursor:default;">🚫 Alert Cancelled</button>`
+                        : `<button class="sv-sos-respond-btn"
+                                onclick="respondToSos(${n.sos_id}, this)"
+                                ${n.status === 'responded' ? 'disabled' : ''}
+                                style="flex:1;">
+                                ${n.status === 'responded' ? '✅ Already Responded' : '🤝 Respond Now'}
+                           </button>`
+                    }
+                    <button class="sv-sos-respond-btn"
+                        onclick="viewSosEvidence(${n.sos_id})"
+                        style="flex:0 0 auto;background:#1e3a5f;padding:0 14px;">
+                        👁️ View
+                    </button>
+                </div>
             `;
             body.appendChild(card);
         });
@@ -538,4 +549,116 @@ function playSosSound() {
         beep(660, 0.7, 0.35); beep(660, 1.1, 0.35); beep(660, 1.5, 0.35);
         beep(880, 1.9, 0.15); beep(880, 2.1, 0.15); beep(880, 2.3, 0.15);
     } catch(e) { /* Audio not supported */ }
+}
+// ─────────────────────────────────────────────────────────────
+// VIEW SOS EVIDENCE — victim er upload kora evidence + details dekhabe
+// ─────────────────────────────────────────────────────────────
+async function viewSosEvidence(sosId) {
+    // Modal already ache? না হলে তৈরি করো
+    let overlay = document.getElementById('sv-victim-ev-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'sv-victim-ev-overlay';
+        overlay.style.cssText = `
+            position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999999;
+            display:flex;align-items:center;justify-content:center;padding:16px;
+        `;
+        overlay.innerHTML = `
+            <div id="sv-victim-ev-box" style="
+                background:#111c33;border:1px solid #1e2d4a;border-radius:16px;
+                padding:24px;max-width:500px;width:100%;max-height:82vh;overflow-y:auto;
+                position:relative;
+            ">
+                <button onclick="document.getElementById('sv-victim-ev-overlay').style.display='none'"
+                    style="position:absolute;top:12px;right:14px;background:none;border:none;
+                    color:#a0b4cc;font-size:24px;cursor:pointer;line-height:1;">×</button>
+                <h3 style="color:#fff;margin:0 0 16px;font-size:16px;">📎 SOS Details & Evidence</h3>
+                <div id="sv-victim-ev-body">
+                    <p style="color:#a0b4cc;text-align:center;padding:20px;">Loading...</p>
+                </div>
+            </div>
+        `;
+        // Overlay click e close
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) overlay.style.display = 'none';
+        });
+        document.body.appendChild(overlay);
+    }
+
+    overlay.style.display = 'flex';
+    const body = document.getElementById('sv-victim-ev-body');
+    body.innerHTML = '<p style="color:#a0b4cc;text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+
+    try {
+        const res  = await fetch(`/api/sos/victim-evidence?sos_id=${sosId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Failed');
+
+        const sos  = data.sos;
+        const evList = data.evidence || [];
+
+        // Status color
+        const statusColor = {
+            cancelled: '#e63946',
+            active:    '#2ecc71',
+            resolved:  '#4f9eff',
+        }[sos.status] || '#fbbf24';
+
+        const statusLabel = {
+            cancelled: '🚫 Cancelled',
+            active:    '🟢 Active',
+            resolved:  '✅ Resolved',
+        }[sos.status] || sos.status;
+
+        // Evidence HTML
+        const evidenceHtml = evList.length > 0
+            ? evList.map(e => {
+                const isImg = e.file_type === 'image' || (e.file_type || '').startsWith('image/');
+                const isVid = e.file_type === 'video' || (e.file_type || '').startsWith('video/');
+                if (isImg) return `<img src="/${e.file_path}" style="max-width:100%;border-radius:8px;margin-top:8px;display:block;" />`;
+                if (isVid) return `<video src="/${e.file_path}" controls style="max-width:100%;border-radius:8px;margin-top:8px;display:block;"></video>`;
+                return `<a href="/${e.file_path}" target="_blank" style="color:#4fc3f7;display:block;margin-top:8px;">📁 View File</a>`;
+            }).join('')
+            : '<p style="color:#4a5568;font-size:13px;margin-top:6px;font-style:italic;">Victim has not uploaded any evidence.</p>';
+
+        body.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+
+                <!-- Status badge -->
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="color:#a0b4cc;font-size:12px;">SOS #${sos.id}</span>
+                    <span style="font-size:11px;font-weight:700;color:${statusColor};
+                        background:${statusColor}22;border:1px solid ${statusColor}44;
+                        border-radius:20px;padding:2px 12px;">${statusLabel}</span>
+                </div>
+
+                <!-- Info rows -->
+                <div style="background:#0d1526;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;">
+                    <div><span style="color:#a0b4cc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Victim</span>
+                        <p style="color:#fff;font-weight:600;margin:3px 0 0;">${sos.victim_name || 'Anonymous'}</p></div>
+
+                    <div><span style="color:#a0b4cc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Location</span>
+                        <p style="color:#fff;margin:3px 0 0;">${sos.location_text || '—'}</p></div>
+
+                    <div><span style="color:#a0b4cc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Crime Type</span>
+                        <p style="color:#fbbf24;font-weight:600;margin:3px 0 0;">${sos.crime_type || '—'}</p></div>
+
+                    ${sos.description ? `<div><span style="color:#a0b4cc;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Description</span>
+                        <p style="color:#cbd5e0;margin:3px 0 0;font-size:13px;">${sos.description}</p></div>` : ''}
+                </div>
+
+                <!-- Evidence -->
+                <div>
+                    <p style="color:#a0b4cc;font-size:12px;margin:0 0 4px;">
+                        <i class="fas fa-paperclip"></i> Victim Evidence
+                    </p>
+                    ${evidenceHtml}
+                </div>
+
+            </div>
+        `;
+
+    } catch(e) {
+        body.innerHTML = `<p style="color:#e63946;text-align:center;padding:20px;">❌ Could not load details.<br><small style="color:#666;">${e.message}</small></p>`;
+    }
 }

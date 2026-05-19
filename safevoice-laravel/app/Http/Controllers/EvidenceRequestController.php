@@ -237,4 +237,48 @@ class EvidenceRequestController extends Controller
 
         return response()->json(['success' => true, 'expired' => $expired]);
     }
+
+    // ─────────────────────────────────────────────────────────
+    // POST /api/evidence-request/reject
+    // User → reject/dismiss an evidence request
+    // ─────────────────────────────────────────────────────────
+    public function reject(Request $request)
+    {
+        $request->validate(['request_id' => 'required|integer']);
+
+        $userId = $request->session()->get('user_id')
+                ?? $request->input('user_id');
+
+        $evReq = EvidenceRequest::where('id', $request->request_id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$evReq) {
+            return response()->json(['success' => false, 'message' => 'Request not found'], 404);
+        }
+
+        $evReq->update(['status' => 'rejected']);
+
+        return response()->json(['success' => true, 'message' => 'Request dismissed.']);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // GET /api/evidence-request/expired
+    // User/Admin → list expired evidence requests
+    // ─────────────────────────────────────────────────────────
+    public function getExpired(Request $request)
+    {
+        $userId = $request->session()->get('user_id')
+                ?? $request->query('user_id');
+
+        $query = EvidenceRequest::where('status', 'expired');
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        return response()->json([
+            'success'  => true,
+            'expired'  => $query->orderByDesc('requested_at')->get(),
+        ]);
+    }
 }
