@@ -109,6 +109,33 @@
                 </div>
             </div>
 
+            <!-- NID / BIRTH REG SEARCH -->
+            <div class="lb-table-section" style="margin-bottom: 20px;">
+                <h3><i class="fas fa-search"></i> Find Your Rank</h3>
+                <p style="color:#888; margin-bottom:14px; font-size:14px;">
+                    NID বা Birth Registration number দিয়ে তোমার position খোঁজো
+                </p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <input
+                        id="idSearchInput"
+                        type="text"
+                        placeholder="Enter NID or Birth Registration Number"
+                        style="flex:1; min-width:200px; padding:12px 16px; border-radius:10px;
+                               border:1px solid #2d3561; background:var(--card-bg,#1a1f35);
+                               color:inherit; font-size:14px; outline:none;"
+                    />
+                    <button
+                        id="idSearchBtn"
+                        style="padding:12px 24px; border-radius:10px; border:none;
+                               background:#4f9eff; color:#fff; font-weight:700;
+                               cursor:pointer; font-size:14px; white-space:nowrap;"
+                    >
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div id="searchResult" style="margin-top:8px;"></div>
+            </div>
+
             <!-- FULL LEADERBOARD TABLE -->
             <div class="lb-table-section">
                 <h3><i class="fas fa-list-ol"></i> Full Rankings</h3>

@@ -9,6 +9,7 @@ use App\Http\Controllers\OfficerController;
 use App\Http\Controllers\PrivateInvestigatorController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\EvidenceController;
+use App\Http\Controllers\EvidenceRequestController;
 
 // ── Auth ─────────────────────────────────────────────────────
 Route::post('/register',         [AuthController::class, 'register']);
@@ -50,6 +51,9 @@ Route::get('/super-admin/users',          [SuperAdminController::class, 'users']
 Route::get('/super-admin/complaints',     [SuperAdminController::class, 'complaints']);
 Route::post('/super-admin/update-status', [SuperAdminController::class, 'updateUserStatus']);
 
+
+Route::post('/user/update-location', [SosController::class, 'updateLocation']);
+
 // ── SOS ──────────────────────────────────────────────────────
 Route::post('/sos/notify',          [SosController::class, 'notify']);
 Route::post('/sos/create',          [SosController::class, 'create']); // ← new (sos.js uses this)
@@ -60,6 +64,17 @@ Route::get('/sos/my-notifications', [SosController::class, 'myNotifications']);
 Route::get('/get_my_sos_notifications', [SosController::class, 'myNotifications']); // legacy
 Route::post('/sos/respond',         [SosController::class, 'respond']);
 Route::post('/respond_to_sos',      [SosController::class, 'respond']); // legacy
+
+// SOS Evidence Upload (user করবে respond করার পর)
+Route::post('/sos/upload-evidence',         [SosController::class, 'uploadEvidence']);
+
+// Leaderboard
+Route::get('/leaderboard',                  [SosController::class, 'leaderboard']);
+Route::get('/leaderboard/search',           [SosController::class, 'leaderboardSearch']);
+
+// Admin SOS Evidence Verification
+Route::get('/admin/sos-evidence-pending',   [SosController::class, 'adminPendingEvidence']);
+Route::post('/admin/sos-evidence-verify',   [SosController::class, 'adminVerifyEvidence']);
 
 // ── Officers ─────────────────────────────────────────────────
 Route::get('/officers',         [OfficerController::class, 'index']);
@@ -96,3 +111,28 @@ Route::get('/track_complaint',           [ComplaintController::class, 'track']);
 // AI
 Route::post('/ai/enhance-description',   [\App\Http\Controllers\AiController::class, 'enhanceDescription']);
 Route::post('/ai/analyze-complaint',     [\App\Http\Controllers\AiController::class, 'analyzeComplaint']);
+
+// ── Evidence Requests ─────────────────────────────────────────
+Route::post('/evidence-request/create',       [\App\Http\Controllers\EvidenceRequestController::class, 'create']);
+Route::get('/evidence-request/pending',       [\App\Http\Controllers\EvidenceRequestController::class, 'getPending']);
+Route::post('/evidence-request/skip',         [\App\Http\Controllers\EvidenceRequestController::class, 'skip']);
+Route::post('/evidence-request/mark-submitted', [\App\Http\Controllers\EvidenceRequestController::class, 'markSubmitted']);
+Route::get('/evidence-request/admin-list',    [\App\Http\Controllers\EvidenceRequestController::class, 'adminList']);
+Route::post('/evidence-request/check-expired', [\App\Http\Controllers\EvidenceRequestController::class, 'checkExpired']);
+Route::get('/evidence-request/expired-list',  [\App\Http\Controllers\EvidenceRequestController::class, 'expiredList']);
+
+
+
+
+Route::get('/evidence-request/pending',        [EvidenceRequestController::class, 'getPending']);
+
+Route::post('/evidence-request/skip',          [EvidenceRequestController::class, 'skip']);
+
+Route::post('/evidence-request/mark-submitted', [EvidenceRequestController::class, 'markSubmitted']);
+
+Route::post('/evidence-request/reject',         [EvidenceRequestController::class, 'reject']);
+
+Route::get('/evidence-request/expired',        [EvidenceRequestController::class, 'getExpired']);
+// ── FCM Push Notifications ─────────────────────────────────────
+Route::post('/fcm/register-token',   [\App\Http\Controllers\FcmController::class, 'registerToken']);
+Route::post('/fcm/unregister-token', [\App\Http\Controllers\FcmController::class, 'unregisterToken']);

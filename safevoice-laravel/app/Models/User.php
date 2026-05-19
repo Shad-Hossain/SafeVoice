@@ -8,6 +8,7 @@ class User extends Authenticatable
         'name','email','phone','password_hash',
         'id_type','id_number','id_document_path',
         'location','profile_photo','status','complaints_count',
+        'fcm_token','sos_helped_count','sos_helped_verified_count',
     ];
     protected $hidden = ['password_hash'];
     public $timestamps = false;

@@ -363,17 +363,9 @@ document.getElementById('idDocFile').addEventListener('change', async function()
             text = await extractTextFromPDF(file);
             console.log('PDF extracted text:', text);
         } else {
-            // ── Image: send to server-side OCR proxy ──
+            // ── Image: Tesseract.js দিয়ে browser এই OCR (কোনো server লাগে না) ──
             showToast('Scanning image… please wait', 'info', 20000);
-            const fd = new FormData();
-            fd.append('idfile', file, file.name);
-            const res  = await fetch('/api/ocr', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.success && data.text) {
-                text = data.text;
-            } else {
-                console.warn('OCR error:', data.message);
-            }
+            text = await runTesseractOcr(file);
             console.log('RAW OCR TEXT:', text);
         }
 
@@ -416,6 +408,72 @@ document.getElementById('idDocFile').addEventListener('change', async function()
         console.error('ID scan error:', err);
     }
 });
+
+// ── Tesseract.js OCR — browser এই image read করে, কোনো server লাগে না ──
+async function runTesseractOcr(file) {
+    // Tesseract.js CDN থেকে load করো
+    if (!window.Tesseract) {
+        await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+
+    try {
+        // Image টা canvas এ draw করে contrast বাড়াই — accuracy বাড়ে
+        const enhanced = await enhanceImageForOcr(file);
+
+        // English আর Bengali দুটো language চেষ্টা করো
+        const { data: { text } } = await Tesseract.recognize(
+            enhanced,
+            'eng+ben',
+            {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        const pct = Math.round(m.progress * 100);
+                        const overlay = document.getElementById('ocrScanOverlay');
+                        const span = overlay ? overlay.querySelector('span') : null;
+                        if (span) span.textContent = `Scanning… ${pct}%`;
+                    }
+                }
+            }
+        );
+        return text || '';
+    } catch(e) {
+        console.error('[Tesseract] Error:', e);
+        // Fallback — enhanced ছাড়া original file দিয়ে চেষ্টা করো
+        try {
+            const { data: { text } } = await Tesseract.recognize(file, 'eng', {});
+            return text || '';
+        } catch(e2) {
+            return '';
+        }
+    }
+}
+
+// Image contrast বাড়াও — NID এর মতো document এর জন্য accuracy বাড়ে
+async function enhanceImageForOcr(file) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx    = canvas.getContext('2d');
+            canvas.width  = img.width;
+            canvas.height = img.height;
+
+            // Grayscale + contrast boost
+            ctx.filter = 'grayscale(100%) contrast(1.4) brightness(1.1)';
+            ctx.drawImage(img, 0, 0);
+
+            canvas.toBlob(blob => resolve(blob), 'image/png');
+        };
+        img.onerror = () => resolve(file); // fallback
+        img.src = URL.createObjectURL(file);
+    });
+}
 
 // ── PDF text extraction using PDF.js ──
 async function extractTextFromPDF(file) {

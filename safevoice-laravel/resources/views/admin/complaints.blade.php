@@ -169,6 +169,12 @@
                 </div>
             </div>
 
+            <!-- Evidence Request Status -->
+            <div id="evReqStatusBox" style="display:none;margin-top:12px;padding:10px 14px;border-radius:10px;border:1px solid #1e2d4a;background:#0a0f1e;">
+                <p style="margin:0;font-size:12px;color:#a0b4cc;font-weight:600;text-transform:uppercase;letter-spacing:.5px;"><i class="fas fa-bell" style="color:#f39c12;margin-right:6px;"></i> Evidence Request Status</p>
+                <div id="evReqStatusContent" style="margin-top:8px;font-size:13px;color:#a0b4cc;"></div>
+            </div>
+
             <!-- Admin Controls -->
             <div class="admin-controls">
                 <div class="control-group">
@@ -204,12 +210,62 @@
         </div>
 
         <div class="modal-footer">
-            <button class="btn-decline" onclick="closeModal()">Cancel</button>
+            <button class="btn-decline" onclick="closeModal()">
+                <i class="fas fa-times"></i> Close
+            </button>
+            <button class="btn-req-evidence" id="btnReqEvidence" onclick="openRequestEvidenceModal()" title="Ask user to submit more evidence">
+                <i class="fas fa-file-upload"></i> Request Evidence
+            </button>
             <button class="btn-accept" onclick="saveChanges()">
                 <i class="fas fa-save"></i> Save Changes
             </button>
         </div>
 
+    </div>
+</div>
+
+<!-- REQUEST EVIDENCE MODAL -->
+<div class="modal-overlay" id="reqEvidenceModal">
+    <div class="modal-box" style="max-width:480px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-upload" style="color:#f39c12;margin-right:8px;"></i> Request More Evidence</h3>
+            <i class="fas fa-times modal-close" onclick="closeReqEvidenceModal()"></i>
+        </div>
+        <div class="modal-body">
+            <p style="color:#a0b4cc;font-size:13px;margin-bottom:16px;">
+                User will receive a notification asking them to submit additional evidence for complaint
+                <strong id="reqEvComplaintId" style="color:#4f9eff;"></strong>.
+                They will have <strong style="color:#f39c12;">7 days</strong> to respond.
+            </p>
+            <div class="control-group">
+                <label><i class="fas fa-comment-alt"></i> Note to User <span style="color:#4a5568;font-size:11px;">(optional)</span></label>
+                <textarea class="msg-textarea" id="reqEvNote" placeholder="e.g. Please upload clearer photos of the incident, or a receipt showing the correct fare amount..." style="height:100px;"></textarea>
+            </div>
+            <div id="reqEvStatus" style="margin-top:12px;font-size:13px;display:none;padding:10px 14px;border-radius:8px;"></div>
+            <!-- Existing request info -->
+            <div id="reqEvExisting" style="display:none;margin-top:12px;background:#0a0f1e;border:1px solid #f39c1240;border-radius:10px;padding:12px 14px;">
+                <p style="margin:0;font-size:12px;color:#f39c12;font-weight:700;"><i class="fas fa-exclamation-triangle"></i> Active Request Exists</p>
+                <p id="reqEvExistingInfo" style="margin:6px 0 0;font-size:12px;color:#a0b4cc;"></p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-decline" onclick="closeReqEvidenceModal()">Cancel</button>
+            <button class="btn-accept" id="reqEvSendBtn" onclick="sendEvidenceRequest()" style="background:linear-gradient(135deg,#b45309,#f59e0b);">
+                <i class="fas fa-paper-plane"></i> Send Request
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- EXPIRED EVIDENCE BANNER (top of page) -->
+<div id="expiredEvidenceBanner" style="display:none;background:#1a0a00;border:1px solid #f39c12;border-radius:12px;padding:14px 20px;margin-bottom:20px;position:relative;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <i class="fas fa-exclamation-triangle" style="color:#f39c12;font-size:20px;flex-shrink:0;"></i>
+        <div style="flex:1;">
+            <p style="margin:0;font-weight:700;color:#f39c12;font-size:14px;">Evidence Submission Deadline Missed</p>
+            <p id="expiredBannerText" style="margin:4px 0 0;color:#a0b4cc;font-size:13px;"></p>
+        </div>
+        <button onclick="document.getElementById('expiredEvidenceBanner').style.display='none'" style="background:none;border:none;color:#4a5568;cursor:pointer;font-size:18px;flex-shrink:0;"><i class="fas fa-times"></i></button>
     </div>
 </div>
 

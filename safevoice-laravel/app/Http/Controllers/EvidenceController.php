@@ -55,23 +55,38 @@ class EvidenceController extends Controller
     {
         $request->validate([
             'sos_id'     => 'required|integer',
-            'evidence'   => 'required|array',
+            'evidence'   => 'nullable|array',
             'evidence.*' => 'file|max:10240',
         ]);
 
+        // crime_type ও description SosAlert এ update করব
+        $sosId = $request->sos_id;
+        $updateData = [];
+        if ($request->filled('crime_type'))  $updateData['crime_type']  = $request->crime_type;
+        if ($request->filled('description')) $updateData['description'] = $request->description;
+        if (!empty($updateData)) {
+            \App\Models\SosAlert::where('id', $sosId)->update($updateData);
+        }
+
+        // Evidence files (optional)
         $uploaded = [];
-        foreach ($request->file('evidence') as $file) {
-            $filename  = 'sos_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/sos'), $filename);
-            $path = 'uploads/sos/' . $filename;
+        if ($request->hasFile('evidence')) {
+            if (!file_exists(public_path('uploads/sos'))) {
+                mkdir(public_path('uploads/sos'), 0755, true);
+            }
+            foreach ($request->file('evidence') as $file) {
+                $filename  = 'sos_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('uploads/sos'), $filename);
+                $path = 'uploads/sos/' . $filename;
 
-            SosEvidence::create([
-                'sos_id'    => $request->sos_id,
-                'file_path' => $path,
-                'file_type' => $file->getClientMimeType(),
-            ]);
+                SosEvidence::create([
+                    'sos_id'    => $sosId,
+                    'file_path' => $path,
+                    'file_type' => $file->getClientMimeType(),
+                ]);
 
-            $uploaded[] = $path;
+                $uploaded[] = $path;
+            }
         }
 
         return response()->json(['success' => true, 'files' => $uploaded]);

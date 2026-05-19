@@ -186,6 +186,18 @@
 /* DETAIL MODAL*/
 .detail-modal {
     max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.detail-modal .modal-body {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.detail-modal .modal-footer {
+    flex-shrink: 0;
 }
 
 .detail-grid {
@@ -329,4 +341,54 @@
     .ac-stats-mini { width: 100%; justify-content: space-between; }
 
     .toast { left: 15px; right: 15px; bottom: 15px; }
+}
+/* REQUEST EVIDENCE BUTTON */
+.btn-req-evidence {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #78350f, #d97706);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    letter-spacing: .3px;
+}
+.btn-req-evidence:hover  { opacity: .88; transform: translateY(-1px); }
+.btn-req-evidence:active { transform: translateY(0); }
+
+/* MODAL FOOTER flex gap fix */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 16px 24px;
+    border-top: 1px solid #1e2d4a;
+}
+
+/* Fix modal footer always visible */
+.detail-modal {
+    max-height: 85vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.detail-modal .modal-body {
+    overflow-y: auto !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+}
+
+.detail-modal .modal-footer {
+    flex-shrink: 0 !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    background: #0d1526 !important;
+    z-index: 1 !important;
 }

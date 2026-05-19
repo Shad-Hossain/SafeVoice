@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use App\Models\Complaint;
 use App\Models\Officer;
 use App\Models\User;
+use App\Http\Controllers\FcmController;
 
 class ComplaintController extends Controller
 {
@@ -122,6 +123,17 @@ class ComplaintController extends Controller
                 'assigned_officer_code' => $officer->officer_code,
             ]);
             $officer->increment('assigned_cases');
+
+            // FCM Push — PI assigned notification
+            if ($complaint->user_id) {
+                FcmController::sendToUser(
+                    $complaint->user_id,
+                    '✅ Private Investigator Assigned',
+                    'A Private Investigator has been assigned to your complaint ' . $complaint->complaint_id . '. Investigation is underway.',
+                    ['type' => 'status_update', 'complaint_id' => $complaint->complaint_id, 'status' => 'Private Investigator Assigned', 'url' => '/track?id=' . $complaint->complaint_id]
+                );
+            }
+
             return response()->json(['success' => true, 'message' => 'Status updated. Payment notification sent to user.']);
         }
 
@@ -141,6 +153,28 @@ class ComplaintController extends Controller
             \App\Models\PrivateInvestigator::where('id', $complaint->assigned_pi_id)
                 ->where('active_cases', '>', 0)
                 ->decrement('active_cases');
+        }
+
+        // FCM Push — status change notification to user
+        if ($complaint->user_id) {
+            $statusMessages = [
+                'Submitted'                    => ['icon' => '📋', 'msg' => 'Your complaint has been received and is being reviewed.'],
+                'Under Review'                 => ['icon' => '🔍', 'msg' => 'Your complaint is now under review by our team.'],
+                'PI Notification Sent'         => ['icon' => '🕵️', 'msg' => 'A Private Investigator review has been initiated for your complaint.'],
+                'PI Payment Confirmed'         => ['icon' => '💳', 'msg' => 'Your payment has been confirmed. PI will be assigned shortly.'],
+                'Private Investigator Assigned'=> ['icon' => '✅', 'msg' => 'A Private Investigator has been assigned to your complaint.'],
+                'Resolved'                     => ['icon' => '🎉', 'msg' => 'Your complaint has been resolved. Thank you for reporting.'],
+                'Rejected'                     => ['icon' => '❌', 'msg' => 'Your complaint could not be processed. Please contact support for details.'],
+            ];
+
+            $info = $statusMessages[$request->status] ?? ['icon' => '🔔', 'msg' => 'Your complaint status has been updated.'];
+
+            FcmController::sendToUser(
+                $complaint->user_id,
+                $info['icon'] . ' Complaint ' . $complaint->complaint_id . ' — ' . $request->status,
+                $info['msg'],
+                ['type' => 'status_update', 'complaint_id' => $complaint->complaint_id, 'status' => $request->status, 'url' => '/track?id=' . $complaint->complaint_id]
+            );
         }
 
         return response()->json(['success' => true, 'message' => 'Status updated to ' . $request->status]);
