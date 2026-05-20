@@ -95,7 +95,7 @@
                             <i class="fas fa-id-card" style="color:#4f9eff;margin-right:7px;"></i>Verify Your Identity
                         </label>
                         <p style="color:#a0b4cc;font-size:13px;margin:0 0 14px;">
-                            NID বা Birth Certificate এর ছবি upload করো — নাম ও ID নম্বর automatically fill হয়ে যাবে।
+                            Upload your NID or Birth Certificate Image
                         </p>
                         <div class="id-type-tabs">
                             <div class="id-tab active" data-type="nid" id="tabNid"><i class="fas fa-id-card"></i> NID Card</div>
@@ -123,7 +123,7 @@
 
                     <div class="form-group">
                         <label>Full Name <span style="color:#e63946;">*</span>
-                            <span style="color:#4a5568;font-weight:400;font-size:12px;margin-left:6px;">(OCR থেকে auto-fill)</span>
+                            <span style="color:#4a5568;font-weight:400;font-size:12px;margin-left:6px;">(auto-fill)</span>
                         </label>
                         <div class="input-wrapper">
                             <i class="fas fa-user"></i>
@@ -134,7 +134,7 @@
 
                     <div class="form-group">
                         <label>ID Number <span style="color:#e63946;">*</span>
-                            <span style="color:#4a5568;font-weight:400;font-size:12px;margin-left:6px;">(OCR থেকে auto-fill)</span>
+                            <span style="color:#4a5568;font-weight:400;font-size:12px;margin-left:6px;">(auto-fill)</span>
                         </label>
                         <div class="input-wrapper">
                             <i class="fas fa-hashtag"></i>
