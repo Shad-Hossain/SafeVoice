@@ -114,12 +114,11 @@ class SosController extends Controller
     // ─────────────────────────────────────────────────────────
     private function getUsersWithinRadius(float $lat, float $lng, int $km, int $excludeId)
     {
-        $activeWindow = now()->subMinutes(15); // last 15 মিনিটে active
-
+        // last_seen check নেই — FCM token থাকলেই notify হবে
+        // Browser বন্ধ থাকলেও mobile এ push যাবে service worker দিয়ে
         return User::where('id', '!=', $excludeId)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->where('last_seen', '>=', $activeWindow)
             ->whereExists(function ($query) {
                 // FCM token আছে এমন user
                 $query->select(DB::raw(1))

@@ -16,6 +16,7 @@
             <li><a href="/legal"><i class="fas fa-gavel"></i> Legal Help</a></li>
             <li><a href="/leaderboard"><i class="fas fa-trophy"></i> Leaderboard</a></li>
             <li><a href="/sos"><i class="fas fa-exclamation-triangle" style="color:#e63946"></i> Emergency SOS</a></li>
+            <li id="nav-sos-responds"><a href="#" onclick="showSection('sos-responds')"><i class="fas fa-hands-helping" style="color:#4f9eff"></i> SOS Responses</a></li>
             <li class="sidebar-divider"></li>
             <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Settings</a></li>
             <li><a href="#" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -92,7 +93,38 @@
             </div>
         </div>
 
+        <!-- ── SOS RESPONSES ── -->
+        <div id="view-sos-responds" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-hands-helping" style="font-size:22px;margin-right:10px;color:#4f9eff"></i>My SOS Responses</h1>
+            </div>
+            <div id="sos-responds-container">
+                <p style="color:var(--text-secondary);text-align:center;padding:40px;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </p>
+            </div>
+        </div>
+
     </main>
+</div>
+
+<!-- Responder Evidence Modal -->
+<div id="resp-ev-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:24px;max-width:460px;width:100%;position:relative;">
+        <button onclick="document.getElementById('resp-ev-overlay').style.display='none'"
+            style="position:absolute;top:12px;right:14px;background:none;border:none;color:#a0b4cc;font-size:24px;cursor:pointer;line-height:1;">×</button>
+        <h3 style="color:#fff;margin:0 0 6px;font-size:16px;">📷 Submit Response Evidence</h3>
+        <p style="color:#a0b4cc;font-size:13px;margin:0 0 16px;">Photo বা video upload করো যা প্রমাণ করে তুমি help করেছ। Admin verify করলে rank বাড়বে।</p>
+        <div id="resp-ev-preview" style="margin-bottom:12px;"></div>
+        <input type="file" id="resp-ev-file" accept="image/*,video/*"
+            style="display:block;width:100%;margin-bottom:12px;color:#fff;font-size:13px;"
+            onchange="previewRespEvFile(this)">
+        <div id="resp-ev-msg" style="display:none;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;"></div>
+        <button onclick="submitRespEvidence()"
+            style="width:100%;background:#1a6496;border:none;color:#fff;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+            🚀 Submit for Verification
+        </button>
+    </div>
 </div>
 
 <!-- Settings Modal -->
@@ -176,10 +208,13 @@ function loadProfile() {
 function showSection(section) {
     document.getElementById('view-overview').style.display     = section === 'overview'     ? 'block' : 'none';
     document.getElementById('view-mycomplaints').style.display = section === 'mycomplaints' ? 'block' : 'none';
+    const sosEl = document.getElementById('view-sos-responds');
+    if (sosEl) sosEl.style.display = section === 'sos-responds' ? 'block' : 'none';
     document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
     const navEl = document.getElementById('nav-' + section);
     if (navEl) navEl.classList.add('active');
     if (section === 'mycomplaints') loadAllComplaints();
+    if (section === 'sos-responds') loadSosResponds();
 }
 
 // ── Load complaints from DB ────────────────────
@@ -231,6 +266,150 @@ async function loadComplaints() {
             const el = document.getElementById(id);
             if (el) el.textContent = '0';
         });
+    }
+}
+
+// ── SOS Responds ───────────────────────────────
+async function loadSosResponds() {
+    const container = document.getElementById('sos-responds-container');
+    if (!container) return;
+    container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+
+    try {
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const userId = svUser.id || svUser.user_id;
+        if (!userId) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:40px;">Please log in to view your SOS responses.</p>';
+            return;
+        }
+
+        const res  = await fetch(`/api/sos/my-responds?user_id=${userId}`, { credentials: 'include' });
+        const data = await res.json();
+
+        if (!data.success || !data.responds || data.responds.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);">
+                <i class="fas fa-hands-helping" style="font-size:40px;opacity:.2;display:block;margin-bottom:14px;"></i>
+                <p>You haven't responded to any SOS alerts yet.</p>
+            </div>`;
+            return;
+        }
+
+        const rows = data.responds.map(r => {
+            const sc = { pending:'#fbbf24', approved:'#2ecc71', rejected:'#e63946', not_submitted:'#4a5568' };
+            const sl = { pending:'⏳ Pending', approved:'✅ Approved', rejected:'❌ Rejected', not_submitted:'📤 Not Submitted' };
+            const ev = r.evidence_status || 'not_submitted';
+
+            const actionBtn = (ev === 'not_submitted' || ev === 'rejected')
+                ? `<button onclick="openResponderEvidenceModal(${r.sos_id})"
+                        style="background:#1a4a6e;border:none;color:#fff;padding:5px 12px;
+                        border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap;">
+                        📷 Submit Evidence
+                   </button>`
+                : ev === 'approved'
+                    ? '<span style="color:#2ecc71;font-size:12px;">✔ Verified</span>'
+                    : '<span style="color:#a0b4cc;font-size:12px;">Awaiting review</span>';
+
+            return `<tr>
+                <td style="font-weight:600;color:#4f9eff;">#${r.sos_id}</td>
+                <td>${r.victim_name || 'Anonymous'}</td>
+                <td>${r.crime_type || '—'}</td>
+                <td style="font-size:12px;color:var(--text-secondary);">${r.location_text ? r.location_text.substring(0,35)+'...' : '—'}</td>
+                <td><span style="font-size:11px;font-weight:700;color:${sc[ev]};background:${sc[ev]}22;
+                    border:1px solid ${sc[ev]}44;border-radius:20px;padding:2px 10px;">${sl[ev]||ev}</span></td>
+                <td>${actionBtn}</td>
+            </tr>`;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SOS ID</th><th>Victim</th><th>Type</th>
+                            <th>Location</th><th>Evidence</th><th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+    } catch(e) {
+        container.innerHTML = '<p style="text-align:center;color:#e63946;padding:40px;">Error loading data. Please try again.</p>';
+    }
+}
+
+let _respEvidenceSosId = null;
+
+function openResponderEvidenceModal(sosId) {
+    _respEvidenceSosId = sosId;
+    const overlay = document.getElementById('resp-ev-overlay');
+    if (!overlay) return;
+    document.getElementById('resp-ev-preview').innerHTML = '';
+    document.getElementById('resp-ev-file').value = '';
+    const msg = document.getElementById('resp-ev-msg');
+    if (msg) msg.style.display = 'none';
+    overlay.style.display = 'flex';
+}
+
+function previewRespEvFile(input) {
+    const preview = document.getElementById('resp-ev-preview');
+    const file    = input.files[0];
+    if (!file || !preview) return;
+    preview.innerHTML = '';
+    if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.style.cssText = 'max-width:100%;max-height:180px;border-radius:8px;object-fit:cover;display:block;';
+        preview.appendChild(img);
+    } else if (file.type.startsWith('video/')) {
+        const vid = document.createElement('video');
+        vid.src = URL.createObjectURL(file);
+        vid.controls = true;
+        vid.style.cssText = 'max-width:100%;border-radius:8px;display:block;';
+        preview.appendChild(vid);
+    }
+}
+
+async function submitRespEvidence() {
+    const file = document.getElementById('resp-ev-file').files[0];
+    const msg  = document.getElementById('resp-ev-msg');
+    if (!file) {
+        msg.textContent = 'Please select a file first.';
+        msg.style.cssText = 'display:block;background:#e6394622;color:#e63946;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
+        return;
+    }
+    if (!_respEvidenceSosId) return;
+
+    msg.textContent = '⏳ Uploading...';
+    msg.style.cssText = 'display:block;background:#4f9eff22;color:#4f9eff;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
+
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+    const csrf   = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const fd = new FormData();
+    fd.append('sos_id',   _respEvidenceSosId);
+    fd.append('evidence', file);
+    fd.append('user_id',  svUser.id || svUser.user_id || '');
+
+    try {
+        const res  = await fetch('/api/sos/submit-responder-evidence', {
+            method: 'POST', credentials: 'include',
+            headers: { 'X-CSRF-TOKEN': csrf },
+            body: fd,
+        });
+        const data = await res.json();
+        if (data.success) {
+            msg.textContent = '✅ Submitted! Admin will verify soon.';
+            msg.style.cssText = 'display:block;background:#2ecc7122;color:#2ecc71;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
+            setTimeout(() => {
+                document.getElementById('resp-ev-overlay').style.display = 'none';
+                loadSosResponds();
+            }, 1500);
+        } else {
+            msg.textContent = '❌ ' + (data.message || 'Upload failed.');
+            msg.style.cssText = 'display:block;background:#e6394622;color:#e63946;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
+        }
+    } catch(e) {
+        msg.textContent = '❌ Network error.';
+        msg.style.cssText = 'display:block;background:#e6394622;color:#e63946;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
     }
 }
 

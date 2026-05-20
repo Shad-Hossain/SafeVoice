@@ -959,6 +959,7 @@ function statusClass(s) {
 
 // ── SOS EVIDENCE VERIFICATION ────────────────────────────────────
 let currentEvidenceRecord = null; // currently open evidence for verify
+const evidenceRecordsMap = {}; // id => full record object
 
 async function loadSosAlerts() {
     const tbody  = document.getElementById('sos-alerts-tbody');
@@ -1209,11 +1210,18 @@ const showVerifyBtn = r.evidence_status === 'pending' && r.evidence_path;
             <i class="fas fa-exclamation-triangle" style="color:#e63946;margin-right:4px;"></i>${sosInfo}
         </p>
         ${r.admin_note ? `<p style="font-size:12px;color:#6a7fa0;margin:0 0 12px;font-style:italic;">Note: ${r.admin_note}</p>` : ''}
-        ${showVerifyBtn ? `<button onclick='openSosEvidenceModal(${JSON.stringify(r).replace(/'/g, "&#39;")})'
+        ${showVerifyBtn ? `<button onclick="openSosEvidenceModalById(${r.id})"
             style="padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#1a3a6a,#2563eb);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:auto;">
             <i class="fas fa-search"></i> Review Evidence
         </button>` : ''}
     </div>`;
+    evidenceRecordsMap[r.id] = r;
+}
+
+function openSosEvidenceModalById(id) {
+    const record = evidenceRecordsMap[id];
+    if (!record) return;
+    openSosEvidenceModal(record);
 }
 
 function openSosEvidenceModal(record) {
