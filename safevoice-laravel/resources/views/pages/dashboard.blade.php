@@ -254,7 +254,7 @@ async function loadComplaints() {
                     <a href="/track?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> View</a>
                     &nbsp;
                     <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
-                    ${(c.status === 'PI Payment Pending' || c.status === 'PI Notification Sent') && (!c.payment_deadline || new Date(c.payment_deadline) > new Date()) ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
+                   ${(c.status === 'PI Payment Pending' || c.status === 'PI Notification Sent') && c.payment_deadline && new Date(c.payment_deadline) > new Date() ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
                 </td>
             </tr>`).join('');
     } catch(e) {
@@ -432,7 +432,7 @@ async function loadAllComplaints() {
                     <a href="/track?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> Track</a>
                     &nbsp;
                     <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
-                    ${(c.status === 'PI Payment Pending' || c.status === 'PI Notification Sent') && (!c.payment_deadline || new Date(c.payment_deadline) > new Date()) ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
+                    ${(c.status === 'PI Payment Pending' || c.status === 'PI Notification Sent') && c.payment_deadline && new Date(c.payment_deadline) > new Date() ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
                 </td>
             </tr>`).join('');
     } catch(e) {
