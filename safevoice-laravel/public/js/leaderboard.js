@@ -1,38 +1,43 @@
-// FAKE DATA 
-const leaderboardData = [
-    { rank: 1, name: 'Rakib Hassan',   responses: 42, streak: 7,  badge: '🏆 Champion'   },
-    { rank: 2, name: 'Shefa Akter',    responses: 38, streak: 5,  badge: '🥈 Runner Up'  },
-    { rank: 3, name: 'Nadia Islam',    responses: 31, streak: 4,  badge: '🥉 Third Place' },
-    { rank: 4, name: 'Arif Hossain',   responses: 27, streak: 3,  badge: '⭐ Top Responder' },
-    { rank: 5, name: 'Tania Begum',    responses: 24, streak: 2,  badge: '⭐ Top Responder' },
-    { rank: 6, name: 'Jahid Khan',     responses: 19, streak: 1,  badge: '🎖️ Active'     },
-    { rank: 7, name: 'Shad Hossain',   responses: 12, streak: 2,  badge: '🎖️ Active', isYou: true },
-    { rank: 8, name: 'Mim Akhter',     responses: 10, streak: 0,  badge: '🎖️ Active'     },
-    { rank: 9, name: 'Sumon Roy',      responses: 8,  streak: 1,  badge: '🎖️ Active'     },
-    { rank: 10, name: 'Farida Khanam', responses: 5,  streak: 0,  badge: '🎖️ Active'    },
-];
+// ──────────────────────────────────────────────────────────────
+// leaderboard.js  — Real data from /api/leaderboard
+// ──────────────────────────────────────────────────────────────
 
-// RENDER TABLE 
-function renderLeaderboard() {
+let allData = [];   // full leaderboard array
+let myRank  = null; // logged-in user এর rank info
+
+// ── Badge helper ──────────────────────────────────────────────
+function getBadge(rank) {
+    if (rank === 1) return '🏆 Champion';
+    if (rank === 2) return '🥈 Runner Up';
+    if (rank === 3) return '🥉 Third Place';
+    if (rank <= 10) return '⭐ Top Responder';
+    return '🎖️ Active';
+}
+
+// ── Render full table ─────────────────────────────────────────
+function renderTable(data) {
     const tbody = document.getElementById('leaderboardBody');
     if (!tbody) return;
 
-    tbody.innerHTML = leaderboardData.map(p => {
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888; padding:30px;">
+            No verified SOS responders yet. Be the first hero!
+        </td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = data.map(p => {
         const rankClass = p.rank === 1 ? 'gold-bg'
                         : p.rank === 2 ? 'silver-bg'
                         : p.rank === 3 ? 'bronze-bg'
-                        : p.isYou     ? 'you-bg'
+                        : p.is_you     ? 'you-bg'
                         : '';
 
-        const youTag = p.isYou
+        const youTag = p.is_you
             ? '<span class="you-tag" style="font-size:11px; background:#4f9eff; color:#fff; padding:2px 7px; border-radius:10px; margin-left:6px;">You</span>'
             : '';
 
-        const streakHTML = p.streak > 0
-            ? `<span class="streak-badge">🔥 ${p.streak} day</span>`
-            : `<span style="color:#4a5568; font-size:13px;">—</span>`;
-
-        const rowStyle = p.isYou ? 'background: #4f9eff08;' : '';
+        const rowStyle = p.is_you ? 'background: #4f9eff08;' : '';
 
         return `
             <tr style="${rowStyle}">
@@ -44,11 +49,135 @@ function renderLeaderboard() {
                     </div>
                 </td>
                 <td><strong>${p.responses}</strong></td>
-                <td>${streakHTML}</td>
+                <td><span style="color:#4a5568; font-size:13px;">—</span></td>
                 <td><span class="badge-pill">${p.badge}</span></td>
             </tr>
         `;
     }).join('');
 }
 
-document.addEventListener('DOMContentLoaded', renderLeaderboard);
+// ── Render podium (top 3) ─────────────────────────────────────
+function renderPodium(data) {
+    const first  = data.find(p => p.rank === 1);
+    const second = data.find(p => p.rank === 2);
+    const third  = data.find(p => p.rank === 3);
+
+    const setCard = (selector, person) => {
+        const card = document.querySelector(selector);
+        if (!card || !person) return;
+        const nameEl  = card.querySelector('h3');
+        const countEl = card.querySelector('p');
+        if (nameEl)  nameEl.textContent = person.name;
+        if (countEl) countEl.textContent = person.responses + ' responses';
+    };
+
+    setCard('.podium-card.gold',   first);
+    setCard('.podium-card.silver', second);
+    setCard('.podium-card.bronze', third);
+}
+
+// ── Render My Rank bar ────────────────────────────────────────
+function renderMyRankBar(rankInfo) {
+    const bar = document.querySelector('.my-rank-bar');
+    if (!bar) return;
+
+    if (!rankInfo) {
+        bar.style.display = 'none';
+        return;
+    }
+
+    bar.style.display = '';
+    const nameEl  = bar.querySelector('.my-rank-name');
+    const subEl   = bar.querySelector('.my-rank-sub');
+    const rankNum = bar.querySelector('.my-rank-num');
+
+    if (nameEl)  nameEl.innerHTML = rankInfo.name + ' <span class="you-tag">You</span>';
+    if (subEl)   subEl.textContent = rankInfo.responses + ' verified responses';
+    if (rankNum) rankNum.textContent = '#' + rankInfo.rank;
+}
+
+// ── Load leaderboard from API ─────────────────────────────────
+async function loadLeaderboard() {
+    try {
+        const res  = await fetch('/api/leaderboard');
+        const data = await res.json();
+
+        if (!data.success) return;
+
+        allData = data.leaderboard || [];
+        myRank  = data.my_rank    || null;
+
+        renderTable(allData);
+        renderPodium(allData);
+        renderMyRankBar(myRank);
+
+    } catch (err) {
+        console.error('Leaderboard load error:', err);
+    }
+}
+
+// ── NID / Birth Reg search ────────────────────────────────────
+async function searchByIdNumber() {
+    const input  = document.getElementById('idSearchInput');
+    const result = document.getElementById('searchResult');
+    if (!input || !result) return;
+
+    const idNumber = input.value.trim();
+    if (!idNumber) {
+        result.innerHTML = `<p style="color:#e53e3e;">Please enter your NID or Birth Registration number.</p>`;
+        return;
+    }
+
+    result.innerHTML = `<p style="color:#888;">Searching...</p>`;
+
+    try {
+        const res  = await fetch(`/api/leaderboard/search?id_number=${encodeURIComponent(idNumber)}`);
+        const data = await res.json();
+
+        if (!data.success) {
+            result.innerHTML = `<p style="color:#e53e3e;">❌ ${data.message || 'Not found'}</p>`;
+            return;
+        }
+
+        const r = data.result;
+        const rankColor = r.rank === 1 ? 'color:#FFD700' : r.rank <= 3 ? 'color:#C0C0C0' : 'color:#4f9eff';
+
+        result.innerHTML = `
+            <div style="background:var(--card-bg,#1a1f35); border:1px solid #2d3561; border-radius:12px; padding:20px; margin-top:12px;">
+                <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                    <div style="width:52px; height:52px; border-radius:50%; background:#2d3561; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-user" style="font-size:22px; color:#4f9eff;"></i>
+                    </div>
+                    <div>
+                        <p style="font-size:18px; font-weight:700; margin:0;">${r.name}</p>
+                        <p style="color:#888; margin:4px 0 0;">${r.badge}</p>
+                    </div>
+                    <div style="margin-left:auto; text-align:right;">
+                        <p style="font-size:32px; font-weight:800; margin:0; ${rankColor}">#${r.rank}</p>
+                        <p style="color:#888; margin:0; font-size:13px;">${r.responses} verified responses</p>
+                    </div>
+                </div>
+            </div>`;
+    } catch (err) {
+        result.innerHTML = `<p style="color:#e53e3e;">Error searching. Try again.</p>`;
+    }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadLeaderboard();
+
+    // Search button click
+    const searchBtn = document.getElementById('idSearchBtn');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', searchByIdNumber);
+    }
+
+    // Enter key দিয়েও search করা যাবে
+    const searchInput = document.getElementById('idSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') searchByIdNumber();
+        });
+    }
+});

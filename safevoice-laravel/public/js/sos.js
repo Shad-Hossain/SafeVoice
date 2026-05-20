@@ -1,7 +1,6 @@
 // ================================================================
 // SafeVoice — SOS Core  (Laravel edition)
 // FLOW: Hold → Create SOS → Send Notification → Evidence Modal
-// All API paths now point to Laravel routes (/api/...)
 // ================================================================
 
 let holdTimer    = null;
@@ -17,18 +16,24 @@ let currentLng      = null;
 let currentLocation = '';
 
 // ── INIT ─────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+// sos.js content block এর ভেতরে load হয় — DOM ততক্ষণে ready।
+// DOMContentLoaded already fired হয়ে গেছে, তাই callback কখনো
+// run হতো না। readyState check করে সরাসরি call করি।
+function initSOS() {
     detectSOSLocation();
     startResponderScan();
     pollForIncomingAlerts();
     bindSOSButton();
-});
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initSOS);
+} else {
+    initSOS();
+}
 
 
-// ── SOS BUTTON — touch & mouse binding ───────────────────────────
-// Bind here in JS so we can call preventDefault() on touch events.
-// This prevents the browser from also firing mousedown after touchstart,
-// which used to cause startHold() → cancelHold() double-fire on mobile.
+// ── SOS BUTTON binding ───────────────────────────────────────────
 function bindSOSButton() {
     const btn = document.getElementById('sosBtn');
     if (!btn) return;
@@ -131,15 +136,19 @@ async function activateSOS() {
         btn.querySelector('small').textContent = 'Broadcasting alert';
     }
     updateStatusBar('Sending SOS alert...', true);
+    // sv_user localStorage থেকে user_id নেওয়া — session cookie কাজ না করলেও চলবে
+    const svUserRaw = localStorage.getItem('sv_user');
+    const svUser    = svUserRaw ? JSON.parse(svUserRaw) : {};
+    const userId    = svUser.id || 0;
+
     try {
         // STEP 1: Create SOS
         const createRes  = await fetch('/api/sos/create', {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-            body: JSON.stringify({ latitude: currentLat, longitude: currentLng, location: currentLocation }),
+            body: JSON.stringify({ latitude: currentLat, longitude: currentLng, location: currentLocation, user_id: userId }),
         });
         if (!createRes.ok) {
-            console.error('SOS create HTTP error:', createRes.status);
             showError('Server error (' + createRes.status + '). Please try again.');
             resetSOS(); return;
         }
@@ -151,7 +160,7 @@ async function activateSOS() {
         const notifRes  = await fetch('/api/sos/notify', {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-            body: JSON.stringify({ sos_id: currentSOSId, latitude: currentLat, longitude: currentLng, location: currentLocation }),
+            body: JSON.stringify({ sos_id: currentSOSId, latitude: currentLat, longitude: currentLng, location: currentLocation, user_id: userId }),
         });
         const notifData     = await notifRes.json();
         const notifiedCount = notifData.notified_count || 0;
@@ -227,7 +236,7 @@ function showFakeResponders(notifiedCount) {
 }
 
 
-// ── EVIDENCE MODAL ────────────────────────────────────────────────
+// ── VICTIM: EVIDENCE MODAL (SOS create এর পর) ────────────────────
 function openEvidenceModal() {
     const modal = document.getElementById('evidenceModal');
     if (!modal) return;
@@ -265,8 +274,7 @@ function handleFileSelect(input) {
     }
 }
 
-
-// ── SUBMIT SOS EVIDENCE ───────────────────────────────────────────
+// VICTIM এর evidence submit (crime type + description + file)
 async function submitEvidence() {
     const crimeType = document.getElementById('crimeType').value;
     const desc      = document.getElementById('crimeDesc').value.trim();
@@ -277,7 +285,7 @@ async function submitEvidence() {
     formData.append('sos_id',      currentSOSId);
     formData.append('crime_type',  crimeType);
     formData.append('description', desc);
-    if (fileInput && fileInput.files[0]) formData.append('evidence[]', fileInput.files[0]);
+    if (fileInput && fileInput.files[0]) formData.append('evidence[0]', fileInput.files[0]);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     if (csrf) formData.append('_token', csrf);
     if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...'; }
@@ -299,29 +307,42 @@ async function submitEvidence() {
 
 function showModalMsg(msg, type) {
     const el = document.getElementById('modalMsg');
-    if (el) { el.textContent = msg; el.className = 'modal-msg ' + type; }
+    if (el) { el.textContent = msg; el.className = 'modal-msg ' + type; el.style.display = 'block'; }
 }
 
 
 // ── INCOMING ALERTS (Responder Side) ─────────────────────────────
-let pollingInterval = null;
-let lastSeenSosId   = null;
+let pollingInterval   = null;
+let lastSeenSosId     = null;
+let isFirstPoll       = true;   // প্রথম poll এ শুধু baseline set করব, alert দেখাব না
 
 function pollForIncomingAlerts() {
     checkIncomingAlerts();
-    pollingInterval = setInterval(checkIncomingAlerts, 10000);
+    pollingInterval = setInterval(checkIncomingAlerts, 8000); // 8 sec polling
 }
 
 async function checkIncomingAlerts() {
     try {
-        const res  = await fetch('/api/sos/my-notifications', { credentials: 'include' });
-        const data = await res.json();
+        // user_id ও pass করব যাতে session ছাড়াও কাজ করে
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const uid    = svUser.id || 0;
+        const params = uid ? '?user_id=' + uid : '';
+        const res    = await fetch('/api/sos/my-notifications' + params, { credentials: 'include' });
+        const data   = await res.json();
         if (data.success && data.notifications && data.notifications.length > 0) {
             const newest = data.notifications[0];
+            if (isFirstPoll) {
+                // প্রথম poll: শুধু current state মনে রাখব, কোনো alert দেখাব না
+                lastSeenSosId = newest.sos_id;
+                isFirstPoll   = false;
+                return;
+            }
             if (newest.sos_id !== lastSeenSosId) {
                 lastSeenSosId = newest.sos_id;
                 showIncomingAlert(newest);
             }
+        } else if (isFirstPoll) {
+            isFirstPoll = false; // কোনো notification নেই, পরবর্তী পোল থেকে নতুন আসলে দেখাবে
         }
     } catch (e) { /* silent */ }
 }
@@ -366,14 +387,14 @@ async function openSOSDetailsModal(sosId) {
     try {
         const res  = await fetch(`/api/sos/alerts?sos_id=${sosId}`, { credentials: 'include' });
         const data = await res.json();
-        if (data.success) renderSOSDetails(data.sos, data.evidence);
+        if (data.success && data.sos) renderSOSDetails(data.sos, data.evidence || [], sosId);
     } catch (e) {
         document.getElementById('sosDetailsContent').innerHTML =
             '<p style="color:#e63946;text-align:center;">Could not load details.</p>';
     }
 }
 
-function renderSOSDetails(sos, evidence) {
+function renderSOSDetails(sos, evidence, sosId) {
     const el = document.getElementById('sosDetailsContent');
     if (!el) return;
     const evidenceHtml = evidence && evidence.length > 0
@@ -385,6 +406,7 @@ function renderSOSDetails(sos, evidence) {
             return `<a href="/${e.file_path}" target="_blank" style="color:#4fc3f7;">View Evidence File</a>`;
         }).join('')
         : '<p style="color:#666;font-size:13px;margin-top:4px;">No evidence uploaded yet</p>';
+
     el.innerHTML = `
         <div class="sos-detail-row"><i class="fas fa-user-circle"></i>
             <div><label>Victim Name</label><strong>${sos.victim_name || 'Anonymous'}</strong></div></div>
@@ -402,12 +424,118 @@ function renderSOSDetails(sos, evidence) {
                 <i class="fas fa-directions"></i> Navigate to Location</a>
             ${sos.victim_phone ? `<a href="tel:${sos.victim_phone}" class="btn-call-victim"><i class="fas fa-phone"></i> Call Victim</a>` : ''}
             <a href="tel:999" class="btn-call-police"><i class="fas fa-shield-alt"></i> Call Police</a>
+        </div>
+
+        <!-- ── RESPONDER EVIDENCE UPLOAD ─────────────────────── -->
+        <div class="responder-evidence-section" id="responderEvidenceSection-${sosId}">
+            <div class="rev-header">
+                <i class="fas fa-camera"></i>
+                <div>
+                    <h4>Upload Your Evidence</h4>
+                    <p>Photo বা video তুলে submit করো — admin verify করলে তোমার rank বাড়বে</p>
+                </div>
+            </div>
+            <div class="rev-upload-area" onclick="document.getElementById('responderEvidenceFile-${sosId}').click()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Tap to choose photo or video</span>
+                <small>JPG, PNG, MP4, MOV — max 50MB</small>
+            </div>
+            <input type="file" id="responderEvidenceFile-${sosId}" style="display:none;"
+                   accept="image/*,video/*"
+                   onchange="previewResponderFile(this, '${sosId}')">
+            <div id="responderEvidencePreview-${sosId}" style="margin-top:8px;"></div>
+            <div id="responderEvidenceMsg-${sosId}" style="display:none; margin-top:8px; padding:10px 14px; border-radius:8px; font-size:13px;"></div>
+            <button class="btn-submit-responder-evidence"
+                    id="submitResponderEvidenceBtn-${sosId}"
+                    onclick="submitResponderEvidence('${sosId}')">
+                <i class="fas fa-paper-plane"></i> Submit Evidence for Verification
+            </button>
         </div>`;
 }
 
 function closeSOSDetailsModal() {
     const modal = document.getElementById('sosDetailsModal');
     if (modal) modal.style.display = 'none';
+}
+
+
+// ── RESPONDER EVIDENCE UPLOAD ─────────────────────────────────────
+function previewResponderFile(input, sosId) {
+    const preview = document.getElementById(`responderEvidencePreview-${sosId}`);
+    const file    = input.files[0];
+    if (!file || !preview) return;
+    preview.innerHTML = '';
+    if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src   = URL.createObjectURL(file);
+        img.style.cssText = 'max-width:100%;border-radius:8px;';
+        preview.appendChild(img);
+    } else if (file.type.startsWith('video/')) {
+        const vid = document.createElement('video');
+        vid.src = URL.createObjectURL(file); vid.controls = true;
+        vid.style.cssText = 'max-width:100%;border-radius:8px;';
+        preview.appendChild(vid);
+    } else {
+        preview.innerHTML = `<p style="color:#a0b4cc;font-size:13px;">${file.name} (${(file.size/1024/1024).toFixed(1)} MB)</p>`;
+    }
+}
+
+async function submitResponderEvidence(sosId) {
+    const fileInput = document.getElementById(`responderEvidenceFile-${sosId}`);
+    const btn       = document.getElementById(`submitResponderEvidenceBtn-${sosId}`);
+    const msgEl     = document.getElementById(`responderEvidenceMsg-${sosId}`);
+
+    if (!fileInput || !fileInput.files[0]) {
+        showResponderEvidenceMsg(sosId, 'Please choose a photo or video first.', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('sos_id',   sosId);
+    formData.append('evidence', fileInput.files[0]);
+
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    if (csrf) formData.append('_token', csrf);
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...'; }
+
+    try {
+        const res  = await fetch('/api/sos/upload-evidence', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showResponderEvidenceMsg(sosId,
+                '✅ Evidence submitted! Admin will verify soon. Your ranking will update after approval.',
+                'success');
+            // Upload area আর button লুকিয়ে দেব
+            const section = document.getElementById(`responderEvidenceSection-${sosId}`);
+            if (section) {
+                const uploadArea = section.querySelector('.rev-upload-area');
+                if (uploadArea) uploadArea.style.display = 'none';
+                if (btn) btn.style.display = 'none';
+            }
+        } else {
+            showResponderEvidenceMsg(sosId, '❌ ' + (data.message || 'Upload failed. Try again.'), 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Evidence for Verification'; }
+        }
+    } catch (err) {
+        showResponderEvidenceMsg(sosId, '❌ Network error. Check your connection.', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Evidence for Verification'; }
+    }
+}
+
+function showResponderEvidenceMsg(sosId, msg, type) {
+    const el = document.getElementById(`responderEvidenceMsg-${sosId}`);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.background = type === 'success' ? '#1a3a2a' : '#3a1a1a';
+    el.style.color      = type === 'success' ? '#4caf50' : '#e53e3e';
+    el.style.border     = `1px solid ${type === 'success' ? '#4caf5040' : '#e53e3e40'}`;
 }
 
 
@@ -451,6 +579,17 @@ function resetSOS() {
 }
 
 function cancelSOS() {
+    // DB te status = cancelled set koro
+    if (currentSOSId) {
+        const csrf   = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        fetch('/api/sos/cancel', {
+            method:      'POST',
+            credentials: 'include',
+            headers:     { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body:        JSON.stringify({ sos_id: currentSOSId, user_id: svUser.id || svUser.user_id }),
+        }).catch(() => {});
+    }
     sosActive    = false;
     currentSOSId = null;
     const overlay = document.getElementById('activatedOverlay');

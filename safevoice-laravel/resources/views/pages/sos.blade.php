@@ -298,4 +298,11 @@ function showModalMsg(msg, type) {
 
 @section('scripts')
 {{-- SOS page এ theme toggle নেই, সবসময় dark mode --}}
+<script src="{{ asset('js/fcm.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const svUser = localStorage.getItem('sv_user');
+        if (svUser) setTimeout(() => initFCM(), 2000);
+    });
+</script>
 @endsection

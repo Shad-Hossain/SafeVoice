@@ -150,6 +150,37 @@
         .pi-modal-btns .btn-send:hover { opacity:.85; }
         .pi-modal-btns .btn-cancel { background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:10px;padding:13px 20px;font-size:14px;cursor:pointer;transition:all .2s; }
         .pi-modal-btns .btn-cancel:hover { border-color:#4f9eff;color:#4f9eff; }
+
+        /* Request Evidence button in complaint modal */
+        .btn-request-evidence { background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:20px;margin-right:10px; }
+        .btn-request-evidence:hover { opacity:.85; }
+
+        /* Evidence Request Modal */
+        .er-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:999999;padding:20px; }
+        .er-modal-overlay.active { display:flex; }
+        .er-modal { background:#111c33;border:1px solid #d9770640;border-radius:20px;padding:30px;max-width:480px;width:100%; }
+        .er-modal-icon { width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#d9770620,#f59e0b20);border:2px solid #d9770650;display:flex;align-items:center;justify-content:center;margin:0 auto 16px; }
+        .er-modal-icon i { font-size:26px;color:#f59e0b; }
+        .er-modal h3 { text-align:center;color:#fff;font-size:17px;margin-bottom:6px; }
+        .er-modal-cid { text-align:center;color:#f59e0b;font-weight:700;font-size:14px;margin-bottom:16px; }
+        .er-note-label { color:#a0b4cc;font-size:13px;font-weight:600;margin-bottom:6px;display:block; }
+        .er-note-textarea { width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;color:#fff;font-size:13px;padding:12px;resize:vertical;min-height:90px;font-family:inherit;box-sizing:border-box; }
+        .er-note-textarea:focus { outline:none;border-color:#d97706; }
+        .er-modal-info { background:#d9770610;border:1px solid #d9770630;border-radius:10px;padding:12px 14px;font-size:12px;color:#d97706;margin:14px 0;line-height:1.6; }
+        .er-modal-btns { display:flex;gap:12px;margin-top:20px; }
+        .er-modal-btns .btn-send-req { flex:1;background:linear-gradient(135deg,#b45309,#d97706);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s; }
+        .er-modal-btns .btn-send-req:hover { opacity:.85; }
+        .er-modal-btns .btn-cancel-req { background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:10px;padding:13px 20px;font-size:14px;cursor:pointer;transition:all .2s; }
+        .er-modal-btns .btn-cancel-req:hover { border-color:#d97706;color:#d97706; }
+
+        /* Expired Evidence Alert Banner */
+        .expired-evidence-banner { background:linear-gradient(135deg,#7f1d1d20,#991b1b20);border:1px solid #ef444440;border-radius:14px;padding:16px 20px;margin-bottom:20px;display:none; }
+        .expired-evidence-banner h4 { color:#f87171;font-size:14px;font-weight:700;margin:0 0 10px 0; }
+        .expired-ev-item { background:#0a0f1e;border:1px solid #ef444430;border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px; }
+        .expired-ev-item .ev-cid { color:#f87171;font-weight:700;font-size:13px; }
+        .expired-ev-item .ev-meta { color:#a0b4cc;font-size:12px;margin-top:2px; }
+        .expired-ev-item .btn-send-pi-notif { background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s; }
+        .expired-ev-item .btn-send-pi-notif:hover { opacity:.85; }
     </style>
 @endsection
 
@@ -168,6 +199,7 @@
             <li id="nav-users"><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Users</a></li>
             <li id="nav-payments"><a href="#" onclick="showSection('payments')"><i class="fas fa-credit-card"></i> Payments</a></li>
             <li id="nav-sos"><a href="#" onclick="showSection('sos')"><i class="fas fa-exclamation-triangle"></i> SOS Alerts</a></li>
+            <li id="nav-sos-evidence"><a href="#" onclick="showSection('sos-evidence')"><i class="fas fa-camera"></i> SOS Evidence <span id="evidencePendingBadge" style="display:none;background:#e63946;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;"></span></a></li>
         </ul>
         <div style="padding:14px 16px;border-top:1px solid #1e2d4a;margin-top:20px">
             <a href="{{ route('super-admin.login') }}" style="display:flex;align-items:center;gap:8px;color:#fbbf24;font-size:12px;font-weight:600;text-decoration:none;background:#fbbf2410;border:1px solid #fbbf2430;border-radius:8px;padding:9px 12px">
@@ -179,6 +211,12 @@
     <main class="main-content" id="mainContent">
 
         <div id="view-dashboard">
+            <!-- Expired Evidence Alert Banner -->
+            <div class="expired-evidence-banner" id="expiredEvidenceBanner">
+                <h4><i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>Evidence Submission Failed — Action Required</h4>
+                <p style="color:#a0b4cc;font-size:12px;margin:0 0 12px 0;">The following users did not submit evidence within 7 days. You can notify them via PI.</p>
+                <div id="expiredEvidenceList"></div>
+            </div>
             <div class="welcome-bar">
                 <h1>Welcome Admin 👋</h1>
                 <p>Real-time SafeVoice complaint management</p>
@@ -311,16 +349,54 @@
         </div>
 
         <div id="view-sos" style="display:none">
-            <div class="welcome-bar"><h1>SOS Alerts</h1><p>Emergency SOS signals</p></div>
+            <div class="welcome-bar">
+                <h1>SOS Alerts</h1>
+                <p>Real-time emergency SOS signals</p>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
+                <button class="btn-refresh" onclick="loadSosAlerts()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <span id="sosAlertsCount" style="color:var(--text-secondary);font-size:13px;margin-left:auto"></span>
+            </div>
             <div class="complaints-table">
                 <table>
-                    <thead><tr><th>Alert ID</th><th>User</th><th>Location</th><th>Time</th><th>Status</th></tr></thead>
-                    <tbody>
-                        <tr><td><strong style="color:#e63946">SOS-001</strong></td><td>Tania Begum</td><td>Mirpur, Dhaka</td><td>May 07, 09:14 AM</td><td><span class="status resolved">Resolved</span></td></tr>
-                        <tr><td><strong style="color:#e63946">SOS-002</strong></td><td>Anonymous</td><td>Gulshan, Dhaka</td><td>May 08, 11:30 PM</td><td><span class="status review">Active</span></td></tr>
-                        <tr><td><strong style="color:#e63946">SOS-003</strong></td><td>Arif Hossain</td><td>Uttara, Dhaka</td><td>May 09, 01:22 AM</td><td><span class="status resolved">Resolved</span></td></tr>
+                    <thead><tr><th>Alert ID</th><th>User</th><th>Location</th><th>Crime Type</th><th>Time</th><th>Status</th><th>Details</th></tr></thead>
+                    <tbody id="sos-alerts-tbody">
+                        <tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════
+             SOS EVIDENCE VERIFICATION SECTION
+        ══════════════════════════════════════════════════════ -->
+        <div id="view-sos-evidence" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-camera" style="font-size:22px;margin-right:10px;color:#4f9eff"></i>SOS Evidence Verification</h1>
+                <p>Review and approve responders' evidence — approved evidence increases their leaderboard rank</p>
+            </div>
+
+            <!-- Filter bar -->
+            <div class="filter-bar">
+                <select id="evidenceFilterStatus" onchange="loadSosEvidence()">
+                    <option value="pending">Pending Review</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="">All</option>
+                </select>
+                <button class="btn-refresh" onclick="loadSosEvidence()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <span id="evidenceCount" style="color:var(--text-secondary);font-size:13px;margin-left:auto"></span>
+            </div>
+
+            <!-- Evidence cards grid -->
+            <div id="evidenceCardGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+                <div class="table-state" style="grid-column:1/-1">
+                    <i class="fas fa-spinner fa-spin"></i> Loading evidence...
+                </div>
             </div>
         </div>
 
@@ -331,9 +407,14 @@
     <div class="view-modal">
         <h3><i class="fas fa-file-alt"></i> Complaint Details</h3>
         <div id="modalContent"></div>
-        <button class="modal-close-btn" onclick="document.getElementById('viewModal').classList.remove('active')">
-            <i class="fas fa-times"></i> Close
-        </button>
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:20px;">
+            <button class="btn-request-evidence" id="btnRequestEvidence" onclick="openEvidenceRequestModal()">
+                <i class="fas fa-file-upload"></i> Request Evidence
+            </button>
+            <button class="modal-close-btn" style="margin-top:0;" onclick="document.getElementById('viewModal').classList.remove('active')">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
     </div>
 </div>
 
@@ -360,11 +441,94 @@
     </div>
 </div>
 
+<!-- SOS Evidence Verify Modal -->
+<div class="sv-ev-modal-overlay" id="sosEvidenceVerifyModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px;">
+    <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:20px;padding:28px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="color:#4f9eff;font-size:17px;margin:0;"><i class="fas fa-camera" style="margin-right:8px;"></i>Verify Evidence</h3>
+            <button onclick="closeSosEvidenceModal()" style="background:transparent;border:none;color:#a0b4cc;font-size:18px;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Responder info -->
+        <div id="evModalResponderInfo" style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;margin-bottom:16px;font-size:13px;"></div>
+
+        <!-- Evidence preview -->
+        <div id="evModalPreview" style="margin-bottom:16px;text-align:center;"></div>
+
+        <!-- Admin note -->
+        <div style="margin-bottom:16px;">
+            <label style="color:#a0b4cc;font-size:12px;font-weight:600;display:block;margin-bottom:6px;">
+                <i class="fas fa-pen" style="color:#4f9eff;margin-right:4px;"></i>Admin Note <span style="color:#4a5568;font-weight:400">(optional — visible to user)</span>
+            </label>
+            <textarea id="evModalNote" rows="3" placeholder="e.g. Clear evidence confirmed. / Photo not clear enough..."
+                style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;color:#fff;font-size:13px;padding:12px;resize:vertical;font-family:inherit;box-sizing:border-box;outline:none;"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button id="evModalRejectBtn" onclick="verifyEvidence('reject')"
+                style="flex:1;padding:13px;border-radius:10px;border:1px solid #e6394640;background:#e6394615;color:#e63946;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;">
+                <i class="fas fa-times-circle"></i> Reject
+            </button>
+            <button id="evModalApproveBtn" onclick="verifyEvidence('approve')"
+                style="flex:2;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#1a6a3a,#2ecc71);color:#fff;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;">
+                <i class="fas fa-check-circle"></i> Approve & Update Rank
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Victim Evidence Modal — victim এর submit করা evidence দেখা -->
+<div id="victimEvidenceModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px;">
+    <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="color:#16a34a;font-size:17px;margin:0;"><i class="fas fa-user-shield" style="margin-right:8px;"></i>Victim Details & Evidence</h3>
+            <button onclick="closeVictimEvidenceModal()" style="background:transparent;border:none;color:#a0b4cc;font-size:20px;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="victimEvidenceContent">
+            <div style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i></div>
+        </div>
+    </div>
+</div>
+<!-- SOS Alert Detail Modal — Victim info + submitted evidence -->
+<div id="sosAlertDetailModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px;">
+    <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="color:#e63946;font-size:17px;margin:0;"><i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>SOS Alert Details</h3>
+            <button onclick="closeSosAlertDetail()" style="background:transparent;border:none;color:#a0b4cc;font-size:20px;cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="sosAlertDetailContent">
+            <div style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- Evidence Request Modal (Admin → request more evidence from user) -->
+<div class="er-modal-overlay" id="erRequestModal">
+    <div class="er-modal">
+        <div class="er-modal-icon"><i class="fas fa-file-upload"></i></div>
+        <h3>Request Additional Evidence</h3>
+        <div class="er-modal-cid" id="erModalComplaintId"></div>
+        <label class="er-note-label"><i class="fas fa-pen" style="color:#d97706;margin-right:6px;"></i>Message to User <span style="color:#4a5568;font-weight:400">(optional)</span></label>
+        <textarea class="er-note-textarea" id="erAdminNoteInput" placeholder="e.g. Please upload a clearer photo of the incident location or any witness statement..."></textarea>
+        <div class="er-modal-info">
+            <i class="fas fa-info-circle"></i>
+            User will receive a notification to submit more evidence.
+            They can upload files instantly or skip for <strong>7 days</strong>.
+            If they fail to submit within 7 days, you will be automatically notified.
+        </div>
+        <div class="er-modal-btns">
+            <button class="btn-cancel-req" onclick="closeEvidenceRequestModal()">Cancel</button>
+            <button class="btn-send-req" id="erSendBtn" onclick="sendEvidenceRequest()">
+                <i class="fas fa-paper-plane"></i> Send Request
+            </button>
+        </div>
+    </div>
+</div>
+
 <script src="{{ asset('js/main.js') }}"></script>
 <script src="{{ asset('js/theme.js') }}"></script>
 <script>
 function showSection(section, preFilter) {
-    ['dashboard','complaints','users','payments','sos'].forEach(s => {
+    ['dashboard','complaints','users','payments','sos','sos-evidence'].forEach(s => {
         document.getElementById('view-' + s).style.display = 'none';
         document.getElementById('nav-' + s)?.classList.remove('active');
     });
@@ -377,6 +541,8 @@ function showSection(section, preFilter) {
     }
     if (section === 'users')    loadUsers();
     if (section === 'payments') loadPayments();
+    if (section === 'sos') loadSosAlerts();
+    if (section === 'sos-evidence') loadSosEvidence();
 }
 
 // ── PAYMENTS ─────────────────────────────────────────────────
@@ -620,8 +786,88 @@ async function confirmSendPINotify() {
     loadComplaints();
 }
 
+// ─── Evidence Request (Admin) ─────────────────────────────────────────────────
+let currentViewComplaint = null; // store complaint currently open in modal
+
+function openEvidenceRequestModal() {
+    if (!currentViewComplaint) return;
+    document.getElementById('erModalComplaintId').textContent = currentViewComplaint.complaint_id;
+    document.getElementById('erAdminNoteInput').value = '';
+    const btn = document.getElementById('erSendBtn');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Request';
+    document.getElementById('erRequestModal').classList.add('active');
+}
+
+function closeEvidenceRequestModal() {
+    document.getElementById('erRequestModal').classList.remove('active');
+}
+
+async function sendEvidenceRequest() {
+    const complaintId = currentViewComplaint?.complaint_id;
+    if (!complaintId) return;
+    const note = document.getElementById('erAdminNoteInput').value.trim();
+    const btn  = document.getElementById('erSendBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    try {
+        const res  = await fetch('/api/evidence-request/create', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ complaint_id: complaintId, admin_note: note }),
+        });
+        const data = await res.json();
+        closeEvidenceRequestModal();
+        if (data.success) {
+            showToast('<i class="fas fa-check-circle"></i> Evidence request sent to user for ' + complaintId);
+        } else {
+            showToast('<i class="fas fa-exclamation-circle"></i> ' + (data.message || 'Failed to send request'), true);
+        }
+    } catch(e) {
+        closeEvidenceRequestModal();
+        showToast('<i class="fas fa-exclamation-circle"></i> Network error. Try again.', true);
+    }
+}
+
+// ─── Expired Evidence Notifications (Admin Dashboard) ────────────────────────
+async function loadExpiredEvidenceAlerts() {
+    try {
+        // First trigger check-expired to update statuses
+        await fetch('/api/evidence-request/check-expired', { method: 'POST', credentials: 'include' });
+        // Then fetch the expired list
+        const res  = await fetch('/api/evidence-request/expired-list', { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success || !data.expired || data.expired.length === 0) return;
+        const banner = document.getElementById('expiredEvidenceBanner');
+        const list   = document.getElementById('expiredEvidenceList');
+        if (!banner || !list) return;
+        list.innerHTML = data.expired.map(r => {
+            const deadline = r.deadline ? new Date(r.deadline).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+            return `<div class="expired-ev-item">
+                <div>
+                    <div class="ev-cid"><i class="fas fa-folder-open" style="margin-right:6px;"></i>${r.complaint_id}</div>
+                    <div class="ev-meta">Deadline was: ${deadline} · Evidence not submitted</div>
+                </div>
+                <button class="btn-send-pi-notif" onclick="triggerPIFromExpired('${r.complaint_id}')">
+                    <i class="fas fa-user-secret"></i> Notify PI
+                </button>
+            </div>`;
+        }).join('');
+        banner.style.display = 'block';
+    } catch(e) { /* silent */ }
+}
+
+function triggerPIFromExpired(complaintId) {
+    // Pre-fill PI modal for this complaint and show it
+    piPendingComplaintId = complaintId;
+    document.getElementById('piNotifyModal').classList.add('active');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function viewComplaint(c) {
     if (typeof c === 'string') c = JSON.parse(c);
+    currentViewComplaint = c;
     document.getElementById('modalContent').innerHTML = `
         <div class="detail-row"><span class="detail-label">Complaint ID</span><span class="detail-value" style="color:#4f9eff;font-weight:700">${c.complaint_id}</span></div>
         <div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">${formatType(c.type)}</span></div>
@@ -652,7 +898,7 @@ async function loadAdminDashboardEvidence(complaint_id) {
         box.innerHTML = data.files.map(f => {
             const isPdf = f.file_name.toLowerCase().endsWith('.pdf');
             const icon  = isPdf ? 'fa-file-pdf' : 'fa-file-image';
-            const url   = `/storage/${f.file_path}`;
+            const url   = `/${f.file_path}`;
             const date  = new Date(f.uploaded_at).toLocaleString('en-GB');
             return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;margin-bottom:8px;">
                 <i class="fas ${icon}" style="color:#4f9eff;font-size:22px;flex-shrink:0;"></i>
@@ -711,6 +957,419 @@ function statusClass(s) {
     return map[s] || '';
 }
 
+// ── SOS EVIDENCE VERIFICATION ────────────────────────────────────
+let currentEvidenceRecord = null; // currently open evidence for verify
+const evidenceRecordsMap = {}; // id => full record object
+
+async function loadSosAlerts() {
+    const tbody  = document.getElementById('sos-alerts-tbody');
+    const countEl = document.getElementById('sosAlertsCount');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    try {
+        const res  = await fetch('/api/sos/alerts', { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Failed');
+        const list = data.alerts || [];
+        if (countEl) countEl.textContent = list.length + ' alert(s)';
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-inbox"></i> No SOS alerts yet.</td></tr>';
+            return;
+        }
+        const fmtTime = (t) => {
+            if (!t) return '—';
+            const d = new Date(t);
+            return d.toLocaleDateString('en-BD', { month: 'short', day: '2-digit' }) + ', ' +
+                   d.toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit' });
+        };
+        tbody.innerHTML = list.map(a => {
+            const statusClass = a.status === 'active' ? 'review' : 'resolved';
+            const statusLabel = a.status === 'active' ? 'Active' : (a.status || 'Unknown');
+            const user = a.user ? a.user.name : 'Anonymous';
+            return `<tr>
+                <td><strong style="color:#e63946">SOS-${String(a.id).padStart(3,'0')}</strong></td>
+                <td>${user}</td>
+                <td>${a.location_text || '—'}</td>
+                <td>${a.crime_type || 'Not specified'}</td>
+                <td>${fmtTime(a.created_at)}</td>
+                <td><span class="status ${statusClass}">${statusLabel}</span></td>
+                <td>
+                    <button onclick="openSosAlertDetail(${a.id})"
+                        style="padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#1a3a6a,#2563eb);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-state" style="color:#e63946"><i class="fas fa-exclamation-triangle"></i> Could not load SOS alerts. ' + e.message + '</td></tr>';
+    }
+}
+
+
+async function openSosAlertDetail(sosId) {
+    const modal   = document.getElementById('sosAlertDetailModal');
+    const content = document.getElementById('sosAlertDetailContent');
+    modal.style.display = 'flex';
+    content.innerHTML   = '<div style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i><p style="margin-top:12px;">Loading...</p></div>';
+
+    try {
+        const res  = await fetch(`/api/sos/alerts?sos_id=${sosId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success || !data.sos) throw new Error(data.message || 'Not found');
+
+        const s = data.sos;
+        const evidence = data.evidence || [];
+        const fmtT = (t) => t ? new Date(t).toLocaleString('en-BD') : '—';
+
+        // Evidence HTML
+        let evHtml = '';
+        if (evidence.length > 0) {
+            evHtml = evidence.map(e => {
+                const isImg = e.file_type && e.file_type.startsWith('image');
+                if (isImg) {
+                    return `<div style="margin-bottom:10px;">
+                        <img src="/${e.file_path}" style="max-width:100%;border-radius:10px;max-height:280px;object-fit:contain;" />
+                        <div style="margin-top:6px;"><a href="/${e.file_path}" target="_blank" style="color:#4f9eff;font-size:12px;"><i class="fas fa-external-link-alt"></i> Open full size</a></div>
+                    </div>`;
+                } else {
+                    return `<video src="/${e.file_path}" controls style="max-width:100%;border-radius:10px;margin-bottom:10px;"></video>`;
+                }
+            }).join('');
+        } else {
+            evHtml = '<p style="color:#4a5568;font-size:13px;font-style:italic;">No evidence uploaded yet.</p>';
+        }
+
+        content.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;">
+                    <span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Victim</span>
+                    <p style="margin:4px 0 0;font-weight:700;font-size:15px;">${s.victim_name || 'Anonymous'}</p>
+                    ${s.victim_phone ? `<p style="margin:4px 0 0;"><a href="tel:${s.victim_phone}" style="color:#4f9eff;font-size:13px;"><i class="fas fa-phone"></i> ${s.victim_phone}</a></p>` : ''}
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;">
+                    <span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Crime Type</span>
+                    <p style="margin:4px 0 0;font-weight:700;font-size:15px;color:#e63946;">${s.crime_type || 'Not specified'}</p>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;grid-column:1/-1;">
+                    <span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Location</span>
+                    <p style="margin:4px 0 0;font-size:13px;color:#a0b4cc;">${s.location_text || '—'}</p>
+                    ${s.latitude && s.longitude ? `<a href="https://maps.google.com?q=${s.latitude},${s.longitude}" target="_blank" style="color:#4f9eff;font-size:12px;margin-top:4px;display:inline-block;"><i class="fas fa-map-marker-alt"></i> Open in Maps</a>` : ''}
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;grid-column:1/-1;">
+                    <span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Description</span>
+                    <p style="margin:4px 0 0;font-size:13px;color:#a0b4cc;line-height:1.6;">${s.description || 'No description provided.'}</p>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;">
+                    <span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Alert Time</span>
+                    <p style="margin:4px 0 0;font-size:13px;color:#a0b4cc;">${fmtT(s.created_at)}</p>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;">
+                    <span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Status</span>
+                    <p style="margin:4px 0 0;font-weight:700;font-size:13px;color:${s.status==='active'?'#fbbf24':'#2ecc71'};">${s.status || '—'}</p>
+                </div>
+            </div>
+            <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;">
+                <p style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 10px;"><i class="fas fa-paperclip" style="margin-right:4px;"></i>Submitted Evidence</p>
+                ${evHtml}
+            </div>`;
+    } catch(e) {
+        content.innerHTML = `<div style="text-align:center;padding:30px;color:#e63946;"><i class="fas fa-exclamation-triangle" style="font-size:24px;"></i><p style="margin-top:12px;">${e.message}</p></div>`;
+    }
+}
+
+function closeSosAlertDetail() {
+    document.getElementById('sosAlertDetailModal').style.display = 'none';
+}
+
+async function loadSosEvidenceBadge() {
+    try {
+        const res  = await fetch('/api/admin/sos-evidence-pending', { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) return;
+        const count = (data.pending || []).filter(r => r.evidence_status === 'pending').length;
+        const badge = document.getElementById('evidencePendingBadge');
+        if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline' : 'none'; }
+    } catch(e) {}
+}
+
+async function loadSosEvidence() {
+    const grid   = document.getElementById('evidenceCardGrid');
+    const countEl = document.getElementById('evidenceCount');
+    const status = document.getElementById('evidenceFilterStatus')?.value ?? 'pending';
+    grid.innerHTML = '<div class="table-state" style="grid-column:1/-1"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+    try {
+        const res  = await fetch('/api/admin/sos-evidence-pending', { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Failed');
+
+        let list = data.pending || [];
+
+        // Client-side filter by selected status
+        if (status) list = list.filter(r => r.evidence_status === status);
+
+        // Update pending badge in sidebar
+        const pendingCount = (data.pending || []).filter(r => r.evidence_status === 'pending').length;
+        const badge = document.getElementById('evidencePendingBadge');
+        if (badge) {
+            badge.textContent = pendingCount;
+            badge.style.display = pendingCount > 0 ? 'inline' : 'none';
+        }
+
+        if (countEl) countEl.textContent = list.length + ' record(s)';
+
+        if (list.length === 0) {
+            grid.innerHTML = `<div class="table-state" style="grid-column:1/-1">
+                <i class="fas fa-check-circle" style="color:#2ecc71"></i>
+                <p style="margin-top:10px;">No evidence records for this filter.</p>
+            </div>`;
+            return;
+        }
+
+        grid.innerHTML = list.map(r => buildEvidenceCard(r)).join('');
+
+    } catch(e) {
+        grid.innerHTML = `<div class="table-state" style="grid-column:1/-1">
+            <i class="fas fa-exclamation-triangle" style="color:#e63946"></i>
+            <p style="margin-top:10px;">Could not load evidence. Check server connection.</p>
+        </div>`;
+    }
+}
+
+function buildEvidenceCard(r) {
+    const statusColor = {
+        pending:  '#fbbf24', approved: '#2ecc71', rejected: '#e63946', none: '#4a5568'
+    }[r.evidence_status] || '#fff';
+    const statusLabel = {
+        pending: '⏳ Pending Review', approved: '✅ Approved', rejected: '❌ Rejected', none: 'No Evidence'
+    }[r.evidence_status] || r.evidence_status;
+
+    // Evidence thumbnail
+    let previewHtml = '';
+    if (r.evidence_path) {
+        const isImage = r.file_type === 'image';
+        if (isImage) {
+            previewHtml = `<img src="/${r.evidence_path}" style="width:100%;height:160px;object-fit:cover;border-radius:10px;margin-bottom:12px;" />`;
+        } else {
+            previewHtml = `<div style="background:#0a0f1e;border-radius:10px;padding:20px;text-align:center;margin-bottom:12px;border:1px solid #1e2d4a;">
+                <i class="fas fa-video" style="font-size:36px;color:#4f9eff;"></i>
+                <p style="color:#a0b4cc;font-size:12px;margin-top:8px;">Video Evidence</p>
+            </div>`;
+        }
+    } else {
+        previewHtml = `<div style="background:#0a0f1e;border-radius:10px;padding:20px;text-align:center;margin-bottom:12px;border:1px dashed #1e2d4a;">
+            <i class="fas fa-image" style="font-size:36px;color:#2a3a5a;"></i>
+            <p style="color:#4a5568;font-size:12px;margin-top:8px;">No file uploaded</p>
+        </div>`;
+    }
+
+    const sosInfo  = r.sos   ? `${r.sos.crime_type || 'SOS'} — ${r.sos.location_text || ''}` : 'SOS #' + r.sos_id;
+const userName = r.responder ? r.responder.name : 'Unknown';
+const userRank = r.responder ? r.responder.sos_helped_verified_count + ' verified' : '';
+const submittedAt = r.evidence_submitted_at ? formatDate(r.evidence_submitted_at) : '—';
+
+// Victim info
+const victimName  = r.sos && r.sos.user ? r.sos.user.name  : 'Anonymous';
+const victimPhone = r.sos && r.sos.user ? r.sos.user.phone : null;
+
+const showVerifyBtn = r.evidence_status === 'pending' && r.evidence_path;
+
+    return `<div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:18px;display:flex;flex-direction:column;">
+        ${previewHtml}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:11px;color:${statusColor};font-weight:700;background:${statusColor}18;border:1px solid ${statusColor}30;border-radius:20px;padding:3px 10px;">
+                ${statusLabel}
+            </span>
+            <span style="font-size:11px;color:#4a5568;">${submittedAt}</span>
+        </div>
+       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#1e2d4a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-shield-alt" style="color:#4f9eff;font-size:14px;"></i>
+            </div>
+            <div>
+                <p style="margin:0;font-size:10px;color:#6a7fa0;text-transform:uppercase;letter-spacing:.4px;">Responder</p>
+                <p style="margin:0;font-weight:700;font-size:14px;">${userName}</p>
+                <p style="margin:0;color:#6a7fa0;font-size:12px;">${userRank} responses</p>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:10px;">
+            <div style="width:30px;height:30px;border-radius:50%;background:#2a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-user" style="color:#e63946;font-size:12px;"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+                <p style="margin:0;font-size:10px;color:#6a7fa0;text-transform:uppercase;letter-spacing:.4px;">Victim (SOS requester)</p>
+                <p style="margin:0;font-weight:700;font-size:13px;color:#fff;">${victimName}</p>
+                ${victimPhone ? `<a href="tel:${victimPhone}" style="color:#4f9eff;font-size:11px;"><i class="fas fa-phone" style="margin-right:3px;"></i>${victimPhone}</a>` : ''}
+            </div>
+            <button onclick="openVictimEvidenceModal(${r.sos_id})"
+                style="padding:6px 10px;border-radius:8px;border:none;background:linear-gradient(135deg,#1a3a2a,#16a34a);color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+                <i class="fas fa-eye"></i> View
+            </button>
+        </div>
+        <p style="font-size:12px;color:#a0b4cc;margin:0 0 14px;line-height:1.5;">
+            <i class="fas fa-exclamation-triangle" style="color:#e63946;margin-right:4px;"></i>${sosInfo}
+        </p>
+        ${r.admin_note ? `<p style="font-size:12px;color:#6a7fa0;margin:0 0 12px;font-style:italic;">Note: ${r.admin_note}</p>` : ''}
+        ${showVerifyBtn ? `<button onclick="openSosEvidenceModalById(${r.id})"
+            style="padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#1a3a6a,#2563eb);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:auto;">
+            <i class="fas fa-search"></i> Review Evidence
+        </button>` : ''}
+    </div>`;
+    evidenceRecordsMap[r.id] = r;
+}
+
+function openSosEvidenceModalById(id) {
+    const record = evidenceRecordsMap[id];
+    if (!record) return;
+    openSosEvidenceModal(record);
+}
+
+function openSosEvidenceModal(record) {
+    currentEvidenceRecord = record;
+    document.getElementById('evModalNote').value = '';
+
+    // Responder info
+    const info = document.getElementById('evModalResponderInfo');
+    const user = record.responder || {};
+    const sos  = record.sos || {};
+    info.innerHTML = `
+        <div style="display:flex;gap:14px;flex-wrap:wrap;">
+            <div><span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Responder</span>
+                <p style="margin:3px 0 0;font-weight:700;color:#fff;">${user.name || '—'}</p></div>
+            <div><span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Current Rank Count</span>
+                <p style="margin:3px 0 0;font-weight:700;color:#2ecc71;">${user.sos_helped_verified_count || 0} verified</p></div>
+            <div><span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">SOS Incident</span>
+                <p style="margin:3px 0 0;color:#a0b4cc;font-size:12px;">${sos.crime_type || '—'} · ${sos.location_text || '—'}</p></div>
+        </div>`;
+
+    // Preview
+    const preview = document.getElementById('evModalPreview');
+    if (record.file_type === 'image') {
+        preview.innerHTML = `<img src="/${record.evidence_path}" style="max-width:100%;max-height:260px;border-radius:12px;object-fit:contain;" />
+            <p style="margin:8px 0 0;font-size:12px;color:#6a7fa0;">
+                <a href="/${record.evidence_path}" target="_blank" style="color:#4f9eff;">Open full size <i class="fas fa-external-link-alt"></i></a>
+            </p>`;
+    } else {
+        preview.innerHTML = `<video src="/${record.evidence_path}" controls style="max-width:100%;border-radius:12px;"></video>`;
+    }
+
+    document.getElementById('sosEvidenceVerifyModal').style.display = 'flex';
+}
+
+// ── Victim Evidence Modal ────────────────────────────────────────
+async function openVictimEvidenceModal(sosId) {
+    const modal   = document.getElementById('victimEvidenceModal');
+    const content = document.getElementById('victimEvidenceContent');
+    modal.style.display = 'flex';
+    content.innerHTML = '<div style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i><p style="margin-top:12px;">Loading victim evidence...</p></div>';
+
+    try {
+        const res  = await fetch(`/api/sos/victim-evidence?sos_id=${sosId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Failed');
+
+        const s        = data.sos;
+        const evidence = data.evidence || [];
+        const fmtT     = (t) => t ? new Date(t).toLocaleString('en-BD') : '—';
+
+        let evHtml = '';
+        if (evidence.length > 0) {
+            evHtml = evidence.map(e => {
+                const isImg = e.file_type && (e.file_type === 'image' || e.file_type.startsWith('image/'));
+                if (isImg) {
+                    return `<div style="margin-bottom:12px;">
+                        <img src="/${e.file_path}" style="max-width:100%;border-radius:10px;max-height:260px;object-fit:contain;border:1px solid #1e2d4a;" />
+                        <div style="margin-top:6px;"><a href="/${e.file_path}" target="_blank" style="color:#4f9eff;font-size:12px;"><i class="fas fa-external-link-alt"></i> Open full size</a></div>
+                    </div>`;
+                } else {
+                    return `<video src="/${e.file_path}" controls style="max-width:100%;border-radius:10px;margin-bottom:10px;border:1px solid #1e2d4a;"></video>`;
+                }
+            }).join('');
+        } else {
+            evHtml = `<div style="text-align:center;padding:20px;color:#4a5568;border:1px dashed #1e2d4a;border-radius:10px;">
+                <i class="fas fa-image" style="font-size:28px;margin-bottom:8px;display:block;"></i>
+                <p style="margin:0;font-size:13px;">No evidence uploaded by victim yet.</p>
+            </div>`;
+        }
+
+        content.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:12px;">
+                    <span style="color:#6a7fa0;font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Victim</span>
+                    <p style="margin:4px 0 0;font-weight:700;font-size:14px;">${s.victim_name || 'Anonymous'}</p>
+                    ${s.victim_phone ? `<a href="tel:${s.victim_phone}" style="color:#4f9eff;font-size:12px;"><i class="fas fa-phone"></i> ${s.victim_phone}</a>` : ''}
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:12px;">
+                    <span style="color:#6a7fa0;font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Crime Type</span>
+                    <p style="margin:4px 0 0;font-weight:700;font-size:14px;color:#e63946;">${s.crime_type || 'Not specified'}</p>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:12px;grid-column:1/-1;">
+                    <span style="color:#6a7fa0;font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Location</span>
+                    <p style="margin:4px 0 0;font-size:13px;color:#a0b4cc;">${s.location_text || '—'}</p>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:12px;grid-column:1/-1;">
+                    <span style="color:#6a7fa0;font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Description</span>
+                    <p style="margin:4px 0 0;font-size:13px;color:#a0b4cc;line-height:1.6;">${s.description || 'No description.'}</p>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:12px;">
+                    <span style="color:#6a7fa0;font-size:10px;text-transform:uppercase;letter-spacing:.5px;">SOS Time</span>
+                    <p style="margin:4px 0 0;font-size:13px;color:#a0b4cc;">${fmtT(s.created_at)}</p>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:12px;">
+                    <span style="color:#6a7fa0;font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Status</span>
+                    <p style="margin:4px 0 0;font-weight:700;font-size:13px;color:${s.status==='active'?'#fbbf24':'#2ecc71'};">${s.status || '—'}</p>
+                </div>
+            </div>
+            <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;">
+                <p style="color:#6a7fa0;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 12px;"><i class="fas fa-paperclip" style="margin-right:4px;"></i>Victim Submitted Evidence</p>
+                ${evHtml}
+            </div>`;
+    } catch(e) {
+        content.innerHTML = `<div style="text-align:center;padding:30px;color:#e63946;"><i class="fas fa-exclamation-triangle" style="font-size:24px;"></i><p style="margin-top:12px;">${e.message}</p></div>`;
+    }
+}
+
+function closeVictimEvidenceModal() {
+    document.getElementById('victimEvidenceModal').style.display = 'none';
+}
+
+async function verifyEvidence(action) {
+    if (!currentEvidenceRecord) return;
+    const note    = document.getElementById('evModalNote').value.trim();
+    const approveBtn = document.getElementById('evModalApproveBtn');
+    const rejectBtn  = document.getElementById('evModalRejectBtn');
+
+    approveBtn.disabled = rejectBtn.disabled = true;
+    approveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    try {
+        const res  = await fetch('/api/admin/sos-evidence-verify', {
+            method:  'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                responder_id: currentEvidenceRecord.id,   // SosResponder PK
+                action,
+                note,
+            }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            closeSosEvidenceModal();
+            const emoji = action === 'approve' ? '✅' : '❌';
+            showToast(`${emoji} ${data.message}`);
+            loadSosEvidence(); // refresh the grid
+        } else {
+            throw new Error(data.message || 'Failed');
+        }
+    } catch(e) {
+        showToast('<i class="fas fa-exclamation-circle"></i> Error: ' + e.message, true);
+        approveBtn.disabled = rejectBtn.disabled = false;
+        approveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Approve & Update Rank';
+    }
+}
+
 function logout() {
     localStorage.removeItem('isAdminLoggedIn');
     window.location.href = '/admin/login';
@@ -727,6 +1386,14 @@ function showToast(msg, isError) {
 document.addEventListener('DOMContentLoaded', function() {
     showSection('dashboard');
     document.getElementById('nav-dashboard').classList.add('active');
+    // Load expired evidence alerts on dashboard load
+    loadExpiredEvidenceAlerts();
+    // Load SOS evidence badge count silently
+    loadSosEvidenceBadge();
+    // Close Evidence Request modal on overlay click
+    document.getElementById('erRequestModal').addEventListener('click', function(e) {
+        if (e.target === this) closeEvidenceRequestModal();
+    });
 });
 </script>
 @endsection

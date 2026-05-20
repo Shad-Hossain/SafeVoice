@@ -16,6 +16,7 @@
             <li><a href="/legal"><i class="fas fa-gavel"></i> Legal Help</a></li>
             <li><a href="/leaderboard"><i class="fas fa-trophy"></i> Leaderboard</a></li>
             <li><a href="/sos"><i class="fas fa-exclamation-triangle" style="color:#e63946"></i> Emergency SOS</a></li>
+            <li id="nav-sos-responds"><a href="#" onclick="showSection('sos-responds')"><i class="fas fa-hands-helping" style="color:#4f9eff"></i> SOS Responses</a></li>
             <li class="sidebar-divider"></li>
             <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Settings</a></li>
             <li><a href="#" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -92,7 +93,38 @@
             </div>
         </div>
 
+        <!-- ── SOS RESPONSES ── -->
+        <div id="view-sos-responds" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-hands-helping" style="font-size:22px;margin-right:10px;color:#4f9eff"></i>My SOS Responses</h1>
+            </div>
+            <div id="sos-responds-container">
+                <p style="color:var(--text-secondary);text-align:center;padding:40px;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </p>
+            </div>
+        </div>
+
     </main>
+</div>
+
+<!-- Responder Evidence Modal -->
+<div id="resp-ev-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:24px;max-width:460px;width:100%;position:relative;">
+        <button onclick="document.getElementById('resp-ev-overlay').style.display='none'"
+            style="position:absolute;top:12px;right:14px;background:none;border:none;color:#a0b4cc;font-size:24px;cursor:pointer;line-height:1;">×</button>
+        <h3 style="color:#fff;margin:0 0 6px;font-size:16px;">📷 Submit Response Evidence</h3>
+        <p style="color:#a0b4cc;font-size:13px;margin:0 0 16px;">Photo বা video upload করো যা প্রমাণ করে তুমি help করেছ। Admin verify করলে rank বাড়বে।</p>
+        <div id="resp-ev-preview" style="margin-bottom:12px;"></div>
+        <input type="file" id="resp-ev-file" accept="image/*,video/*"
+            style="display:block;width:100%;margin-bottom:12px;color:#fff;font-size:13px;"
+            onchange="previewRespEvFile(this)">
+        <div id="resp-ev-msg" style="display:none;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;"></div>
+        <button onclick="submitRespEvidence()"
+            style="width:100%;background:#1a6496;border:none;color:#fff;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+            🚀 Submit for Verification
+        </button>
+    </div>
 </div>
 
 <!-- Settings Modal -->
@@ -176,10 +208,13 @@ function loadProfile() {
 function showSection(section) {
     document.getElementById('view-overview').style.display     = section === 'overview'     ? 'block' : 'none';
     document.getElementById('view-mycomplaints').style.display = section === 'mycomplaints' ? 'block' : 'none';
+    const sosEl = document.getElementById('view-sos-responds');
+    if (sosEl) sosEl.style.display = section === 'sos-responds' ? 'block' : 'none';
     document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
     const navEl = document.getElementById('nav-' + section);
     if (navEl) navEl.classList.add('active');
     if (section === 'mycomplaints') loadAllComplaints();
+    if (section === 'sos-responds') loadSosResponds();
 }
 
 // ── Load complaints from DB ────────────────────
@@ -231,6 +266,142 @@ async function loadComplaints() {
             const el = document.getElementById(id);
             if (el) el.textContent = '0';
         });
+    }
+}
+
+// ── SOS Responds ───────────────────────────────
+async function loadSosResponds() {
+    const container = document.getElementById('sos-responds-container');
+    if (!container) return;
+    container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+
+    try {
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const userId = svUser.id || svUser.user_id;
+        if (!userId) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:40px;">Please log in.</p>';
+            return;
+        }
+
+        const res  = await fetch('/api/sos/my-responds?user_id=' + userId, { credentials: 'include' });
+        const data = await res.json();
+
+        if (!data.success || !data.responds || data.responds.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);"><i class="fas fa-hands-helping" style="font-size:40px;opacity:.2;display:block;margin-bottom:14px;"></i><p>You have not responded to any SOS alerts yet.</p></div>';
+            return;
+        }
+
+        const sc = { pending:'#fbbf24', approved:'#2ecc71', rejected:'#e63946', not_submitted:'#4a5568', none:'#4a5568' };
+        const sl = { pending:'Pending Review', approved:'Approved', rejected:'Rejected', not_submitted:'Not Submitted', none:'Not Submitted' };
+
+        let rows = '';
+        data.responds.forEach(function(r) {
+            const ev = r.evidence_status || 'none';
+            const canSubmit = (ev === 'not_submitted' || ev === 'none' || ev === 'rejected');
+            const color = sc[ev] || '#4a5568';
+            const label = sl[ev] || ev;
+
+            let btn = '';
+            if (canSubmit) {
+                btn = '<button onclick="openResponderEvidenceModal(' + r.sos_id + ')" style="background:#1a4a6e;border:none;color:#fff;padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;margin-right:6px;">Submit Evidence</button>';
+            }
+
+            const badge = '<span style="font-size:11px;font-weight:700;color:' + color + ';background:' + color + '22;border:1px solid ' + color + '44;border-radius:20px;padding:2px 10px;">' + label + '</span>';
+
+            rows += '<tr>'
+                + '<td style="font-weight:600;color:#4f9eff;">#' + r.sos_id + '</td>'
+                + '<td>' + (r.victim_name || 'Anonymous') + '</td>'
+                + '<td>' + (r.crime_type || '-') + '</td>'
+                + '<td style="font-size:12px;color:#a0b4cc;">' + (r.location_text ? r.location_text.substring(0,35) + '...' : '-') + '</td>'
+                + '<td>' + btn + badge + '</td>'
+                + '</tr>';
+        });
+
+        const table = '<div class="complaints-table"><table>'
+            + '<thead><tr><th>SOS ID</th><th>Victim</th><th>Type</th><th>Location</th><th>Evidence &amp; Status</th></tr></thead>'
+            + '<tbody>' + rows + '</tbody>'
+            + '</table></div>';
+
+        container.innerHTML = table;
+
+    } catch(e) {
+        container.innerHTML = '<p style="text-align:center;color:#e63946;padding:40px;">Error loading data.</p>';
+    }
+}
+
+let _respEvidenceSosId = null;
+
+function openResponderEvidenceModal(sosId) {
+    _respEvidenceSosId = sosId;
+    const overlay = document.getElementById('resp-ev-overlay');
+    if (!overlay) return;
+    document.getElementById('resp-ev-preview').innerHTML = '';
+    document.getElementById('resp-ev-file').value = '';
+    const msg = document.getElementById('resp-ev-msg');
+    if (msg) msg.style.display = 'none';
+    overlay.style.display = 'flex';
+}
+
+function previewRespEvFile(input) {
+    const preview = document.getElementById('resp-ev-preview');
+    const file    = input.files[0];
+    if (!file || !preview) return;
+    preview.innerHTML = '';
+    if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.style.cssText = 'max-width:100%;max-height:180px;border-radius:8px;object-fit:cover;display:block;';
+        preview.appendChild(img);
+    } else if (file.type.startsWith('video/')) {
+        const vid = document.createElement('video');
+        vid.src = URL.createObjectURL(file);
+        vid.controls = true;
+        vid.style.cssText = 'max-width:100%;border-radius:8px;display:block;';
+        preview.appendChild(vid);
+    }
+}
+
+async function submitRespEvidence() {
+    const file = document.getElementById('resp-ev-file').files[0];
+    const msg  = document.getElementById('resp-ev-msg');
+    if (!file) {
+        msg.textContent = 'Please select a file first.';
+        msg.style.cssText = 'display:block;background:#e6394622;color:#e63946;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
+        return;
+    }
+    if (!_respEvidenceSosId) return;
+
+    msg.textContent = '⏳ Uploading...';
+    msg.style.cssText = 'display:block;background:#4f9eff22;color:#4f9eff;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
+
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+    const csrf   = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const fd = new FormData();
+    fd.append('sos_id',   _respEvidenceSosId);
+    fd.append('evidence', file);
+    fd.append('user_id',  svUser.id || svUser.user_id || '');
+
+    try {
+        const res  = await fetch('/api/sos/submit-responder-evidence', {
+            method: 'POST', credentials: 'include',
+            headers: { 'X-CSRF-TOKEN': csrf },
+            body: fd,
+        });
+        const data = await res.json();
+        if (data.success) {
+            msg.textContent = '✅ Submitted! Admin will verify soon.';
+            msg.style.cssText = 'display:block;background:#2ecc7122;color:#2ecc71;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
+            setTimeout(() => {
+                document.getElementById('resp-ev-overlay').style.display = 'none';
+                loadSosResponds();
+            }, 1500);
+        } else {
+            msg.textContent = '❌ ' + (data.message || 'Upload failed.');
+            msg.style.cssText = 'display:block;background:#e6394622;color:#e63946;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
+        }
+    } catch(e) {
+        msg.textContent = '❌ Network error.';
+        msg.style.cssText = 'display:block;background:#e6394622;color:#e63946;padding:10px;border-radius:8px;font-size:13px;margin-bottom:10px;';
     }
 }
 
@@ -326,6 +497,9 @@ function statusBadge(s) {
 
 // ── Logout ─────────────────────────────────────
 async function doLogout() {
+    // FCM token মুছো logout এর আগে
+    await unregisterFcmToken().catch(() => {});
+
     try {
         await fetch('/api/logout', {
             method: 'POST',
@@ -350,6 +524,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProfile();
     loadComplaints();
     checkPINotifications();
+
+    // Check for pending evidence requests
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+    const userId = svUser.id || svUser.user_id || '';
+    if (userId) {
+        // Slight delay so other modals load first
+        setTimeout(() => checkEvidenceRequests(userId), 2000);
+    }
 });
 
 // ── "Pay Now" button — decline করার পরেও deadline এর মধ্যে pay করা যাবে ──
@@ -638,6 +820,83 @@ function closePaymentSuccess() {
         <button onclick="closePaymentSuccess()" style="background:linear-gradient(135deg,#1a6f4a,#2ecc71);color:#fff;border:none;border-radius:10px;padding:13px 40px;font-size:15px;font-weight:700;cursor:pointer;">Done</button>
     </div>
 </div>
+<!-- EVIDENCE REQUEST NOTIFICATION MODAL -->
+<div id="evReqNotifModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:10001;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#0d1526;border:1px solid #d97706;border-radius:20px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 0 40px #d9770640;">
+
+        <!-- Header -->
+        <div style="padding:20px 24px;border-bottom:1px solid #1e2d4a;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1c0f00,#2d1800);border-radius:20px 20px 0 0;">
+            <div style="background:#d9770620;border:1px solid #d97706;border-radius:12px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-file-upload" style="color:#d97706;font-size:20px;"></i>
+            </div>
+            <div>
+                <h3 style="margin:0;color:#fff;font-size:16px;font-weight:700;">Additional Evidence Required</h3>
+                <p style="margin:3px 0 0;color:#a0b4cc;font-size:12px;">Admin has requested more evidence for your complaint</p>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:20px 24px;">
+            <!-- Complaint ID badge -->
+            <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <p style="margin:0;color:#4a5568;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Complaint</p>
+                    <p id="erNotifComplaintId" style="margin:4px 0 0;color:#4f9eff;font-size:16px;font-weight:800;"></p>
+                    <p id="erNotifComplaintType" style="margin:2px 0 0;color:#a0b4cc;font-size:12px;"></p>
+                </div>
+                <div style="text-align:right;">
+                    <p style="margin:0;color:#4a5568;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Deadline</p>
+                    <p id="erNotifDeadline" style="margin:4px 0 0;color:#e63946;font-size:13px;font-weight:700;"></p>
+                </div>
+            </div>
+
+            <!-- Admin note -->
+            <div id="erNotifNoteBox" style="display:none;background:#140d00;border:1px solid #d9770650;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+                <p style="margin:0 0 6px;color:#d97706;font-size:12px;font-weight:700;"><i class="fas fa-comment-alt"></i> Note from Admin</p>
+                <p id="erNotifNote" style="margin:0;color:#e5c88a;font-size:13px;line-height:1.6;"></p>
+            </div>
+
+            <!-- Upload section -->
+            <div>
+                <p style="font-size:13px;font-weight:700;color:#a0b4cc;margin:0 0 10px;text-transform:uppercase;letter-spacing:.5px;">Upload Evidence Now</p>
+                <div id="erUploadBox" style="background:#0a0f1e;border:2px dashed #d97706;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border .2s;" onclick="document.getElementById('erFileInput').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:#d97706;margin-bottom:8px;display:block;"></i>
+                    <p style="color:#fff;font-size:13px;margin:0 0 4px;">Click to select files</p>
+                    <span style="color:#4a5568;font-size:12px;">JPG, PNG, PDF — max 10MB each</span>
+                </div>
+                <input type="file" id="erFileInput" accept="image/jpeg,image/png,image/gif,image/webp,.pdf" multiple style="position:absolute;left:-9999px;" onchange="erHandleFiles(this)" />
+                <div id="erFileList" style="margin-top:10px;display:none;">
+                    <ul id="erFileNames" style="list-style:none;padding:0;margin:0;font-size:13px;color:#a0b4cc;"></ul>
+                </div>
+                <div id="erUploadMsg" style="margin-top:10px;font-size:13px;text-align:center;display:none;padding:8px 12px;border-radius:8px;"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding:16px 24px;border-top:1px solid #1e2d4a;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+            <button onclick="erSkipForNow()" style="padding:10px 20px;background:#111c33;color:#a0b4cc;border:1px solid #1e2d4a;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">
+                <i class="fas fa-clock"></i> Skip for Now
+            </button>
+            <button onclick="rejectEvidenceRequest()"
+style="
+background:#991b1b;
+color:white;
+border:none;
+padding:12px 18px;
+border-radius:10px;
+font-weight:700;
+cursor:pointer;
+margin-left:10px;
+">
+    Reject Request
+</button>
+            <button id="erSubmitBtn" onclick="erSubmitEvidence()" style="padding:10px 24px;background:linear-gradient(135deg,#78350f,#d97706);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">
+                <i class="fas fa-paper-plane"></i> Submit Evidence
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- EVIDENCE MODAL -->
 <div id="evidenceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:20px;">
     <div style="background:#0d1526;border:1px solid #1e2d4a;border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;">
@@ -813,9 +1072,206 @@ async function uploadMoreEvidence() {
 }
 
 function escDash(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════════════════════════════════════════════════
+// EVIDENCE REQUEST NOTIFICATION SYSTEM
+// ══════════════════════════════════════════════════════════════
+let erCurrentRequestId   = null;
+let erPendingQueue       = [];
+let erQueueIndex         = 0;
+
+// Called after user is confirmed logged in — check for pending evidence requests
+async function checkEvidenceRequests(userId) {
+    try {
+        const res  = await fetch(`/api/evidence-request/pending?user_id=${userId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success || !data.requests || data.requests.length === 0) return;
+        erPendingQueue = data.requests;
+        erQueueIndex   = 0;
+        erShowNext();
+    } catch(e) { /* silent */ }
+}
+
+function erShowNext() {
+    if (erQueueIndex >= erPendingQueue.length) return; // all done
+    const req = erPendingQueue[erQueueIndex];
+    erCurrentRequestId = req.id;
+
+    document.getElementById('erNotifComplaintId').textContent   = req.complaint_id;
+    document.getElementById('erNotifComplaintType').textContent = req.complaint_type || '';
+
+    // Deadline display
+    const dl = req.deadline ? new Date(req.deadline) : null;
+    const dlText = dl ? dl.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+    const daysLeft = dl ? Math.max(0, Math.ceil((dl - Date.now()) / 86400000)) : null;
+    document.getElementById('erNotifDeadline').textContent = dl
+        ? `${dlText} (${daysLeft} day${daysLeft !== 1 ? 's' : ''} left)`
+        : '—';
+    document.getElementById('erNotifDeadline').style.color = (daysLeft !== null && daysLeft <= 2) ? '#e63946' : '#f39c12';
+
+    // Admin note
+    const noteBox = document.getElementById('erNotifNoteBox');
+    const noteEl  = document.getElementById('erNotifNote');
+    if (req.admin_note) {
+        noteEl.textContent  = req.admin_note;
+        noteBox.style.display = 'block';
+    } else {
+        noteBox.style.display = 'none';
+    }
+
+    // Reset upload UI
+    document.getElementById('erFileInput').value  = '';
+    document.getElementById('erFileList').style.display  = 'none';
+    document.getElementById('erFileNames').innerHTML     = '';
+    document.getElementById('erUploadMsg').style.display = 'none';
+    document.getElementById('erSubmitBtn').disabled      = false;
+    document.getElementById('erSubmitBtn').innerHTML     = '<i class="fas fa-paper-plane"></i> Submit Evidence';
+
+    document.getElementById('evReqNotifModal').style.display = 'flex';
+}
+
+function erHandleFiles(input) {
+    const files = input.files;
+    const list  = document.getElementById('erFileList');
+    const names = document.getElementById('erFileNames');
+    if (!files.length) { list.style.display = 'none'; return; }
+    names.innerHTML = '';
+    Array.from(files).forEach(f => {
+        const li   = document.createElement('li');
+        li.style.cssText = 'padding:4px 0;display:flex;align-items:center;gap:8px;';
+        const icon = f.name.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf' : 'fa-file-image';
+        li.innerHTML = `<i class="fas ${icon}" style="color:#d97706;width:16px;"></i> ${escDash(f.name)} <span style="color:#4a5568;font-size:12px;">(${(f.size/1024/1024).toFixed(2)} MB)</span>`;
+        names.appendChild(li);
+    });
+    list.style.display = 'block';
+}
+
+async function erSubmitEvidence() {
+    const input = document.getElementById('erFileInput');
+    const btn   = document.getElementById('erSubmitBtn');
+    const msg   = document.getElementById('erUploadMsg');
+
+    if (!input.files.length) {
+        msg.style.display  = 'block';
+        msg.style.background = '#140900';
+        msg.style.color    = '#f39c12';
+        msg.innerHTML      = '<i class="fas fa-exclamation-triangle"></i> Please select at least one file to upload.';
+        return;
+    }
+
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    msg.style.display = 'none';
+
+    // Upload files first
+    const complaintId = document.getElementById('erNotifComplaintId').textContent;
+    const formData    = new FormData();
+    formData.append('complaint_id', complaintId);
+    for (let i = 0; i < input.files.length; i++) {
+        formData.append('evidence[]', input.files[i]);
+    }
+
+    try {
+        const uploadRes  = await fetch('/api/upload_complaint_evidence', {
+            method: 'POST', credentials: 'include', body: formData
+        });
+        const uploadData = await uploadRes.json();
+
+        if (!uploadData.success) {
+            msg.style.display    = 'block';
+            msg.style.background = '#1a0a0a';
+            msg.style.color      = '#e63946';
+            msg.innerHTML        = `<i class="fas fa-exclamation-circle"></i> Upload failed: ${uploadData.message || 'Unknown error'}`;
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Evidence';
+            return;
+        }
+
+        // Mark evidence request as submitted
+        await fetch('/api/evidence-request/mark-submitted', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: erCurrentRequestId }),
+        });
+
+        msg.style.display    = 'block';
+        msg.style.background = '#0a1a10';
+        msg.style.color      = '#2ecc71';
+        msg.innerHTML        = `<i class="fas fa-check-circle"></i> ${uploadData.message} Evidence submitted successfully!`;
+
+        setTimeout(() => {
+            document.getElementById('evReqNotifModal').style.display = 'none';
+            erQueueIndex++;
+            erShowNext(); // show next pending request if any
+        }, 1800);
+
+    } catch(e) {
+        msg.style.display    = 'block';
+        msg.style.background = '#1a0a0a';
+        msg.style.color      = '#e63946';
+        msg.innerHTML        = '<i class="fas fa-exclamation-circle"></i> Upload failed. Check your connection.';
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Evidence';
+    }
+}
+
+async function erSkipForNow() {
+    if (!erCurrentRequestId) {
+        document.getElementById('evReqNotifModal').style.display = 'none';
+        return;
+    }
+    try {
+        await fetch('/api/evidence-request/skip', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: erCurrentRequestId }),
+        });
+    } catch(e) { /* silent */ }
+
+    document.getElementById('evReqNotifModal').style.display = 'none';
+    erCurrentRequestId = null;
+    erQueueIndex++;
+    // Show next pending request after a short delay
+    setTimeout(erShowNext, 400);
+}
+
+async function rejectEvidenceRequest() {
+    if (!erCurrentRequestId) {
+        document.getElementById('evReqNotifModal').style.display = 'none';
+        return;
+    }
+    try {
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        await fetch('/api/evidence-request/reject', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                request_id: erCurrentRequestId,
+                user_id: svUser.id || svUser.user_id,
+            }),
+        });
+    } catch(e) { /* silent */ }
+
+    document.getElementById('evReqNotifModal').style.display = 'none';
+    erCurrentRequestId = null;
+    erQueueIndex++;
+    setTimeout(erShowNext, 400);
+}
+
 </script>
 @endsection
 
 @section('scripts')
 <script src="{{ asset('js/theme.js') }}"></script>
+<script src="{{ asset('js/fcm.js') }}"></script>
+<script>
+    // FCM init — user login করার পরে push notification চালু করো
+    document.addEventListener('DOMContentLoaded', function() {
+        const svUser = localStorage.getItem('sv_user');
+        if (svUser) {
+            // Slight delay so page loads first
+            setTimeout(() => initFCM(), 3000);
+        }
+    });
+</script>
 @endsection

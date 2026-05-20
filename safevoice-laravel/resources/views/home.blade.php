@@ -26,10 +26,10 @@
 
 <section class="stats">
     <div class="stats-container">
-        <div class="stat-card"><h2>1,240</h2><p>Total Complaints</p></div>
-        <div class="stat-card"><h2>980</h2><p>Resolved Cases</p></div>
-        <div class="stat-card"><h2>260</h2><p>Pending</p></div>
-        <div class="stat-card"><h2>430</h2><p>SOS Responses</p></div>
+        <div class="stat-card"><h2 id="stat-home-total">—</h2><p>Total Complaints</p></div>
+        <div class="stat-card"><h2 id="stat-home-resolved">—</h2><p>Resolved Cases</p></div>
+        <div class="stat-card"><h2 id="stat-home-pending">—</h2><p>Pending</p></div>
+        <div class="stat-card"><h2 id="stat-home-sos">—</h2><p>SOS Responses</p></div>
     </div>
 </section>
 
@@ -81,4 +81,19 @@
         </div>
     </div>
 </section>
+
+<script>
+(async function loadHomeStats() {
+    try {
+        const res  = await fetch('/api/stats');
+        const data = await res.json();
+        if (!data.success) return;
+        const fmt = n => n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'k' : n;
+        document.getElementById('stat-home-total').textContent    = fmt(data.total    || 0);
+        document.getElementById('stat-home-resolved').textContent = fmt(data.resolved || 0);
+        document.getElementById('stat-home-pending').textContent  = fmt(data.pending  || 0);
+        document.getElementById('stat-home-sos').textContent      = fmt(data.sos      || 0);
+    } catch(e) {}
+})();
+</script>
 @endsection
