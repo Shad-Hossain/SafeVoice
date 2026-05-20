@@ -29,3 +29,11 @@ Route::prefix('super-admin')->group(function () {
     Route::get('/login',     fn() => view('super_admin_login'))->name('super-admin.login');
     Route::get('/dashboard', fn() => view('super_admin_dashboard'))->name('super-admin.dashboard');
 });
+
+Route::get('/api/pi/case/{token}/accept', function (Illuminate\Http\Request $request, $token) {
+    return (new App\Http\Controllers\PiCaseAssignmentController())->handleEmailAction($request, $token, 'accept');
+});
+
+Route::get('/api/pi/case/{token}/reject', function (Illuminate\Http\Request $request, $token) {
+    return (new App\Http\Controllers\PiCaseAssignmentController())->handleEmailAction($request, $token, 'reject');
+});

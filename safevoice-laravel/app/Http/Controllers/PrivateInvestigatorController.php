@@ -148,29 +148,18 @@ class PrivateInvestigatorController extends Controller
             ]);
         }
 
-        $complaint->update([
-            'assigned_pi_id' => $pi->id,
-            'pi_assigned_at' => now(),
-            'status'         => 'Private Investigator Assigned',
-        ]);
-
-        $pi->increment('active_cases');
-        $pi->increment('total_cases');
-
         PiNotification::where('complaint_id', $request->complaint_id)
-            ->update(['status' => 'payment_confirmed', 'responded_at' => now()]);
+    ->update(['status' => 'payment_confirmed', 'responded_at' => now()]);
 
-        // Email PI with full case details
-        $this->sendPiAssignmentEmail($pi, $complaint);
+$complaint->update(['status' => 'PI Assignment Pending']);
 
-        // Email User with confirmation
-        $this->sendUserConfirmationEmail($complaint, $pi, $userId);
+$assignmentController = new \App\Http\Controllers\PiCaseAssignmentController();
+$result = $assignmentController->sendToNextPi($complaint->complaint_id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment confirmed! PI assigned. Check your email for details.',
-            'pi_code' => $pi->pi_code,
-        ]);
+return response()->json([
+    'success' => true,
+    'message' => 'Payment confirmed! An investigator will contact you shortly.',
+]);
     }
 
     // GET /api/admin/payments — admin sees all payments (case ID + TXN only, no user info)
