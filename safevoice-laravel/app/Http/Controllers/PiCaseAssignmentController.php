@@ -182,13 +182,35 @@ class PiCaseAssignmentController extends Controller
         // User কে notification mail পাঠাও
         $this->sendUserAcceptedEmail($complaint, $pi);
 
-        return $this->htmlResponse(
-            '✅ Case Accepted!',
-            "You have accepted case <strong>{$complaint->complaint_id}</strong>.<br><br>The client has been notified. Please contact them within 48 hours.",
-            'success',
-            $pi->full_name,
-            $complaint->complaint_id
-        );
+        // Victim details বের করো
+$victimInfo = '';
+if (!$complaint->is_anonymous && $complaint->user_id) {
+    $user = User::find($complaint->user_id);
+    if ($user) {
+        $victimInfo = "
+            <div style='background:#0d1526;border:1px solid #1e3a6e;border-radius:10px;padding:16px 20px;margin-top:16px;text-align:left;'>
+                <div style='font-size:11px;color:#4f9eff;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:12px;'>👤 Victim Contact Details</div>
+                <p style='color:#e2e8f0;font-size:14px;margin:6px 0;'>📛 Name: <strong style='color:#fff;'>{$user->name}</strong></p>
+                <p style='color:#e2e8f0;font-size:14px;margin:6px 0;'>📧 Email: <strong style='color:#4f9eff;'>{$user->email}</strong></p>
+                <p style='color:#e2e8f0;font-size:14px;margin:6px 0;'>📞 Phone: <strong style='color:#fff;'>{$user->phone}</strong></p>
+            </div>";
+    }
+} else {
+    $victimInfo = "
+        <div style='background:#92400e20;border:1px solid #f59e0b40;border-radius:10px;padding:14px 18px;margin-top:16px;'>
+            <p style='color:#fbbf24;font-size:13px;margin:0;'>⚠️ Anonymous case — the victim will contact you directly.</p>
+        </div>";
+}
+
+return $this->htmlResponse(
+    '✅ Case Accepted!',
+    "You have accepted case <strong style='color:#4f9eff;'>{$complaint->complaint_id}</strong>.<br><br>
+    The client has been notified. Please contact them within 48 hours.
+    {$victimInfo}",
+    'success',
+    $pi->full_name,
+    $complaint->complaint_id
+);
     }
 
     // ─────────────────────────────────────────────────────────────
