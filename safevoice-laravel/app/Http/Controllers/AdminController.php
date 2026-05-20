@@ -3,7 +3,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Models\Complaint;
+use App\Models\SosResponder;
 
 class AdminController extends Controller
 {
@@ -56,4 +59,22 @@ class AdminController extends Controller
         User::where('id', $request->id)->update(['status' => $request->status]);
         return response()->json(['success' => true, 'message' => 'User status updated to ' . $request->status]);
     }
+
+    // GET /api/stats — home page public stats
+    public function publicStats()
+    {
+        $total    = DB::table('complaints')->count();
+        $resolved = DB::table('complaints')->where('status', 'resolved')->count();
+        $pending  = DB::table('complaints')->whereIn('status', ['submitted','under_review','pending'])->count();
+        $sos      = DB::table('sos_responders')->count();
+
+        return response()->json([
+            'success'  => true,
+            'total'    => $total,
+            'resolved' => $resolved,
+            'pending'  => $pending,
+            'sos'      => $sos,
+        ]);
+    }
+
 }

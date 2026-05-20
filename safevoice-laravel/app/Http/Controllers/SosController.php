@@ -436,14 +436,6 @@ public function submitResponderEvidence(Request $request)
     // GET /api/admin/sos-evidence-pending
     public function adminPendingEvidence(Request $request)
     {
-        // admin_id session অথবা is_admin session check
-        $isAdmin = $request->session()->get('admin_id')
-                || $request->session()->get('is_admin');
-
-        if (!$isAdmin) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
-
         // সব records আনো — frontend নিজেই status দিয়ে filter করে
         $pending = SosResponder::with([
         'sos:id,location_text,crime_type,created_at,user_id',
@@ -459,13 +451,6 @@ public function submitResponderEvidence(Request $request)
     // POST /api/admin/sos-evidence-verify
     public function adminVerifyEvidence(Request $request)
     {
-        $isAdmin = $request->session()->get('admin_id')
-                || $request->session()->get('is_admin');
-
-        if (!$isAdmin) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
-
         $request->validate([
             'responder_id' => 'required|integer',
             'action'       => 'required|in:approve,reject',

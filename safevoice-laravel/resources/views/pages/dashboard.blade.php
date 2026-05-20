@@ -279,61 +279,53 @@ async function loadSosResponds() {
         const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
         const userId = svUser.id || svUser.user_id;
         if (!userId) {
-            container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:40px;">Please log in to view your SOS responses.</p>';
+            container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:40px;">Please log in.</p>';
             return;
         }
 
-        const res  = await fetch(`/api/sos/my-responds?user_id=${userId}`, { credentials: 'include' });
+        const res  = await fetch('/api/sos/my-responds?user_id=' + userId, { credentials: 'include' });
         const data = await res.json();
 
         if (!data.success || !data.responds || data.responds.length === 0) {
-            container.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);">
-                <i class="fas fa-hands-helping" style="font-size:40px;opacity:.2;display:block;margin-bottom:14px;"></i>
-                <p>You haven't responded to any SOS alerts yet.</p>
-            </div>`;
+            container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);"><i class="fas fa-hands-helping" style="font-size:40px;opacity:.2;display:block;margin-bottom:14px;"></i><p>You have not responded to any SOS alerts yet.</p></div>';
             return;
         }
 
-        const rows = data.responds.map(r => {
-            const sc = { pending:'#fbbf24', approved:'#2ecc71', rejected:'#e63946', not_submitted:'#4a5568' };
-            const sl = { pending:'⏳ Pending', approved:'✅ Approved', rejected:'❌ Rejected', not_submitted:'📤 Not Submitted' };
-            const ev = r.evidence_status || 'not_submitted';
+        const sc = { pending:'#fbbf24', approved:'#2ecc71', rejected:'#e63946', not_submitted:'#4a5568', none:'#4a5568' };
+        const sl = { pending:'Pending Review', approved:'Approved', rejected:'Rejected', not_submitted:'Not Submitted', none:'Not Submitted' };
 
-            const actionBtn = (ev === 'not_submitted' || ev === 'rejected')
-                ? `<button onclick="openResponderEvidenceModal(${r.sos_id})"
-                        style="background:#1a4a6e;border:none;color:#fff;padding:5px 12px;
-                        border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap;">
-                        📷 Submit Evidence
-                   </button>`
-                : ev === 'approved'
-                    ? '<span style="color:#2ecc71;font-size:12px;">✔ Verified</span>'
-                    : '<span style="color:#a0b4cc;font-size:12px;">Awaiting review</span>';
+        let rows = '';
+        data.responds.forEach(function(r) {
+            const ev = r.evidence_status || 'none';
+            const canSubmit = (ev === 'not_submitted' || ev === 'none' || ev === 'rejected');
+            const color = sc[ev] || '#4a5568';
+            const label = sl[ev] || ev;
 
-            return `<tr>
-                <td style="font-weight:600;color:#4f9eff;">#${r.sos_id}</td>
-                <td>${r.victim_name || 'Anonymous'}</td>
-                <td>${r.crime_type || '—'}</td>
-                <td style="font-size:12px;color:var(--text-secondary);">${r.location_text ? r.location_text.substring(0,35)+'...' : '—'}</td>
-                <td><span style="font-size:11px;font-weight:700;color:${sc[ev]};background:${sc[ev]}22;
-                    border:1px solid ${sc[ev]}44;border-radius:20px;padding:2px 10px;">${sl[ev]||ev}</span></td>
-                <td>${actionBtn}</td>
-            </tr>`;
-        }).join('');
+            let btn = '';
+            if (canSubmit) {
+                btn = '<button onclick="openResponderEvidenceModal(' + r.sos_id + ')" style="background:#1a4a6e;border:none;color:#fff;padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;margin-right:6px;">Submit Evidence</button>';
+            }
 
-        container.innerHTML = `
-            <div class="complaints-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>SOS ID</th><th>Victim</th><th>Type</th>
-                            <th>Location</th><th>Evidence</th><th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                </table>
-            </div>`;
+            const badge = '<span style="font-size:11px;font-weight:700;color:' + color + ';background:' + color + '22;border:1px solid ' + color + '44;border-radius:20px;padding:2px 10px;">' + label + '</span>';
+
+            rows += '<tr>'
+                + '<td style="font-weight:600;color:#4f9eff;">#' + r.sos_id + '</td>'
+                + '<td>' + (r.victim_name || 'Anonymous') + '</td>'
+                + '<td>' + (r.crime_type || '-') + '</td>'
+                + '<td style="font-size:12px;color:#a0b4cc;">' + (r.location_text ? r.location_text.substring(0,35) + '...' : '-') + '</td>'
+                + '<td>' + btn + badge + '</td>'
+                + '</tr>';
+        });
+
+        const table = '<div class="complaints-table"><table>'
+            + '<thead><tr><th>SOS ID</th><th>Victim</th><th>Type</th><th>Location</th><th>Evidence &amp; Status</th></tr></thead>'
+            + '<tbody>' + rows + '</tbody>'
+            + '</table></div>';
+
+        container.innerHTML = table;
+
     } catch(e) {
-        container.innerHTML = '<p style="text-align:center;color:#e63946;padding:40px;">Error loading data. Please try again.</p>';
+        container.innerHTML = '<p style="text-align:center;color:#e63946;padding:40px;">Error loading data.</p>';
     }
 }
 

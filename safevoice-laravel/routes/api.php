@@ -38,6 +38,7 @@ Route::post('/upload_sos_evidence',       [EvidenceController::class, 'uploadSos
 Route::post('/admin/login',               [AdminController::class, 'login']);
 Route::post('/admin_login',               [AdminController::class, 'login']); // legacy
 Route::post('/admin/logout',              [AdminController::class, 'logout']);
+Route::get('/stats',              [AdminController::class, 'publicStats']);
 Route::get('/admin/users',                [AdminController::class, 'users']);
 Route::get('/manage_user',                [AdminController::class, 'users']); // legacy
 Route::post('/admin/users/update-status', [AdminController::class, 'updateUserStatus']);
