@@ -144,16 +144,10 @@
 
 <!-- Red Floating SOS Button -->
 <button onclick="openActiveSosModal()" id="sos-float-btn"
-    style="position:fixed;bottom:30px;right:30px;width:56px;height:56px;border-radius:50%;background:#e63946;border:none;color:#fff;font-size:22px;cursor:pointer;z-index:9998;box-shadow:0 4px 20px rgba(230,57,70,.5);display:flex;align-items:center;justify-content:center;animation:sosRedPulse 2s infinite;"
+    style="position:fixed;bottom:30px;right:30px;width:56px;height:56px;border-radius:50%;background:#e63946;border:none;color:#fff;font-size:22px;cursor:pointer;z-index:9998;display:flex;align-items:center;justify-content:center;"
     title="View active SOS alerts (last 30 minutes)">
     <i class="fas fa-exclamation"></i>
 </button>
-<style>
-@keyframes sosRedPulse {
-    0%,100% { box-shadow: 0 0 0 0 rgba(230,57,70,.6); }
-    50%      { box-shadow: 0 0 0 10px rgba(230,57,70,0); }
-}
-</style>
 
 <!-- Responder Evidence Modal -->
 <div id="resp-ev-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;align-items:center;justify-content:center;padding:16px;">

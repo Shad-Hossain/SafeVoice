@@ -176,7 +176,7 @@ function injectSosSidebarButton() {
         <style>
             #sv-sos-fab {
                 position: fixed;
-                bottom: 30px;
+                bottom: 100px;
                 right: 24px;
                 z-index: 99998;
                 width: 56px;
