@@ -17,6 +17,7 @@
             <li><a href="/leaderboard"><i class="fas fa-trophy"></i> Leaderboard</a></li>
             <li><a href="/sos"><i class="fas fa-exclamation-triangle" style="color:#e63946"></i> Emergency SOS</a></li>
             <li id="nav-sos-responds"><a href="#" onclick="showSection('sos-responds')"><i class="fas fa-hands-helping" style="color:#4f9eff"></i> SOS Responses</a></li>
+            <li id="nav-all-sos"><a href="#" onclick="showSection('all-sos')"><i class="fas fa-bell" style="color:#e63946"></i> All SOS Requests</a></li>
             <li class="sidebar-divider"></li>
             <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Settings</a></li>
             <li><a href="#" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -105,8 +106,54 @@
             </div>
         </div>
 
+        <!-- ── ALL SOS REQUESTS ── -->
+        <div id="view-all-sos" style="display:none">
+            <div class="welcome-bar">
+                <div>
+                    <h1><i class="fas fa-bell" style="font-size:22px;margin-right:10px;color:#e63946"></i>All SOS Requests</h1>
+                    <p style="color:var(--text-secondary);font-size:14px;">আজ পর্যন্ত সকল SOS requests</p>
+                </div>
+                <button onclick="loadAllSosRequests()" style="background:#1e2d4a;border:1px solid #2a3f5f;color:#a0b4cc;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div id="all-sos-container">
+                <p style="color:var(--text-secondary);text-align:center;padding:40px;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </p>
+            </div>
+        </div>
+
     </main>
 </div>
+
+<!-- Active SOS Modal (last 30 minutes) -->
+<div id="active-sos-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.80);z-index:99999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#0d1117;border:1px solid #e6394655;border-radius:16px;padding:0;max-width:480px;width:100%;position:relative;max-height:80vh;display:flex;flex-direction:column;">
+        <div style="padding:18px 20px 14px;border-bottom:1px solid #1e2d4a;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#e63946;display:inline-block;animation:sosRedPulse 1s infinite;"></span>
+                <h3 style="margin:0;color:#fff;font-size:16px;font-weight:700;">🚨 Active SOS Alerts Near You</h3>
+            </div>
+            <button onclick="closeActiveSosModal()" style="background:none;border:none;color:#a0b4cc;font-size:22px;cursor:pointer;line-height:1;">×</button>
+        </div>
+        <p style="margin:0;padding:8px 20px;font-size:12px;color:#e63946;background:#e6394611;">গত 30 মিনিটের মধ্যে দেওয়া active SOS alerts</p>
+        <div id="active-sos-body" style="padding:16px;overflow-y:auto;flex:1;"></div>
+    </div>
+</div>
+
+<!-- Red Floating SOS Button -->
+<button onclick="openActiveSosModal()" id="sos-float-btn"
+    style="position:fixed;bottom:30px;right:30px;width:56px;height:56px;border-radius:50%;background:#e63946;border:none;color:#fff;font-size:22px;cursor:pointer;z-index:9998;box-shadow:0 4px 20px rgba(230,57,70,.5);display:flex;align-items:center;justify-content:center;animation:sosRedPulse 2s infinite;"
+    title="View active SOS alerts (last 30 minutes)">
+    <i class="fas fa-exclamation"></i>
+</button>
+<style>
+@keyframes sosRedPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(230,57,70,.6); }
+    50%      { box-shadow: 0 0 0 10px rgba(230,57,70,0); }
+}
+</style>
 
 <!-- Responder Evidence Modal -->
 <div id="resp-ev-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;align-items:center;justify-content:center;padding:16px;">
@@ -210,11 +257,14 @@ function showSection(section) {
     document.getElementById('view-mycomplaints').style.display = section === 'mycomplaints' ? 'block' : 'none';
     const sosEl = document.getElementById('view-sos-responds');
     if (sosEl) sosEl.style.display = section === 'sos-responds' ? 'block' : 'none';
+    const allSosEl = document.getElementById('view-all-sos');
+    if (allSosEl) allSosEl.style.display = section === 'all-sos' ? 'block' : 'none';
     document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
     const navEl = document.getElementById('nav-' + section);
     if (navEl) navEl.classList.add('active');
     if (section === 'mycomplaints') loadAllComplaints();
     if (section === 'sos-responds') loadSosResponds();
+    if (section === 'all-sos') loadAllSosRequests();
 }
 
 // ── Load complaints from DB ────────────────────
@@ -331,7 +381,117 @@ async function loadSosResponds() {
 
 let _respEvidenceSosId = null;
 
-function openResponderEvidenceModal(sosId) {
+// ── All SOS Requests ───────────────────────────────
+async function loadAllSosRequests() {
+    const container = document.getElementById('all-sos-container');
+    if (!container) return;
+    container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+
+    try {
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const userId = svUser.id || svUser.user_id;
+        if (!userId) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:40px;">Please log in.</p>';
+            return;
+        }
+
+        const res  = await fetch('/api/sos/all-requests?user_id=' + userId, { credentials: 'include' });
+        const data = await res.json();
+
+        if (!data.success || !data.alerts || data.alerts.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary);"><i class="fas fa-bell" style="font-size:40px;opacity:.2;display:block;margin-bottom:14px;"></i><p>কোনো SOS request পাওয়া যায়নি।</p></div>';
+            return;
+        }
+
+        const statusColors = { active: '#e63946', cancelled: '#6b7280', resolved: '#2ecc71' };
+        const statusLabels = { active: '🔴 Active', cancelled: '⚪ Cancelled', resolved: '✅ Resolved' };
+
+        function timeAgo(dateStr) {
+            const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
+            if (diff < 1)   return 'এইমাত্র';
+            if (diff < 60)  return diff + ' মিনিট আগে';
+            const h = Math.floor(diff / 60);
+            if (h < 24)     return h + ' ঘণ্টা আগে';
+            return Math.floor(h / 24) + ' দিন আগে';
+        }
+
+        let rows = '';
+        data.alerts.forEach(function(a) {
+            const statusColor = statusColors[a.status] || '#6b7280';
+            const statusLabel = statusLabels[a.status] || a.status;
+            const locationShort = a.location_text ? a.location_text.substring(0, 40) + (a.location_text.length > 40 ? '...' : '') : '-';
+            rows += `<tr>
+                <td style="font-weight:600;color:#e63946;">#${a.id}</td>
+                <td>${a.victim_name || 'Anonymous'}</td>
+                <td>${a.crime_type || '-'}</td>
+                <td style="font-size:12px;color:#a0b4cc;">${locationShort}</td>
+                <td><span style="font-size:11px;font-weight:700;color:${statusColor};background:${statusColor}22;border:1px solid ${statusColor}44;border-radius:20px;padding:2px 10px;">${statusLabel}</span></td>
+                <td style="color:#a0b4cc;font-size:12px;">${timeAgo(a.created_at)}</td>
+                <td style="font-size:12px;color:#4f9eff;">${a.responder_count} জন</td>
+            </tr>`;
+        });
+
+        container.innerHTML = `<div class="complaints-table"><table>
+            <thead><tr>
+                <th>SOS ID</th><th>Victim</th><th>ধরন</th><th>Location</th><th>Status</th><th>সময়</th><th>Responders</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table></div>`;
+
+    } catch(e) {
+        container.innerHTML = '<p style="text-align:center;color:#e63946;padding:40px;">Error loading data.</p>';
+    }
+}
+
+// ── Active SOS Modal (Red Floating Button) ──────────
+async function openActiveSosModal() {
+    const modal = document.getElementById('active-sos-modal');
+    const body  = document.getElementById('active-sos-body');
+    if (!modal || !body) return;
+
+    modal.style.display = 'flex';
+    body.innerHTML = '<p style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+
+    try {
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const userId = svUser.id || svUser.user_id;
+        const res    = await fetch('/api/sos/active-recent?user_id=' + userId, { credentials: 'include' });
+        const data   = await res.json();
+
+        if (!data.success || !data.alerts || data.alerts.length === 0) {
+            body.innerHTML = '<div style="text-align:center;padding:40px;color:#a0b4cc;"><i class="fas fa-shield-alt" style="font-size:36px;opacity:.3;display:block;margin-bottom:12px;"></i><p>গত 30 মিনিটে কোনো active SOS নেই।</p></div>';
+            return;
+        }
+
+        body.innerHTML = data.alerts.map(function(a) {
+            const minsAgo = a.minutes_ago != null ? a.minutes_ago : '?';
+            const loc = a.location_text || 'Location unavailable';
+            return `<div style="background:#1a0a0a;border:1px solid #e6394633;border-radius:12px;padding:16px;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                    <div>
+                        <span style="font-weight:700;color:#fff;font-size:14px;">👤 ${a.victim_name || 'Anonymous'}</span>
+                        ${a.crime_type ? `<span style="margin-left:8px;font-size:11px;background:#e6394622;color:#e63946;border:1px solid #e6394644;border-radius:20px;padding:2px 8px;">${a.crime_type}</span>` : ''}
+                    </div>
+                    <span style="font-size:11px;color:#e63946;font-weight:600;">${minsAgo} মি. আগে</span>
+                </div>
+                <div style="font-size:12px;color:#a0b4cc;margin-bottom:10px;"><i class="fas fa-map-marker-alt" style="color:#e63946;margin-right:4px;"></i>${loc.substring(0, 70)}${loc.length > 70 ? '...' : ''}</div>
+                <div style="display:flex;gap:8px;">
+                    <span style="font-size:11px;color:#6b7280;">${a.responder_count} জন respond করেছেন</span>
+                </div>
+            </div>`;
+        }).join('');
+
+    } catch(e) {
+        body.innerHTML = '<p style="text-align:center;color:#e63946;padding:30px;">Error loading data.</p>';
+    }
+}
+
+function closeActiveSosModal() {
+    const modal = document.getElementById('active-sos-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+
     _respEvidenceSosId = sosId;
     const overlay = document.getElementById('resp-ev-overlay');
     if (!overlay) return;
@@ -340,7 +500,6 @@ function openResponderEvidenceModal(sosId) {
     const msg = document.getElementById('resp-ev-msg');
     if (msg) msg.style.display = 'none';
     overlay.style.display = 'flex';
-}
 
 function previewRespEvFile(input) {
     const preview = document.getElementById('resp-ev-preview');

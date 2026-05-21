@@ -381,10 +381,10 @@
             <!-- Filter bar -->
             <div class="filter-bar">
                 <select id="evidenceFilterStatus" onchange="loadSosEvidence()">
+                    <option value="">All</option>
                     <option value="pending">Pending Review</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
-                    <option value="">All</option>
                 </select>
                 <button class="btn-refresh" onclick="loadSosEvidence()">
                     <i class="fas fa-sync-alt"></i> Refresh
@@ -1095,7 +1095,7 @@ async function loadSosEvidenceBadge() {
 async function loadSosEvidence() {
     const grid   = document.getElementById('evidenceCardGrid');
     const countEl = document.getElementById('evidenceCount');
-    const status = document.getElementById('evidenceFilterStatus')?.value ?? 'pending';
+    const status = document.getElementById('evidenceFilterStatus')?.value ?? '';
     grid.innerHTML = '<div class="table-state" style="grid-column:1/-1"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
 
     try {
@@ -1174,6 +1174,7 @@ const victimPhone = r.sos && r.sos.user ? r.sos.user.phone : null;
 
 const showVerifyBtn = r.evidence_status === 'pending' && r.evidence_path;
 
+    evidenceRecordsMap[r.id] = r;
     return `<div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:18px;display:flex;flex-direction:column;">
         ${previewHtml}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -1215,13 +1216,17 @@ const showVerifyBtn = r.evidence_status === 'pending' && r.evidence_path;
             <i class="fas fa-search"></i> Review Evidence
         </button>` : ''}
     </div>`;
-    evidenceRecordsMap[r.id] = r;
 }
 
 function openSosEvidenceModalById(id) {
     const record = evidenceRecordsMap[id];
     if (!record) return;
     openSosEvidenceModal(record);
+}
+
+function closeSosEvidenceModal() {
+    document.getElementById('sosEvidenceVerifyModal').style.display = 'none';
+    currentEvidenceRecord = null;
 }
 
 function openSosEvidenceModal(record) {

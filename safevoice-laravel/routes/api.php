@@ -71,6 +71,8 @@ Route::post('/respond_to_sos',      [SosController::class, 'respond']); // legac
 Route::post('/sos/upload-evidence',         [SosController::class, 'uploadEvidence']);
 // My SOS Responds — responder যে SOS গুলোতে respond করেছে সেগুলোর list
 Route::get('/sos/my-responds',              [SosController::class, 'myResponds']);
+Route::get('/sos/all-requests',             [SosController::class, 'allSosRequests']);
+Route::get('/sos/active-recent',            [SosController::class, 'activeRecentAlerts']);
 
 // Victim Evidence — SOS request এর সাথে victim যে evidence submit করেছে সেটা দেখা
 Route::get('/sos/victim-evidence',          [SosController::class, 'victimEvidence']);

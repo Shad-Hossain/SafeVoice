@@ -564,6 +564,83 @@ public function submitResponderEvidence(Request $request)
         return '🎖️ Active';
     }
 
+    // ─────────────────────────────────────────────────────────
+    // GET /api/sos/all-requests
+    // আজ পর্যন্ত সকল SOS requests (সব user এর)
+    // ─────────────────────────────────────────────────────────
+    public function allSosRequests(Request $request)
+    {
+        $userId = $request->session()->get('user_id')
+                ?? $request->query('user_id');
+
+        if (!$userId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $alerts = SosAlert::with(['user', 'responders'])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($a) use ($userId) {
+                $responderIds = $a->responders ? $a->responders->pluck('responder_id')->toArray() : [];
+                return [
+                    'id'             => $a->id,
+                    'victim_name'    => $a->user ? $a->user->name : 'Anonymous',
+                    'location_text'  => $a->location_text,
+                    'crime_type'     => $a->crime_type,
+                    'description'    => $a->description,
+                    'latitude'       => $a->latitude,
+                    'longitude'      => $a->longitude,
+                    'status'         => $a->status,
+                    'created_at'     => $a->created_at,
+                    'responder_count'=> count($responderIds),
+                    'i_responded'    => in_array((int)$userId, $responderIds),
+                ];
+            });
+
+        return response()->json(['success' => true, 'alerts' => $alerts]);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // GET /api/sos/active-recent
+    // গত 30 মিনিটের মধ্যে দেওয়া active SOS alerts
+    // ─────────────────────────────────────────────────────────
+    public function activeRecentAlerts(Request $request)
+    {
+        $userId = $request->session()->get('user_id')
+                ?? $request->query('user_id');
+
+        if (!$userId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $cutoff = now()->subMinutes(30);
+
+        $alerts = SosAlert::with(['user', 'responders'])
+            ->where('status', 'active')
+            ->where('created_at', '>=', $cutoff)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($a) use ($userId) {
+                $responderIds = $a->responders ? $a->responders->pluck('responder_id')->toArray() : [];
+                return [
+                    'id'             => $a->id,
+                    'victim_name'    => $a->user ? $a->user->name : 'Anonymous',
+                    'location_text'  => $a->location_text,
+                    'crime_type'     => $a->crime_type,
+                    'description'    => $a->description,
+                    'latitude'       => $a->latitude,
+                    'longitude'      => $a->longitude,
+                    'status'         => $a->status,
+                    'created_at'     => $a->created_at,
+                    'responder_count'=> count($responderIds),
+                    'i_responded'    => in_array((int)$userId, $responderIds),
+                    'minutes_ago'    => now()->diffInMinutes($a->created_at),
+                ];
+            });
+
+        return response()->json(['success' => true, 'alerts' => $alerts, 'count' => $alerts->count()]);
+    }
+
     // POST /api/sos/cancel
     public function cancelAlert(Request $request)
     {
