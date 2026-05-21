@@ -175,22 +175,7 @@ function injectSosSidebarButton() {
     btn.innerHTML += `
         <style>
             #sv-sos-fab {
-                position: fixed;
-                bottom: 100px;
-                right: 24px;
-                z-index: 99998;
-                width: 56px;
-                height: 56px;
-                border-radius: 50%;
-                background: linear-gradient(135deg, #e63946, #9b1d20);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-                cursor: pointer;
-                box-shadow: 0 4px 20px rgba(230,57,70,0.5);
-                transition: transform .2s, box-shadow .2s;
-                user-select: none;
+                display: none !important;
             }
             #sv-sos-fab:hover {
                 transform: scale(1.1);

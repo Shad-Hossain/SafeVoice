@@ -143,8 +143,30 @@
 </div>
 
 <!-- Red Floating SOS Button -->
+<style>
+@keyframes sosPulseGlow {
+    0%   { box-shadow: 0 0 0 0 rgba(230,57,70,0.7), 0 4px 20px rgba(230,57,70,0.4); }
+    50%  { box-shadow: 0 0 0 14px rgba(230,57,70,0), 0 4px 30px rgba(230,57,70,0.8); }
+    100% { box-shadow: 0 0 0 0 rgba(230,57,70,0), 0 4px 20px rgba(230,57,70,0.4); }
+}
+@keyframes sosIconPulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.15); }
+}
+#sos-float-btn {
+    animation: sosPulseGlow 1.8s ease-in-out infinite;
+}
+#sos-float-btn i {
+    animation: sosIconPulse 1.8s ease-in-out infinite;
+}
+#sos-float-btn:hover {
+    animation: none !important;
+    box-shadow: 0 0 0 16px rgba(230,57,70,0), 0 6px 28px rgba(230,57,70,0.9) !important;
+    transform: scale(1.1);
+}
+</style>
 <button onclick="openActiveSosModal()" id="sos-float-btn"
-    style="position:fixed;bottom:30px;right:30px;width:56px;height:56px;border-radius:50%;background:#e63946;border:none;color:#fff;font-size:22px;cursor:pointer;z-index:9998;display:flex;align-items:center;justify-content:center;"
+    style="position:fixed;bottom:30px;right:30px;width:56px;height:56px;border-radius:50%;background:#e63946;border:none;color:#fff;font-size:22px;cursor:pointer;z-index:9998;display:flex;align-items:center;justify-content:center;transition:transform .2s;"
     title="View active SOS alerts (last 30 minutes)">
     <i class="fas fa-exclamation"></i>
 </button>
