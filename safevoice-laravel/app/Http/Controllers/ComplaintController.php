@@ -15,7 +15,9 @@ class ComplaintController extends Controller
         $query = Complaint::query()
             ->select('id','complaint_id','type','incident_date','location',
                      'description','is_anonymous','status','submitted_at','updated_at',
-                     'assigned_pi_id','pi_assigned_at','payment_deadline','user_id');
+                     'assigned_pi_id','pi_assigned_at','payment_deadline','user_id',
+                     'legal_consent','publish_consent','admin_message',
+                     'user_name as reporter_name');
 
         if ($request->filled('status')) $query->where('status', $request->status);
         if ($request->filled('type'))   $query->where('type',   $request->type);
@@ -40,7 +42,8 @@ class ComplaintController extends Controller
         $complaint = Complaint::where('complaint_id', $id)
             ->select('id','complaint_id','type','incident_date','location',
                      'description','is_anonymous','status','submitted_at',
-                     'updated_at','user_id','assigned_pi_id','pi_assigned_at','evidence_files')
+                     'updated_at','user_id','assigned_pi_id','pi_assigned_at','evidence_files',
+                     'legal_consent','publish_consent')
             ->first();
 
         if (!$complaint) {
@@ -76,15 +79,26 @@ class ComplaintController extends Controller
 
         $isAnonymous = $request->boolean('is_anonymous');
 
+        $legalConsent   = $request->input('legal_consent');    // 'yes' | 'no' | null
+        $publishConsent = $request->input('publish_consent');  // 'yes' | 'no' | null
+
+        // দুটোতেই 'no' দিলে → auto Rejected
+        $status = 'Submitted';
+        if ($legalConsent === 'no' && $publishConsent === 'no') {
+            $status = 'Rejected';
+        }
+
         $complaint = Complaint::create([
-            'complaint_id'  => $complaintId,
-            'user_id'       => $isAnonymous ? null : $userId,  // anonymous হলে user_id hidden
-            'type'          => $request->type,
-            'incident_date' => $incidentDate,
-            'location'      => $request->location ?? '',
-            'description'   => $request->description,
-            'is_anonymous'  => $isAnonymous,
-            'status'        => 'Submitted',
+            'complaint_id'   => $complaintId,
+            'user_id'        => $isAnonymous ? null : $userId,
+            'type'           => $request->type,
+            'incident_date'  => $incidentDate,
+            'location'       => $request->location ?? '',
+            'description'    => $request->description,
+            'is_anonymous'   => $isAnonymous,
+            'status'         => $status,
+            'legal_consent'  => $legalConsent,
+            'publish_consent'=> $publishConsent,
         ]);
 
         // Anonymous হলে count বাড়বে না — admin track করতে পারবে না

@@ -229,13 +229,46 @@
     background: #0d1526;
     border: 1px solid #1e2d4a;
     border-radius: 16px;
-    overflow: hidden;
+    overflow-x: auto;
 }
 
 .complaints-table table {
     width: 100%;
+    min-width: 900px;
     border-collapse: collapse;
+    table-layout: auto;
 }
+
+.complaints-table th,
+.complaints-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Complaint ID */
+.complaints-table th:nth-child(1),
+.complaints-table td:nth-child(1) { white-space: nowrap; min-width: 110px; }
+/* Type */
+.complaints-table th:nth-child(2),
+.complaints-table td:nth-child(2) { white-space: nowrap; min-width: 100px; }
+/* Location */
+.complaints-table th:nth-child(3),
+.complaints-table td:nth-child(3) { min-width: 100px; max-width: 160px; white-space: normal; word-break: break-word; font-size: 12px; color: var(--text-secondary); }
+/* Date */
+.complaints-table th:nth-child(4),
+.complaints-table td:nth-child(4) { white-space: nowrap; min-width: 80px; }
+/* Anonymous */
+.complaints-table th:nth-child(5),
+.complaints-table td:nth-child(5) { white-space: nowrap; min-width: 70px; text-align: center; }
+/* Status */
+.complaints-table th:nth-child(6),
+.complaints-table td:nth-child(6) { white-space: nowrap; min-width: 120px; }
+/* Consent */
+.complaints-table th:nth-child(7),
+.complaints-table td:nth-child(7) { min-width: 105px; }
+/* Action */
+.complaints-table th:nth-child(8),
+.complaints-table td:nth-child(8) { white-space: nowrap; min-width: 240px; padding-right: 16px; }
 
 .complaints-table thead {
     background: #1e2d4a;

@@ -876,6 +876,16 @@ function viewComplaint(c) {
         <div class="detail-row"><span class="detail-label">Anonymous</span><span class="detail-value">${c.is_anonymous ? 'Yes' : 'No'}</span></div>
         <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusBadge(c.status)}</span></div>
         <div class="detail-row"><span class="detail-label">Submitted At</span><span class="detail-value">${formatDate(c.submitted_at)}</span></div>
+        <div style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px 14px;">
+                <div style="font-size:11px;color:#a0b4cc;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">⚖️ Legal Action</div>
+                <div style="font-size:13px;">${c.legal_consent === 'yes' ? '<span style="color:#4f9eff;font-weight:700;">✅ Yes — Wants to proceed legally</span>' : c.legal_consent === 'no' ? '<span style="color:#e63946;font-weight:700;">❌ No — Does not want legal action</span>' : '<span style="color:#6b7280;">— Not answered</span>'}</div>
+            </div>
+            <div style="flex:1;min-width:160px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px 14px;">
+                <div style="font-size:11px;color:#a0b4cc;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">📢 Publish Consent</div>
+                <div style="font-size:13px;">${c.publish_consent === 'yes' ? '<span style="color:#2ecc71;font-weight:700;">✅ Yes — Agreed to publish</span>' : c.publish_consent === 'no' ? '<span style="color:#e63946;font-weight:700;">❌ No — Does not want case published</span>' : '<span style="color:#6b7280;">— Not answered</span>'}</div>
+            </div>
+        </div>
         <div class="detail-label" style="margin-top:15px;display:block">Description</div>
         <div class="desc-box">${c.description || '—'}</div>
         <div class="detail-label" style="margin-top:18px;display:block"><i class="fas fa-paperclip" style="color:#4f9eff"></i> Evidence Files</div>

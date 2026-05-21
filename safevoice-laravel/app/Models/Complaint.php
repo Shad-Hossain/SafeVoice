@@ -9,6 +9,7 @@ class Complaint extends Model
        'is_anonymous','status','admin_message','assigned_officer_code',
         'user_name','user_phone','user_email','user_address',
         'assigned_pi_id','pi_assigned_at','pi_email_sent','user_id','evidence_files',
+        'legal_consent','publish_consent',
     ];
     protected $casts = ['evidence_files'=>'array','is_anonymous'=>'boolean','pi_email_sent'=>'boolean'];
     public $timestamps = false;

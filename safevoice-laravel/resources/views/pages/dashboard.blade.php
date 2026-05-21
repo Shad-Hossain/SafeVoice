@@ -85,10 +85,10 @@
             <div class="complaints-table">
                 <table>
                     <thead>
-                        <tr><th>Complaint ID</th><th>Type</th><th>Location</th><th>Date</th><th>Anonymous</th><th>Status</th><th>Action</th></tr>
+                        <tr><th>Complaint ID</th><th>Type</th><th>Location</th><th>Date</th><th>Anonymous</th><th>Status</th><th>Consent</th><th>Action</th></tr>
                     </thead>
                     <tbody id="all-tbody">
-                        <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-secondary)"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                        <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-secondary)"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -304,7 +304,7 @@ async function loadComplaints() {
                     <a href="/track?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> View</a>
                     &nbsp;
                     <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
-                    ${(c.status === 'PI Payment Pending' || c.status === 'PI Notification Sent') && (!c.payment_deadline || new Date(c.payment_deadline) > new Date()) ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
+                    ${(['PI Payment Pending','PI Notification Sent','PI Review Pending'].includes(c.status)) && (!c.payment_deadline || new Date(c.payment_deadline) > new Date()) ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;white-space:nowrap;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
                 </td>
             </tr>`).join('');
     } catch(e) {
@@ -491,7 +491,7 @@ function closeActiveSosModal() {
     if (modal) modal.style.display = 'none';
 }
 
-
+function openResponderEvidenceModal(sosId) {
     _respEvidenceSosId = sosId;
     const overlay = document.getElementById('resp-ev-overlay');
     if (!overlay) return;
@@ -500,6 +500,7 @@ function closeActiveSosModal() {
     const msg = document.getElementById('resp-ev-msg');
     if (msg) msg.style.display = 'none';
     overlay.style.display = 'flex';
+}
 
 function previewRespEvFile(input) {
     const preview = document.getElementById('resp-ev-preview');
@@ -576,28 +577,46 @@ async function loadAllComplaints() {
         const tbody = document.getElementById('all-tbody');
 
         if (!data.complaints || !data.complaints.length) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-secondary)">No complaints yet. <a href="/complaint" style="color:#4f9eff">Submit one!</a></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-secondary)">No complaints yet. <a href="/complaint" style="color:#4f9eff">Submit one!</a></td></tr>';
             return;
         }
-        tbody.innerHTML = data.complaints.map(c => `
+        tbody.innerHTML = data.complaints.map(c => {
+            // Consent badge
+            const lc = c.legal_consent;
+            const pc = c.publish_consent;
+            let consentHtml = '';
+            if (lc === null && pc === null) {
+                consentHtml = '<span style="font-size:11px;color:#4a5568;">—</span>';
+            } else {
+                const lBadge = lc === 'yes'
+                    ? '<span style="font-size:10px;background:#4f9eff22;color:#4f9eff;border:1px solid #4f9eff44;border-radius:20px;padding:1px 7px;white-space:nowrap;">⚖️ Legal</span>'
+                    : '<span style="font-size:10px;background:#e6394622;color:#e63946;border:1px solid #e6394644;border-radius:20px;padding:1px 7px;white-space:nowrap;">⚖️ No Legal</span>';
+                const pBadge = pc === 'yes'
+                    ? '<span style="font-size:10px;background:#2ecc7122;color:#2ecc71;border:1px solid #2ecc7144;border-radius:20px;padding:1px 7px;white-space:nowrap;">📢 Publish</span>'
+                    : '<span style="font-size:10px;background:#e6394622;color:#e63946;border:1px solid #e6394644;border-radius:20px;padding:1px 7px;white-space:nowrap;">📢 No Publish</span>';
+                consentHtml = '<div style="display:flex;flex-direction:column;gap:3px;">' + lBadge + pBadge + '</div>';
+            }
+
+            return `
             <tr>
                 <td><strong style="color:#4f9eff">${c.complaint_id}</strong></td>
                 <td>${formatType(c.type)}</td>
-                <td style="font-size:12px;color:var(--text-secondary)">${c.location || '—'}</td>
+                <td style="font-size:12px;color:var(--text-secondary);word-break:break-word;max-width:130px;">${c.location || '—'}</td>
                 <td style="font-size:12px;color:var(--text-secondary)">${formatDate(c.submitted_at)}</td>
                 <td style="text-align:center">${c.is_anonymous == 1 ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:var(--text-secondary)"></i>'}</td>
                 <td>${statusBadge(c.status)}</td>
+                <td>${consentHtml}</td>
                 <td style="white-space:nowrap;">
                     <a href="/track?id=${c.complaint_id}" class="btn-view"><i class="fas fa-eye"></i> Track</a>
                     &nbsp;
                     <button class="btn-view" style="background:#1a3a2a;border-color:#2ecc71;color:#2ecc71;" onclick="openEvidenceModal('${c.complaint_id}')"><i class="fas fa-paperclip"></i> Evidence</button>
-                    ${(c.status === 'PI Payment Pending' || c.status === 'PI Notification Sent') && (!c.payment_deadline || new Date(c.payment_deadline) > new Date()) ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
+                    ${(['PI Payment Pending','PI Notification Sent','PI Review Pending'].includes(c.status)) && (!c.payment_deadline || new Date(c.payment_deadline) > new Date()) ? `&nbsp;<button class="btn-view" style="background:#2d1a4a;border-color:#a855f7;color:#c084fc;white-space:nowrap;" onclick="openPaymentForComplaint('${c.complaint_id}')"><i class="fas fa-credit-card"></i> Pay for PI</button>` : ''}
                 </td>
-            </tr>`).join('');
+            </tr>`; }).join('');
     } catch(e) {
         console.error('loadAllComplaints error:', e);
         document.getElementById('all-tbody').innerHTML =
-            '<tr><td colspan="7" style="text-align:center;padding:30px;color:#e63946"><i class="fas fa-exclamation-circle"></i> Could not load. <a href="#" onclick="loadAllComplaints()" style="color:#4f9eff">Retry</a></td></tr>';
+            '<tr><td colspan="8" style="text-align:center;padding:30px;color:#e63946"><i class="fas fa-exclamation-circle"></i> Could not load. <a href="#" onclick="loadAllComplaints()" style="color:#4f9eff">Retry</a></td></tr>';
     }
 }
 

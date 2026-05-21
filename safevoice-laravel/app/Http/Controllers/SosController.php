@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 use App\Models\SosAlert;
 use App\Models\SosNotification;
 use App\Models\SosResponder;
@@ -634,7 +635,7 @@ public function submitResponderEvidence(Request $request)
                     'created_at'     => $a->created_at,
                     'responder_count'=> count($responderIds),
                     'i_responded'    => in_array((int)$userId, $responderIds),
-                    'minutes_ago'    => now()->diffInMinutes($a->created_at),
+                    'minutes_ago'    => $a->created_at ? (int) now()->diffInMinutes(\Carbon\Carbon::parse($a->created_at)) : null,
                 ];
             });
 

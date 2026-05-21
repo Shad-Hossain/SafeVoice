@@ -243,6 +243,78 @@
     </div>
 </div>
 
+<!-- CONSENT MODAL 1: Legal -->
+<div class="modal-overlay" id="consentLegalModal" style="display:none;">
+    <div class="modal-box" style="max-width:460px;text-align:center;">
+        <div style="width:60px;height:60px;background:#4f9eff15;border:2px solid #4f9eff44;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <i class="fas fa-gavel" style="font-size:24px;color:#4f9eff;"></i>
+        </div>
+        <h2 style="color:#fff;font-size:18px;margin:0 0 10px;">Legal Action Consent</h2>
+        <p style="color:#a0b4cc;font-size:14px;line-height:1.7;margin:0 0 24px;">
+            Are you planning to <strong style="color:#fff;">move forward legally</strong> with this case?<br>
+            <span style="font-size:12px;color:#6b7280;">This helps us assess the severity and prioritize your complaint.</span>
+        </p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+            <button onclick="handleLegalConsent('yes')"
+                style="flex:1;max-width:160px;background:#4f9eff;border:none;color:#fff;padding:12px 20px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-check"></i> Yes
+            </button>
+            <button onclick="handleLegalConsent('no')"
+                style="flex:1;max-width:160px;background:#1e2d4a;border:1px solid #2a3f5f;color:#a0b4cc;padding:12px 20px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-times"></i> No
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CONSENT MODAL 2: Publish -->
+<div class="modal-overlay" id="consentPublishModal" style="display:none;">
+    <div class="modal-box" style="max-width:460px;text-align:center;">
+        <div style="width:60px;height:60px;background:#2ecc7115;border:2px solid #2ecc7144;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <i class="fas fa-share-alt" style="font-size:24px;color:#2ecc71;"></i>
+        </div>
+        <h2 style="color:#fff;font-size:18px;margin:0 0 10px;">Social Media Publication Consent</h2>
+        <p style="color:#a0b4cc;font-size:14px;line-height:1.7;margin:0 0 24px;">
+            If your case is <strong style="color:#2ecc71;">valid and approved</strong> by our admin, your case will be <strong style="color:#fff;">published across all social media platforms</strong> through SafeVoice to raise public awareness.<br>
+            <span style="font-size:12px;color:#6b7280;">Do you agree to this publication?</span>
+        </p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+            <button onclick="handlePublishConsent('yes')"
+                style="flex:1;max-width:160px;background:#2ecc71;border:none;color:#fff;padding:12px 20px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-check"></i> Yes, Agree
+            </button>
+            <button onclick="handlePublishConsent('no')"
+                style="flex:1;max-width:160px;background:#1e2d4a;border:1px solid #2a3f5f;color:#a0b4cc;padding:12px 20px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-times"></i> No
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- AUTO-REJECT WARNING MODAL -->
+<div class="modal-overlay" id="autoRejectModal" style="display:none;">
+    <div class="modal-box" style="max-width:420px;text-align:center;">
+        <div style="width:60px;height:60px;background:#e6394615;border:2px solid #e6394644;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <i class="fas fa-exclamation-triangle" style="font-size:24px;color:#e63946;"></i>
+        </div>
+        <h2 style="color:#e63946;font-size:18px;margin:0 0 10px;">Complaint Will Be Rejected</h2>
+        <p style="color:#a0b4cc;font-size:14px;line-height:1.7;margin:0 0 20px;">
+            Since you declined both legal action and social media publication, your complaint will be <strong style="color:#e63946;">automatically rejected</strong>.<br><br>
+            <span style="font-size:12px;color:#6b7280;">A complaint without any action intent cannot be processed by our system.</span>
+        </p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+            <button onclick="proceedWithRejection()"
+                style="flex:1;max-width:180px;background:#e63946;border:none;color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">
+                Submit Anyway
+            </button>
+            <button onclick="cancelConsent()"
+                style="flex:1;max-width:180px;background:#1e2d4a;border:1px solid #2a3f5f;color:#a0b4cc;padding:11px 18px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">
+                Go Back
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- SUCCESS MODAL -->
 <div class="modal-overlay" id="successModal">
     <div class="modal-box success-modal">
@@ -448,7 +520,49 @@ async function runAiAnalysis(description) {
 }
 
 // ── SUBMIT ───────────────────────────────────────────────────
-async function submitComplaint() {
+// ── Consent Flow ─────────────────────────────────────────────
+let _consentLegal   = null;  // 'yes' | 'no'
+let _consentPublish = null;  // 'yes' | 'no'
+
+function submitComplaint() {
+    // Reset consent values and show first modal
+    _consentLegal   = null;
+    _consentPublish = null;
+    document.getElementById('consentLegalModal').style.display = 'flex';
+}
+
+function handleLegalConsent(choice) {
+    _consentLegal = choice;
+    document.getElementById('consentLegalModal').style.display = 'none';
+    document.getElementById('consentPublishModal').style.display = 'flex';
+}
+
+function handlePublishConsent(choice) {
+    _consentPublish = choice;
+    document.getElementById('consentPublishModal').style.display = 'none';
+
+    // দুটোতেই 'no' → auto-reject warning
+    if (_consentLegal === 'no' && _consentPublish === 'no') {
+        document.getElementById('autoRejectModal').style.display = 'flex';
+        return;
+    }
+
+    // Otherwise proceed with actual submission
+    doActualSubmit();
+}
+
+function proceedWithRejection() {
+    document.getElementById('autoRejectModal').style.display = 'none';
+    doActualSubmit();
+}
+
+function cancelConsent() {
+    document.getElementById('autoRejectModal').style.display = 'none';
+    _consentLegal   = null;
+    _consentPublish = null;
+}
+
+async function doActualSubmit() {
     const btn      = document.getElementById('submitBtn');
     const isAnon   = document.getElementById('anonymousToggle').checked;
     const svUser   = JSON.parse(localStorage.getItem('sv_user') || '{}');
@@ -457,12 +571,14 @@ async function submitComplaint() {
     btn.innerHTML = '<i class="fas fa-spinner"></i> Submitting...';
 
     const payload = {
-        type:          document.getElementById('incidentType').value,
-        incident_date: document.getElementById('incidentDate').value,
-        location:      document.getElementById('incidentLocation').value,
-        description:   document.getElementById('description').value.trim(),
-        is_anonymous:  isAnon,
-        user_id:       svUser.id || null
+        type:            document.getElementById('incidentType').value,
+        incident_date:   document.getElementById('incidentDate').value,
+        location:        document.getElementById('incidentLocation').value,
+        description:     document.getElementById('description').value.trim(),
+        is_anonymous:    isAnon,
+        user_id:         svUser.id || null,
+        legal_consent:   _consentLegal,
+        publish_consent: _consentPublish,
     };
 
     let complaint_id    = '';
@@ -486,7 +602,6 @@ async function submitComplaint() {
         // ── Anonymous token localStorage e save koro ──────────
         if (isAnon && anonymous_token) {
             const anonList = JSON.parse(localStorage.getItem('sv_anon_complaints') || '[]');
-            // Same complaint_id thakle replace koro
             const filtered = anonList.filter(c => c.complaint_id !== complaint_id);
             filtered.push({
                 complaint_id:    complaint_id,
@@ -505,7 +620,7 @@ async function submitComplaint() {
                 complaint_id: complaint_id,
                 submitted_at: new Date().toISOString(),
                 type:         payload.type,
-                status:       'Submitted',
+                status:       data.status || 'Submitted',
             });
             localStorage.setItem('sv_my_complaints', JSON.stringify(myComplaints.slice(0, 50)));
         }

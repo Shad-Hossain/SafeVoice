@@ -166,6 +166,22 @@ async function openModal(id) {
     document.getElementById('dReporter').textContent = anon ? '🔒 Hidden (Anonymous)' : (c.reporter_name || 'User #'+c.user_id);
     document.getElementById('dAnon').textContent     = anon ? 'Yes' : 'No';
     document.getElementById('dDesc').textContent     = c.description || '—';
+
+    // ── Consent fields ────────────────────────────────────────
+    const lc = c.legal_consent;
+    const pc = c.publish_consent;
+    const legalEl   = document.getElementById('dLegalConsent');
+    const publishEl = document.getElementById('dPublishConsent');
+    if (legalEl) {
+        if      (lc === 'yes') legalEl.innerHTML = '<span style="color:#4f9eff;font-weight:700;font-size:14px;">✅ Yes — Wants to proceed legally</span>';
+        else if (lc === 'no')  legalEl.innerHTML = '<span style="color:#e63946;font-weight:700;font-size:14px;">❌ No — Does not want legal action</span>';
+        else                   legalEl.innerHTML = '<span style="color:#6b7280;font-size:13px;">— Not answered</span>';
+    }
+    if (publishEl) {
+        if      (pc === 'yes') publishEl.innerHTML = '<span style="color:#2ecc71;font-weight:700;font-size:14px;">✅ Yes — Agreed to publish on social media</span>';
+        else if (pc === 'no')  publishEl.innerHTML = '<span style="color:#e63946;font-weight:700;font-size:14px;">❌ No — Does not want case published</span>';
+        else                   publishEl.innerHTML = '<span style="color:#6b7280;font-size:13px;">— Not answered</span>';
+    }
     const sel = document.getElementById('statusUpdate');
     sel.value = c.status || 'Submitted';
     document.getElementById('adminMsgInput').value = c.admin_message || '';
