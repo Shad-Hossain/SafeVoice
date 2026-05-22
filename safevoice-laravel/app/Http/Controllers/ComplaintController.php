@@ -105,7 +105,20 @@ class ComplaintController extends Controller
         if (!$isAnonymous) {
             User::where('id', $userId)->increment('complaints_count');
         }
-
+if ($complaint->user_id) {
+    \App\Models\UserNotification::notify(
+        $complaint->user_id,
+        'complaint_submitted',
+        '📋 Complaint Submitted',
+        "তোমার complaint {$complaint->complaint_id} সফলভাবে submit হয়েছে। আমরা শীঘ্রই review করব।",
+        [
+            'complaint_id' => $complaint->complaint_id,
+            'action_url'   => '/track?id=' . $complaint->complaint_id,
+            'icon'         => '📋',
+        ]
+    );
+}
+ 
         return response()->json([
             'success'      => true,
             'complaint_id' => $complaintId,
@@ -167,6 +180,45 @@ class ComplaintController extends Controller
             \App\Models\PrivateInvestigator::where('id', $complaint->assigned_pi_id)
                 ->where('active_cases', '>', 0)
                 ->decrement('active_cases');
+
+            // ── Capacity freed up → pending cases গুলো auto-assign করো ──
+            // যেসব case payment হয়ে গেছে কিন্তু সব PI full ছিল বলে আটকে আছে
+            $pendingCases = \App\Models\Complaint::where('status', 'PI Payment Pending Confirmation')
+                ->orderBy('submitted_at') // পুরনো case আগে পাবে (FIFO)
+                ->get();
+
+            if ($pendingCases->isNotEmpty()) {
+                $assignmentController = new \App\Http\Controllers\PiCaseAssignmentController();
+
+                foreach ($pendingCases as $pending) {
+                    // প্রতিটা case এর জন্য আবার check করো PI available কিনা
+                    // (একটা PI একসাথে একটার বেশি নিতে পারবে না)
+                    $hasCapacity = \App\Models\PrivateInvestigator::where('is_active', true)
+                        ->where('active_cases', '<', 10)
+                        ->exists();
+
+                    if (!$hasCapacity) break; // আর কোনো PI নেই, বাকিগুলো next time
+
+                    $result = $assignmentController->sendToNextPi($pending->complaint_id);
+
+                    if ($result['success']) {
+                        // User কে জানাও যে এখন investigator খোঁজা শুরু হয়েছে
+                        if ($pending->user_id) {
+                            \App\Models\UserNotification::notify(
+                                $pending->user_id,
+                                'status_update',
+                                '🔄 Investigator Search Started',
+                                "তোমার complaint {$pending->complaint_id} এর জন্য Investigator খোঁজা শুরু হয়েছে। শীঘ্রই update পাবে।",
+                                [
+                                    'complaint_id' => $pending->complaint_id,
+                                    'action_url'   => '/track?id=' . $pending->complaint_id,
+                                    'icon'         => '🔄',
+                                ]
+                            );
+                        }
+                    }
+                }
+            }
         }
 
         // FCM Push — status change notification to user
@@ -180,7 +232,31 @@ class ComplaintController extends Controller
                 'Resolved'                     => ['icon' => '🎉', 'msg' => 'Your complaint has been resolved. Thank you for reporting.'],
                 'Rejected'                     => ['icon' => '❌', 'msg' => 'Your complaint could not be processed. Please contact support for details.'],
             ];
-
+if ($complaint->user_id) {
+    $statusNotifMessages = [
+        'Under Review'                  => ['icon' => '🔍', 'title' => '🔍 Complaint Under Review',           'msg' => "তোমার complaint {$complaint->complaint_id} এখন review এ আছে।"],
+        'PI Notification Sent'          => ['icon' => '🕵️', 'title' => '🕵️ Private Investigator Notification', 'msg' => "তোমার complaint {$complaint->complaint_id} এর জন্য PI review শুরু হয়েছে।"],
+        'PI Payment Confirmed'          => ['icon' => '💳', 'title' => '💳 Payment Confirmed',                 'msg' => "Payment confirmed। শীঘ্রই PI assign হবে।"],
+        'Private Investigator Assigned' => ['icon' => '✅', 'title' => '✅ PI Assigned',                        'msg' => "তোমার complaint {$complaint->complaint_id} এ একজন Private Investigator assign হয়েছেন।"],
+        'Resolved'                      => ['icon' => '🎉', 'title' => '🎉 Complaint Resolved',                 'msg' => "তোমার complaint {$complaint->complaint_id} resolve হয়েছে। ধন্যবাদ!"],
+        'Rejected'                      => ['icon' => '❌', 'title' => '❌ Complaint Rejected',                 'msg' => "তোমার complaint {$complaint->complaint_id} process করা সম্ভব হয়নি। Support এ যোগাযোগ করো।"],
+    ];
+ 
+    $notifInfo = $statusNotifMessages[$request->status] ?? null;
+    if ($notifInfo) {
+        \App\Models\UserNotification::notify(
+            $complaint->user_id,
+            'status_update',
+            $notifInfo['title'],
+            $notifInfo['msg'],
+            [
+                'complaint_id' => $complaint->complaint_id,
+                'action_url'   => '/track?id=' . $complaint->complaint_id,
+                'icon'         => $notifInfo['icon'],
+            ]
+        );
+    }
+}
             $info = $statusMessages[$request->status] ?? ['icon' => '🔔', 'msg' => 'Your complaint status has been updated.'];
 
             FcmController::sendToUser(

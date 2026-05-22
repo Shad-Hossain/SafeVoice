@@ -112,6 +112,16 @@ Route::get('/admin/payments', [PrivateInvestigatorController::class, 'pendingPay
 // ── Super Admin PI visibility ─────────────────────────────────
 Route::get('/super-admin/pi-cases',      [SuperAdminController::class, 'piCases']);
 Route::post('/super-admin/add-pi',       [PrivateInvestigatorController::class, 'store']);
+
+// ── Super Admin Notifications ─────────────────────────────────
+Route::get('/super-admin/notifications',             [SuperAdminController::class, 'notifications']);
+Route::get('/super-admin/notifications/unread-count',[SuperAdminController::class, 'notificationsUnreadCount']);
+Route::post('/super-admin/notifications/mark-read',  [SuperAdminController::class, 'notificationsMarkRead']);
+
+// ── Super Admin Refunds ───────────────────────────────────────
+Route::get('/super-admin/refunds',                   [SuperAdminController::class, 'refunds']);
+Route::get('/super-admin/refunds/pending-count',     [SuperAdminController::class, 'refundsPendingCount']);
+Route::post('/super-admin/refunds/mark-processed',   [SuperAdminController::class, 'markRefundProcessed']);
 Route::post('/super-admin/pi/update',    [PrivateInvestigatorController::class, 'update']);
 Route::post('/super-admin/pi/toggle',    [PrivateInvestigatorController::class, 'toggle']);
 Route::post('/super-admin/pi/delete',    [PrivateInvestigatorController::class, 'destroy']);
@@ -148,3 +158,10 @@ Route::get('/evidence-request/expired',        [EvidenceRequestController::class
 // ── FCM Push Notifications ─────────────────────────────────────
 Route::post('/fcm/register-token',   [\App\Http\Controllers\FcmController::class, 'registerToken']);
 Route::post('/fcm/unregister-token', [\App\Http\Controllers\FcmController::class, 'unregisterToken']);
+
+use App\Http\Controllers\UserNotificationController;
+
+Route::get('/notifications',              [UserNotificationController::class, 'index']);
+Route::get('/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
+Route::post('/notifications/mark-read',   [UserNotificationController::class, 'markRead']);
+Route::delete('/notifications/{id}',      [UserNotificationController::class, 'destroy']);

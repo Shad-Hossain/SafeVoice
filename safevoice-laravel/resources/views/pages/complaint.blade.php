@@ -275,7 +275,7 @@
         </div>
         <h2 style="color:#fff;font-size:18px;margin:0 0 10px;">Social Media Publication Consent</h2>
         <p style="color:#a0b4cc;font-size:14px;line-height:1.7;margin:0 0 24px;">
-            If your case is <strong style="color:#2ecc71;">valid and approved</strong> by our admin, your case will be <strong style="color:#fff;">published across all social media platforms</strong> through SafeVoice to raise public awareness.<br>
+            If your case is <strong style="color:#2ecc71;">valid and approved</strong> by our admin, your case will be <strong style="color:#fff;">published across all social media platforms</strong> through SafeVoice to raise public awareness and If your case is fake you'll get 30 days notice period to prove that your case is not fake, if you fail to prove you will be exposed with your false case through SafeVoice<br>
             <span style="font-size:12px;color:#6b7280;">Do you agree to this publication?</span>
         </p>
         <div style="display:flex;gap:12px;justify-content:center;">

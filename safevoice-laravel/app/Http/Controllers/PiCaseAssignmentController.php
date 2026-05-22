@@ -9,7 +9,9 @@ use App\Models\PiCaseAssignment;
 use App\Models\User;
 use App\Models\SuperAdmin;
 use App\Models\ComplaintEvidence;
- use App\Models\PiPayment;
+use App\Models\PiPayment;
+use App\Models\UserNotification;
+use App\Models\SuperAdminNotification;
 /**
  * PI Case Assignment Controller
  * ─────────────────────────────
@@ -75,6 +77,22 @@ class PiCaseAssignmentController extends Controller
                 'status'              => 'PI Assignment Failed',
                 'current_pi_email_id' => null,
             ]);
+
+            // ── In-app notification: user কে জানাও refund আসছে ──
+            if ($complaint->user_id) {
+                UserNotification::notify(
+                    $complaint->user_id,
+                    'refund_initiated',
+                    '💰 Refund Processing',
+                    "দুঃখিত! Complaint {$complaint->complaint_id} এর জন্য কোনো PI পাওয়া যায়নি। তোমার payment ৩-৫ কার্যদিবসের মধ্যে refund হবে।",
+                    [
+                        'complaint_id' => $complaint->complaint_id,
+                        'action_url'   => '/dashboard',
+                        'icon'         => '💰',
+                    ]
+                );
+            }
+
             return [
                 'success' => false,
                 'message' => 'All PIs rejected. Super Admin notified. User refund email sent.',
@@ -236,6 +254,21 @@ return $this->htmlResponse(
 
         // পরের PI তে পাঠাও
         $result = $this->sendToNextPi($complaint->complaint_id);
+
+        // ── In-app notification: user কে জানাও search চলছে ──
+        if ($complaint->user_id && $result['success']) {
+            UserNotification::notify(
+                $complaint->user_id,
+                'status_update',
+                '🔄 Investigator Search Ongoing',
+                "তোমার complaint {$complaint->complaint_id} এর জন্য আমরা আরেকজন Investigator খুঁজছি। শীঘ্রই update পাবে।",
+                [
+                    'complaint_id' => $complaint->complaint_id,
+                    'action_url'   => '/track?id=' . $complaint->complaint_id,
+                    'icon'         => '🔄',
+                ]
+            );
+        }
 
         if ($result['success']) {
             $msg = "You rejected case {$complaint->complaint_id}. It has been forwarded to the next available investigator.";
@@ -674,6 +707,18 @@ HTML;
             'Super Admin',
             "🔴 ACTION REQUIRED: All PIs Rejected Case {$complaint->complaint_id}",
             $html
+        );
+
+        // ── In-app notification: super admin dashboard এ দেখাবে ──
+        SuperAdminNotification::notify(
+            'all_pi_rejected',
+            '🔴 All PIs Rejected — Manual Action Required',
+            "Case {$complaint->complaint_id} ({$type}) এর জন্য সব {$rejectedCount} জন PI reject করেছে। Manual assignment দরকার।",
+            [
+                'complaint_id' => $complaint->complaint_id,
+                'action_url'   => '/super-admin/dashboard',
+                'icon'         => '⚠️',
+            ]
         );
     }
 

@@ -3,6 +3,206 @@
 @section('styles')
 <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
+<style>
+/* ══ NOTIFICATION BELL ══════════════════════════════════════════ */
+.notif-bell-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+.notif-bell-btn {
+    position: relative;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #a0b4cc;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+    margin-right: 10px;
+}
+.notif-bell-btn:hover {
+    background: rgba(79,158,255,0.15);
+    border-color: #4f9eff55;
+    color: #4f9eff;
+}
+.notif-bell-btn.has-unread {
+    color: #4f9eff;
+    animation: bellShake 2.5s ease infinite;
+}
+@keyframes bellShake {
+    0%,100% { transform: rotate(0deg); }
+    10%      { transform: rotate(-12deg); }
+    20%      { transform: rotate(12deg); }
+    30%      { transform: rotate(-8deg); }
+    40%      { transform: rotate(8deg); }
+    50%      { transform: rotate(0deg); }
+}
+.notif-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #e63946;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid #0d1117;
+    line-height: 1;
+}
+.notif-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 360px;
+    max-height: 480px;
+    background: #111827;
+    border: 1px solid #1e2d4a;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(79,158,255,.08);
+    z-index: 9999;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: notifFadeIn .18s ease;
+}
+@keyframes notifFadeIn {
+    from { opacity: 0; transform: translateY(-8px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+.notif-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #1e2d4a;
+    flex-shrink: 0;
+}
+.notif-panel-title {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.notif-panel-title i { color: #4f9eff; }
+.notif-mark-all-btn {
+    background: none;
+    border: 1px solid #2a3f5f;
+    color: #7b8fa6;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.notif-mark-all-btn:hover {
+    background: rgba(79,158,255,.1);
+    border-color: #4f9eff55;
+    color: #4f9eff;
+}
+.notif-panel-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 6px 0;
+}
+.notif-panel-body::-webkit-scrollbar { width: 4px; }
+.notif-panel-body::-webkit-scrollbar-track { background: transparent; }
+.notif-panel-body::-webkit-scrollbar-thumb { background: #2a3f5f; border-radius: 2px; }
+.notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background .15s;
+    border-bottom: 1px solid #0d1117;
+    position: relative;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: rgba(255,255,255,.03); }
+.notif-item.unread { background: rgba(79,158,255,.05); }
+.notif-item.unread::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: #4f9eff;
+    border-radius: 0 2px 2px 0;
+}
+.notif-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.notif-content { flex: 1; min-width: 0; }
+.notif-title {
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.notif-item.unread .notif-title { color: #fff; }
+.notif-msg {
+    color: #7b8fa6;
+    font-size: 12px;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.notif-time { color: #4f5e70; font-size: 11px; margin-top: 5px; }
+.notif-delete-btn {
+    background: none;
+    border: none;
+    color: #4f5e70;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: all .2s;
+    flex-shrink: 0;
+    font-size: 12px;
+}
+.notif-item:hover .notif-delete-btn { opacity: 1; }
+.notif-delete-btn:hover { color: #e63946; background: rgba(230,57,70,.1); }
+.notif-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #4f5e70;
+}
+.notif-empty i { font-size: 36px; margin-bottom: 10px; display: block; }
+.notif-empty p { font-size: 13px; margin: 0; }
+.notif-loading { text-align: center; padding: 30px; color: #4f5e70; font-size: 13px; }
+@media (max-width: 500px) {
+    .notif-panel { width: calc(100vw - 24px); right: -16px; }
+}
+</style>
 @endsection
 
 @section('content')
@@ -33,9 +233,28 @@
                     <h1>Welcome back, <span id="welcomeName">User</span>! 👋</h1>
                     <p>Here's what's happening with your complaints</p>
                 </div>
-                <a href="/complaint" class="btn-new-complaint"><i class="fas fa-plus"></i> New Complaint</a>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <!-- 🔔 BELL NOTIFICATION ICON -->
+                    <div class="notif-bell-wrapper" id="notifBellWrapper">
+                        <button class="notif-bell-btn" id="notifBellBtn" onclick="toggleNotifPanel()" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+                        </button>
+                        <div class="notif-panel" id="notifPanel" style="display:none;">
+                            <div class="notif-panel-header">
+                                <span class="notif-panel-title"><i class="fas fa-bell"></i> Notifications</span>
+                                <button class="notif-mark-all-btn" onclick="markAllRead()">
+                                    <i class="fas fa-check-double"></i> সব পড়েছি
+                                </button>
+                            </div>
+                            <div class="notif-panel-body" id="notifPanelBody">
+                                <div class="notif-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/complaint" class="btn-new-complaint"><i class="fas fa-plus"></i> New Complaint</a>
+                </div>
             </div>
-
             <div class="summary-cards">
                 <div class="summary-card">
                     <div class="card-icon blue"><i class="fas fa-file-alt"></i></div>
@@ -1453,19 +1672,226 @@ async function rejectEvidenceRequest() {
 }
 
 </script>
+
 @endsection
 
 @section('scripts')
 <script src="{{ asset('js/theme.js') }}"></script>
 <script src="{{ asset('js/fcm.js') }}"></script>
 <script>
-    // FCM init — user login করার পরে push notification চালু করো
+    // FCM init
     document.addEventListener('DOMContentLoaded', function() {
         const svUser = localStorage.getItem('sv_user');
         if (svUser) {
-            // Slight delay so page loads first
             setTimeout(() => initFCM(), 3000);
         }
     });
+</script>
+
+{{-- ══ NOTIFICATION BELL JAVASCRIPT ══════════════════════════════════ --}}
+<script>
+// ─── getUserId helper (sv_user থেকে নেয়) ─────────────────────────────
+function getUserId() {
+    try {
+        const u = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        return u.id || u.user_id || null;
+    } catch(e) { return null; }
+}
+
+function getCsrf() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+// ─── State ────────────────────────────────────────────────────────────
+let _notifOpen    = false;
+let _notifLoaded  = false;
+let _pollInterval = null;
+
+// ─── Toggle Panel ─────────────────────────────────────────────────────
+function toggleNotifPanel() {
+    _notifOpen = !_notifOpen;
+    const panel = document.getElementById('notifPanel');
+    if (!panel) return;
+    panel.style.display = _notifOpen ? 'flex' : 'none';
+    if (_notifOpen && !_notifLoaded) loadNotifications();
+}
+
+// Outside click এ close করো
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('notifBellWrapper');
+    if (wrapper && !wrapper.contains(e.target) && _notifOpen) {
+        _notifOpen = false;
+        const p = document.getElementById('notifPanel');
+        if (p) p.style.display = 'none';
+    }
+});
+
+// ─── Load Notifications ───────────────────────────────────────────────
+async function loadNotifications() {
+    const userId = getUserId();
+    if (!userId) return;
+    try {
+        const res  = await fetch(`/api/notifications?user_id=${userId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) return;
+        _notifLoaded = true;
+        renderNotifications(data.notifications);
+        updateBadge(data.unread_count);
+    } catch(e) { console.error('Notification load error:', e); }
+}
+
+// ─── Render ───────────────────────────────────────────────────────────
+function renderNotifications(notifications) {
+    const body = document.getElementById('notifPanelBody');
+    if (!body) return;
+
+    if (!notifications || notifications.length === 0) {
+        body.innerHTML = `<div class="notif-empty">
+            <i class="fas fa-bell-slash"></i>
+            <p>কোনো notification নেই</p>
+        </div>`;
+        return;
+    }
+
+    body.innerHTML = notifications.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" id="notif-${n.id}"
+             onclick="notifClick(${n.id}, '${escJs(n.action_url || '')}')">
+            <div class="notif-icon">${n.icon || '🔔'}</div>
+            <div class="notif-content">
+                <div class="notif-title">${escHtml(n.title)}</div>
+                <div class="notif-msg">${escHtml(n.message)}</div>
+                <div class="notif-time">${timeAgo(n.created_at)}</div>
+            </div>
+            <button class="notif-delete-btn" onclick="deleteNotif(event, ${n.id})" title="Delete">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// ─── Click → Mark Read + Navigate ─────────────────────────────────────
+async function notifClick(id, url) {
+    const userId = getUserId();
+    if (!userId) return;
+    try {
+        await fetch('/api/notifications/mark-read', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrf() },
+            body: JSON.stringify({ id, user_id: userId })
+        });
+    } catch(e) {}
+    const el = document.getElementById(`notif-${id}`);
+    if (el) el.classList.remove('unread');
+    refreshBadge();
+    if (url && url !== 'null' && url.trim() !== '') {
+        window.location.href = url;
+    }
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────
+async function deleteNotif(event, id) {
+    event.stopPropagation();
+    const userId = getUserId();
+    if (!userId) return;
+    try {
+        await fetch(`/api/notifications/${id}?user_id=${userId}`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: { 'X-CSRF-TOKEN': getCsrf() }
+        });
+    } catch(e) {}
+    const el = document.getElementById(`notif-${id}`);
+    if (el) {
+        el.style.transition = 'opacity .2s, transform .2s';
+        el.style.opacity    = '0';
+        el.style.transform  = 'translateX(10px)';
+        setTimeout(() => {
+            el.remove();
+            const body = document.getElementById('notifPanelBody');
+            if (body && body.querySelectorAll('.notif-item').length === 0) {
+                body.innerHTML = `<div class="notif-empty"><i class="fas fa-bell-slash"></i><p>কোনো notification নেই</p></div>`;
+            }
+        }, 200);
+    }
+    refreshBadge();
+}
+
+// ─── Mark All Read ────────────────────────────────────────────────────
+async function markAllRead() {
+    const userId = getUserId();
+    if (!userId) return;
+    try {
+        await fetch('/api/notifications/mark-read', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrf() },
+            body: JSON.stringify({ all: true, user_id: userId })
+        });
+    } catch(e) {}
+    document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+    updateBadge(0);
+}
+
+// ─── Badge ────────────────────────────────────────────────────────────
+function updateBadge(count) {
+    const badge = document.getElementById('notifBadge');
+    const btn   = document.getElementById('notifBellBtn');
+    if (!badge || !btn) return;
+    if (count > 0) {
+        badge.textContent   = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+        btn.classList.add('has-unread');
+    } else {
+        badge.style.display = 'none';
+        btn.classList.remove('has-unread');
+    }
+}
+
+async function refreshBadge() {
+    const userId = getUserId();
+    if (!userId) return;
+    try {
+        const res  = await fetch(`/api/notifications/unread-count?user_id=${userId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success !== undefined) updateBadge(data.count);
+    } catch(e) {}
+}
+
+// ─── Auto Poll every 30s ─────────────────────────────────────────────
+function startNotifPolling() {
+    refreshBadge();
+    _pollInterval = setInterval(() => {
+        refreshBadge();
+        if (_notifOpen) loadNotifications();
+    }, 30000);
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────
+function escHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+function escJs(str) {
+    if (!str) return '';
+    return String(str).replace(/'/g, "\\'").replace(/\n/g, '');
+}
+function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    if (diff < 60)    return 'এইমাত্র';
+    if (diff < 3600)  return Math.floor(diff / 60)   + ' মিনিট আগে';
+    if (diff < 86400) return Math.floor(diff / 3600)  + ' ঘণ্টা আগে';
+    return Math.floor(diff / 86400) + ' দিন আগে';
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    if (getUserId()) startNotifPolling();
+});
 </script>
 @endsection
