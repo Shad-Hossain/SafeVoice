@@ -56,7 +56,6 @@ class ComplaintController extends Controller
     // POST /api/complaints/submit
     public function submit(Request $request)
     {
-        // Session থেকে user_id নাও, না পেলে request body থেকে নাও
         $userId = $request->session()->get('user_id')
                 ?? $request->input('user_id');
 
@@ -79,52 +78,55 @@ class ComplaintController extends Controller
 
         $isAnonymous = $request->boolean('is_anonymous');
 
-        $legalConsent   = $request->input('legal_consent');    // 'yes' | 'no' | null
-        $publishConsent = $request->input('publish_consent');  // 'yes' | 'no' | null
+        $legalConsent   = $request->input('legal_consent');
+        $publishConsent = $request->input('publish_consent');
 
-        // দুটোতেই 'no' দিলে → auto Rejected
         $status = 'Submitted';
         if ($legalConsent === 'no' && $publishConsent === 'no') {
             $status = 'Rejected';
         }
 
         $complaint = Complaint::create([
-            'complaint_id'   => $complaintId,
-            'user_id'        => $isAnonymous ? null : $userId,
-            'type'           => $request->type,
-            'incident_date'  => $incidentDate,
-            'location'       => $request->location ?? '',
-            'description'    => $request->description,
-            'is_anonymous'   => $isAnonymous,
-            'status'         => $status,
-            'legal_consent'  => $legalConsent,
-            'publish_consent'=> $publishConsent,
+            'complaint_id'      => $complaintId,
+            // Anonymous হলে user_id null — admin দেখবে না কে করেছে
+            'user_id'           => $isAnonymous ? null : $userId,
+            // anonymous_user_id সবসময় সেট — user নিজের complaint দেখতে ও notification পেতে পারবে
+            'anonymous_user_id' => $userId,
+            'type'              => $request->type,
+            'incident_date'     => $incidentDate,
+            'location'          => $request->location ?? '',
+            'description'       => $request->description,
+            'is_anonymous'      => $isAnonymous,
+            'status'            => $status,
+            'legal_consent'     => $legalConsent,
+            'publish_consent'   => $publishConsent,
         ]);
 
-        // Anonymous হলে count বাড়বে না — admin track করতে পারবে না
+        // Anonymous হলে complaints_count বাড়বে না (leaderboard এ দেখাবে না)
         if (!$isAnonymous) {
             User::where('id', $userId)->increment('complaints_count');
         }
-if ($complaint->user_id) {
-    \App\Models\UserNotification::notify(
-        $complaint->user_id,
-        'complaint_submitted',
-        '📋 Complaint Submitted',
-        "তোমার complaint {$complaint->complaint_id} সফলভাবে submit হয়েছে। আমরা শীঘ্রই review করব।",
-        [
-            'complaint_id' => $complaint->complaint_id,
-            'action_url'   => '/track?id=' . $complaint->complaint_id,
-            'icon'         => '📋',
-        ]
-    );
-}
- 
+
+        // সব complain submit এর notification পাঠাও (anonymous বা না)
+        \App\Models\UserNotification::notify(
+            $userId,
+            'complaint_submitted',
+            '📋 Complaint Submitted',
+            "তোমার complaint {$complaint->complaint_id} সফলভাবে submit হয়েছে।" .
+                ($isAnonymous ? ' (Anonymous — তুমি ছাড়া কেউ জানবে না)' : '') .
+                ' আমরা শীঘ্রই review করব।',
+            [
+                'complaint_id' => $complaint->complaint_id,
+                'action_url'   => '/track?id=' . $complaint->complaint_id,
+                'icon'         => '📋',
+            ]
+        );
+
         return response()->json([
             'success'      => true,
             'complaint_id' => $complaintId,
             'message'      => 'Complaint submitted successfully',
         ]);
-       
     }
 
     // POST /api/complaints/update-status
@@ -151,16 +153,7 @@ if ($complaint->user_id) {
             ]);
             $officer->increment('assigned_cases');
 
-            // FCM Push — PI assigned notification
-            if ($complaint->user_id) {
-                FcmController::sendToUser(
-                    $complaint->user_id,
-                    '✅ Private Investigator Assigned',
-                    'A Private Investigator has been assigned to your complaint ' . $complaint->complaint_id . '. Investigation is underway.',
-                    ['type' => 'status_update', 'complaint_id' => $complaint->complaint_id, 'status' => 'Private Investigator Assigned', 'url' => '/track?id=' . $complaint->complaint_id]
-                );
-            }
-
+            $this->notifyUser($complaint, 'Private Investigator Assigned');
             return response()->json(['success' => true, 'message' => 'Status updated. Payment notification sent to user.']);
         }
 
@@ -171,8 +164,6 @@ if ($complaint->user_id) {
             'admin_message' => $request->input('admin_message', ''),
         ]);
 
-        // Case Resolved বা Rejected হলে assigned PI এর active_cases কমাও
-        // (total_cases assign এর সময়ই বেড়েছে, সেটা আর কমবে না)
         if (in_array($request->status, ['Resolved', 'Rejected'])
             && !in_array($oldStatus, ['Resolved', 'Rejected'])
             && $complaint->assigned_pi_id)
@@ -181,142 +172,135 @@ if ($complaint->user_id) {
                 ->where('active_cases', '>', 0)
                 ->decrement('active_cases');
 
-            // ── Capacity freed up → pending cases গুলো auto-assign করো ──
-            // যেসব case payment হয়ে গেছে কিন্তু সব PI full ছিল বলে আটকে আছে
             $pendingCases = \App\Models\Complaint::where('status', 'PI Payment Pending Confirmation')
-                ->orderBy('submitted_at') // পুরনো case আগে পাবে (FIFO)
+                ->orderBy('submitted_at')
                 ->get();
 
             if ($pendingCases->isNotEmpty()) {
                 $assignmentController = new \App\Http\Controllers\PiCaseAssignmentController();
-
                 foreach ($pendingCases as $pending) {
-                    // প্রতিটা case এর জন্য আবার check করো PI available কিনা
-                    // (একটা PI একসাথে একটার বেশি নিতে পারবে না)
                     $hasCapacity = \App\Models\PrivateInvestigator::where('is_active', true)
                         ->where('active_cases', '<', 10)
                         ->exists();
-
-                    if (!$hasCapacity) break; // আর কোনো PI নেই, বাকিগুলো next time
-
+                    if (!$hasCapacity) break;
                     $result = $assignmentController->sendToNextPi($pending->complaint_id);
-
                     if ($result['success']) {
-                        // User কে জানাও যে এখন investigator খোঁজা শুরু হয়েছে
-                        if ($pending->user_id) {
-                            \App\Models\UserNotification::notify(
-                                $pending->user_id,
-                                'status_update',
-                                '🔄 Investigator Search Started',
-                                "তোমার complaint {$pending->complaint_id} এর জন্য Investigator খোঁজা শুরু হয়েছে। শীঘ্রই update পাবে।",
-                                [
-                                    'complaint_id' => $pending->complaint_id,
-                                    'action_url'   => '/track?id=' . $pending->complaint_id,
-                                    'icon'         => '🔄',
-                                ]
-                            );
-                        }
+                        $this->notifyUser($pending, 'pi_search_started');
                     }
                 }
             }
         }
 
-        // FCM Push — status change notification to user
-        if ($complaint->user_id) {
-            $statusMessages = [
-                'Submitted'                    => ['icon' => '📋', 'msg' => 'Your complaint has been received and is being reviewed.'],
-                'Under Review'                 => ['icon' => '🔍', 'msg' => 'Your complaint is now under review by our team.'],
-                'PI Notification Sent'         => ['icon' => '🕵️', 'msg' => 'A Private Investigator review has been initiated for your complaint.'],
-                'PI Payment Confirmed'         => ['icon' => '💳', 'msg' => 'Your payment has been confirmed. PI will be assigned shortly.'],
-                'Private Investigator Assigned'=> ['icon' => '✅', 'msg' => 'A Private Investigator has been assigned to your complaint.'],
-                'Resolved'                     => ['icon' => '🎉', 'msg' => 'Your complaint has been resolved. Thank you for reporting.'],
-                'Rejected'                     => ['icon' => '❌', 'msg' => 'Your complaint could not be processed. Please contact support for details.'],
-            ];
-if ($complaint->user_id) {
-    $statusNotifMessages = [
-        'Under Review'                  => ['icon' => '🔍', 'title' => '🔍 Complaint Under Review',           'msg' => "তোমার complaint {$complaint->complaint_id} এখন review এ আছে।"],
-        'PI Notification Sent'          => ['icon' => '🕵️', 'title' => '🕵️ Private Investigator Notification', 'msg' => "তোমার complaint {$complaint->complaint_id} এর জন্য PI review শুরু হয়েছে।"],
-        'PI Payment Confirmed'          => ['icon' => '💳', 'title' => '💳 Payment Confirmed',                 'msg' => "Payment confirmed। শীঘ্রই PI assign হবে।"],
-        'Private Investigator Assigned' => ['icon' => '✅', 'title' => '✅ PI Assigned',                        'msg' => "তোমার complaint {$complaint->complaint_id} এ একজন Private Investigator assign হয়েছেন।"],
-        'Resolved'                      => ['icon' => '🎉', 'title' => '🎉 Complaint Resolved',                 'msg' => "তোমার complaint {$complaint->complaint_id} resolve হয়েছে। ধন্যবাদ!"],
-        'Rejected'                      => ['icon' => '❌', 'title' => '❌ Complaint Rejected',                 'msg' => "তোমার complaint {$complaint->complaint_id} process করা সম্ভব হয়নি। Support এ যোগাযোগ করো।"],
-    ];
- 
-    $notifInfo = $statusNotifMessages[$request->status] ?? null;
-    if ($notifInfo) {
-        \App\Models\UserNotification::notify(
-            $complaint->user_id,
-            'status_update',
-            $notifInfo['title'],
-            $notifInfo['msg'],
-            [
-                'complaint_id' => $complaint->complaint_id,
-                'action_url'   => '/track?id=' . $complaint->complaint_id,
-                'icon'         => $notifInfo['icon'],
-            ]
-        );
-    }
-}
-            $info = $statusMessages[$request->status] ?? ['icon' => '🔔', 'msg' => 'Your complaint status has been updated.'];
+        $this->notifyUser($complaint, $request->status);
 
-            FcmController::sendToUser(
-                $complaint->user_id,
-                $info['icon'] . ' Complaint ' . $complaint->complaint_id . ' — ' . $request->status,
-                $info['msg'],
-                ['type' => 'status_update', 'complaint_id' => $complaint->complaint_id, 'status' => $request->status, 'url' => '/track?id=' . $complaint->complaint_id]
+        return response()->json(['success' => true, 'message' => 'Status updated to ' . $request->status]);
+    }
+
+    /**
+     * User কে notification পাঠাও — anonymous_user_id দিয়ে চেক করে
+     * anonymous complaint এর user ও notification পাবে
+     */
+    private function notifyUser(Complaint $complaint, string $status): void
+    {
+        // anonymous_user_id আছে তাকেই notify করব (user_id না থাকলেও)
+        $notifyUserId = $complaint->user_id ?? $complaint->anonymous_user_id ?? null;
+        if (!$notifyUserId) return;
+
+        $statusNotifMessages = [
+            'Under Review'                  => ['icon' => '🔍', 'title' => '🔍 Complaint Under Review',           'msg' => "তোমার complaint {$complaint->complaint_id} এখন review এ আছে।"],
+            'PI Notification Sent'          => ['icon' => '🕵️', 'title' => '🕵️ Private Investigator Notification', 'msg' => "তোমার complaint {$complaint->complaint_id} এর জন্য PI review শুরু হয়েছে।"],
+            'PI Payment Confirmed'          => ['icon' => '💳', 'title' => '💳 Payment Confirmed',                 'msg' => "Payment confirmed। শীঘ্রই PI assign হবে।"],
+            'Private Investigator Assigned' => ['icon' => '✅', 'title' => '✅ PI Assigned',                        'msg' => "তোমার complaint {$complaint->complaint_id} এ একজন Private Investigator assign হয়েছেন।"],
+            'Resolved'                      => ['icon' => '🎉', 'title' => '🎉 Complaint Resolved',                 'msg' => "তোমার complaint {$complaint->complaint_id} resolve হয়েছে। ধন্যবাদ!"],
+            'Rejected'                      => ['icon' => '❌', 'title' => '❌ Complaint Rejected',                 'msg' => "তোমার complaint {$complaint->complaint_id} process করা সম্ভব হয়নি। Support এ যোগাযোগ করো।"],
+            'pi_search_started'             => ['icon' => '🔄', 'title' => '🔄 Investigator Search Started',       'msg' => "তোমার complaint {$complaint->complaint_id} এর জন্য Investigator খোঁজা শুরু হয়েছে।"],
+        ];
+
+        $notifInfo = $statusNotifMessages[$status] ?? null;
+        if ($notifInfo) {
+            \App\Models\UserNotification::notify(
+                $notifyUserId,
+                'status_update',
+                $notifInfo['title'],
+                $notifInfo['msg'],
+                [
+                    'complaint_id' => $complaint->complaint_id,
+                    'action_url'   => '/track?id=' . $complaint->complaint_id,
+                    'icon'         => $notifInfo['icon'],
+                ]
             );
         }
 
-        return response()->json(['success' => true, 'message' => 'Status updated to ' . $request->status]);
-       
+        // FCM Push — শুধু non-anonymous user_id এর জন্য (privacy)
+        if ($complaint->user_id) {
+            $statusMessages = [
+                'Submitted'                    => ['icon' => '📋', 'msg' => 'Your complaint has been received.'],
+                'Under Review'                 => ['icon' => '🔍', 'msg' => 'Your complaint is now under review.'],
+                'PI Notification Sent'         => ['icon' => '🕵️', 'msg' => 'A PI review has been initiated.'],
+                'PI Payment Confirmed'         => ['icon' => '💳', 'msg' => 'Payment confirmed. PI will be assigned.'],
+                'Private Investigator Assigned'=> ['icon' => '✅', 'msg' => 'A PI has been assigned to your complaint.'],
+                'Resolved'                     => ['icon' => '🎉', 'msg' => 'Your complaint has been resolved.'],
+                'Rejected'                     => ['icon' => '❌', 'msg' => 'Your complaint could not be processed.'],
+            ];
+            $info = $statusMessages[$status] ?? ['icon' => '🔔', 'msg' => 'Complaint status updated.'];
+            FcmController::sendToUser(
+                $complaint->user_id,
+                $info['icon'] . ' Complaint ' . $complaint->complaint_id . ' — ' . $status,
+                $info['msg'],
+                ['type' => 'status_update', 'complaint_id' => $complaint->complaint_id, 'status' => $status, 'url' => '/track?id=' . $complaint->complaint_id]
+            );
+        }
     }
 
     // GET /api/my-complaints
     public function myComplaints(Request $request)
-{
-    $userId = $request->session()->get('user_id')
-            ?? $request->query('user_id')
-            ?? $request->input('user_id');
+    {
+        $userId = $request->session()->get('user_id')
+                ?? $request->query('user_id')
+                ?? $request->input('user_id');
 
-    if (!$userId) {
-        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        if (!$userId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        // anonymous_user_id দিয়ে খুঁজবে — anonymous complaint ও দেখাবে
+        // কিন্তু admin panel এ user_id = null থাকায় admin জানবে না কে করেছে
+        $complaints = Complaint::where(function($q) use ($userId) {
+                $q->where('user_id', $userId)
+                  ->orWhere('anonymous_user_id', $userId);
+            })
+            ->orderByDesc('submitted_at')
+            ->get();
+
+        return response()->json(['success' => true, 'complaints' => $complaints]);
     }
 
-    $complaints = Complaint::where('user_id', $userId)
-        ->orderByDesc('submitted_at')
-        ->get();
+    // GET /api/track_complaint?id=SV-2026-XXXX
+    public function track(Request $request)
+    {
+        $id = strtoupper(trim($request->query('id', '')));
 
-    return response()->json(['success' => true, 'complaints' => $complaints]);
-}
-// GET /api/track_complaint?id=SV-2026-XXXX
-public function track(Request $request)
-{
-    $id = strtoupper(trim($request->query('id', '')));
+        if (!$id) {
+            return response()->json(['success' => false, 'message' => 'Complaint ID required.'], 400);
+        }
 
-    if (!$id) {
-        return response()->json(['success' => false, 'message' => 'Complaint ID required.'], 400);
+        $complaint = Complaint::where('complaint_id', $id)->first();
+
+        if (!$complaint) {
+            return response()->json(['success' => false, 'message' => 'No complaint found.'], 404);
+        }
+
+        return response()->json([
+            'success'   => true,
+            'complaint' => [
+                'complaint_id' => $complaint->complaint_id,
+                'type'         => $complaint->type,
+                'location'     => $complaint->location,
+                'status'       => $complaint->status,
+                'is_anonymous' => $complaint->is_anonymous,
+                'submitted_at' => $complaint->submitted_at,
+                'incident_date'=> $complaint->incident_date,
+            ],
+        ]);
     }
-
-    $complaint = Complaint::where('complaint_id', $id)->first();
-
-    if (!$complaint) {
-        return response()->json(['success' => false, 'message' => 'No complaint found.'], 404);
-    }
-
-    return response()->json([
-        'success'   => true,
-        'complaint' => [
-            'complaint_id' => $complaint->complaint_id,
-            'type'         => $complaint->type,
-            'location'     => $complaint->location,
-            'status'       => $complaint->status,
-            'is_anonymous' => $complaint->is_anonymous,
-            'submitted_at' => $complaint->submitted_at,
-            'incident_date'=> $complaint->incident_date,
-        ],
-    ]);
-}
-
-
-
 }

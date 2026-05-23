@@ -8,7 +8,9 @@ class Complaint extends Model
         'complaint_id','type','incident_date','location','description',
        'is_anonymous','status','admin_message','assigned_officer_code',
         'user_name','user_phone','user_email','user_address',
-        'assigned_pi_id','pi_assigned_at','pi_email_sent','user_id','evidence_files',
+        'assigned_pi_id','pi_assigned_at','pi_email_sent','user_id',
+        'anonymous_user_id', // anonymous complaint এও user track করার জন্য
+        'evidence_files',
         'legal_consent','publish_consent',
     ];
     protected $casts = ['evidence_files'=>'array','is_anonymous'=>'boolean','pi_email_sent'=>'boolean'];

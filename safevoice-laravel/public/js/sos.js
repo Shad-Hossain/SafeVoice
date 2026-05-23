@@ -126,6 +126,49 @@ function cancelHold() {
 
 // ── ACTIVATE SOS ─────────────────────────────────────────────────
 async function activateSOS() {
+    // Login ছাড়া থাকলে phone number modal দেখাবো
+    const svUserRaw = localStorage.getItem('sv_user');
+    const svUser    = svUserRaw ? JSON.parse(svUserRaw) : {};
+    const userId    = svUser.id || 0;
+
+    if (!userId) {
+        // Login ছাড়া — phone number দিতে বলব
+        showAnonymousSosModal();
+        return;
+    }
+
+    await _doActivateSOS(userId, null, null);
+}
+
+// ── ANONYMOUS SOS MODAL ──────────────────────────────────────────
+function showAnonymousSosModal() {
+    cancelHold(); // Hold animation reset
+    const modal = document.getElementById('anonymousSosModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeAnonymousSosModal() {
+    const modal = document.getElementById('anonymousSosModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function proceedAnonymousSos() {
+    const phoneInput = document.getElementById('anonPhone');
+    const nameInput  = document.getElementById('anonName');
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const name  = nameInput  ? nameInput.value.trim()  : 'Anonymous';
+
+    if (!phone || phone.length < 10) {
+        const errEl = document.getElementById('anonSosErr');
+        if (errEl) { errEl.textContent = 'অনুগ্রহ করে সঠিক phone number দাও।'; errEl.style.display = 'block'; }
+        return;
+    }
+
+    closeAnonymousSosModal();
+    await _doActivateSOS(0, phone, name);
+}
+
+async function _doActivateSOS(userId, contactPhone, contactName) {
     sosActive = true;
     const btn  = document.getElementById('sosBtn');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
@@ -136,17 +179,20 @@ async function activateSOS() {
         btn.querySelector('small').textContent = 'Broadcasting alert';
     }
     updateStatusBar('Sending SOS alert...', true);
-    // sv_user localStorage থেকে user_id নেওয়া — session cookie কাজ না করলেও চলবে
-    const svUserRaw = localStorage.getItem('sv_user');
-    const svUser    = svUserRaw ? JSON.parse(svUserRaw) : {};
-    const userId    = svUser.id || 0;
 
     try {
         // STEP 1: Create SOS
         const createRes  = await fetch('/api/sos/create', {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-            body: JSON.stringify({ latitude: currentLat, longitude: currentLng, location: currentLocation, user_id: userId }),
+            body: JSON.stringify({
+                latitude:      currentLat,
+                longitude:     currentLng,
+                location:      currentLocation,
+                user_id:       userId,
+                contact_phone: contactPhone,
+                contact_name:  contactName,
+            }),
         });
         if (!createRes.ok) {
             showError('Server error (' + createRes.status + '). Please try again.');

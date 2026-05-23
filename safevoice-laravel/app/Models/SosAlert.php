@@ -7,6 +7,7 @@ class SosAlert extends Model
     protected $fillable = [
         'user_id','latitude','longitude','location_text',
         'crime_type','description','status','notification_sent','notified_count',
+        'contact_phone','contact_name', // login ছাড়া SOS এর জন্য
     ];
     protected $casts = ['notification_sent'=>'boolean'];
     public $timestamps = false;

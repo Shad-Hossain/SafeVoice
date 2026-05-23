@@ -361,6 +361,17 @@
     </div>
 </div>
 
+<!-- SOS Detail Modal -->
+<div id="sos-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:999999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#0d1117;border:1px solid #e6394655;border-radius:16px;max-width:460px;width:100%;position:relative;max-height:85vh;display:flex;flex-direction:column;">
+        <div style="padding:16px 20px;border-bottom:1px solid #1e2d4a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <h3 style="margin:0;color:#fff;font-size:15px;font-weight:700;">🚨 SOS Alert Details</h3>
+            <button onclick="closeSosDetailModal()" style="background:none;border:none;color:#a0b4cc;font-size:22px;cursor:pointer;line-height:1;">×</button>
+        </div>
+        <div id="sos-detail-body" style="padding:16px;overflow-y:auto;flex:1;"></div>
+    </div>
+</div>
+
 <!-- Red Floating SOS Button -->
 <style>
 @keyframes sosPulseGlow {
@@ -710,8 +721,11 @@ async function openActiveSosModal() {
                     <span style="font-size:11px;color:#e63946;font-weight:600;">${minsAgo} মি. আগে</span>
                 </div>
                 <div style="font-size:12px;color:#a0b4cc;margin-bottom:10px;"><i class="fas fa-map-marker-alt" style="color:#e63946;margin-right:4px;"></i>${loc.substring(0, 70)}${loc.length > 70 ? '...' : ''}</div>
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
                     <span style="font-size:11px;color:#6b7280;">${a.responder_count} জন respond করেছেন</span>
+                    <button onclick="openSosDetailFromDashboard(${a.id})" style="background:#e63946;border:none;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                        <i class="fas fa-eye"></i> View
+                    </button>
                 </div>
             </div>`;
         }).join('');
@@ -723,6 +737,79 @@ async function openActiveSosModal() {
 
 function closeActiveSosModal() {
     const modal = document.getElementById('active-sos-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// ── SOS Detail Modal from Dashboard ─────────────────────────
+async function openSosDetailFromDashboard(sosId) {
+    // Active SOS modal লুকাই আগে
+    const activeModal = document.getElementById('active-sos-modal');
+    if (activeModal) activeModal.style.display = 'none';
+
+    // Details modal দেখাই
+    const detailModal = document.getElementById('sos-detail-modal');
+    const detailBody  = document.getElementById('sos-detail-body');
+    if (!detailModal || !detailBody) return;
+
+    detailModal.style.display = 'flex';
+    detailBody.innerHTML = '<p style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+
+    try {
+        const res  = await fetch('/api/sos/alerts?sos_id=' + sosId, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success || !data.sos) throw new Error();
+
+        const s = data.sos;
+        const lat = s.latitude;
+        const lng = s.longitude;
+        const mapsUrl = (lat && lng) ? `https://maps.google.com?q=${lat},${lng}` : null;
+
+        detailBody.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:center;gap:10px;padding:12px;background:#1a0a0a;border-radius:10px;">
+                    <i class="fas fa-user-circle" style="color:#e63946;font-size:20px;"></i>
+                    <div>
+                        <div style="font-size:11px;color:#6b7280;">Victim</div>
+                        <div style="color:#fff;font-weight:700;">${s.victim_name || 'Anonymous'}</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:12px;background:#1a0a0a;border-radius:10px;">
+                    <i class="fas fa-map-marker-alt" style="color:#e63946;font-size:20px;"></i>
+                    <div>
+                        <div style="font-size:11px;color:#6b7280;">Location</div>
+                        <div style="color:#fff;font-size:13px;">${s.location_text || 'Not available'}</div>
+                    </div>
+                </div>
+                ${s.crime_type ? `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#1a0a0a;border-radius:10px;">
+                    <i class="fas fa-exclamation-triangle" style="color:#e63946;font-size:20px;"></i>
+                    <div>
+                        <div style="font-size:11px;color:#6b7280;">Crime Type</div>
+                        <div style="color:#e63946;font-weight:700;">${s.crime_type}</div>
+                    </div>
+                </div>` : ''}
+                ${s.description ? `<div style="padding:12px;background:#1a0a0a;border-radius:10px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">Description</div>
+                    <div style="color:#e2e8f0;font-size:13px;line-height:1.5;">${s.description}</div>
+                </div>` : ''}
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+                    ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" style="flex:1;background:#1a4a6e;border:none;color:#fff;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;min-width:140px;">
+                        <i class="fas fa-directions"></i> Navigate to Spot
+                    </a>` : ''}
+                    ${s.victim_phone ? `<a href="tel:${s.victim_phone}" style="flex:1;background:#1a4a1a;border:none;color:#2ecc71;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #2ecc7140;min-width:140px;">
+                        <i class="fas fa-phone"></i> Call Victim
+                    </a>` : ''}
+                    <a href="tel:999" style="flex:1;background:#e6394611;border:1px solid #e6394640;color:#e63946;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;min-width:120px;">
+                        <i class="fas fa-shield-alt"></i> Call Police
+                    </a>
+                </div>
+            </div>`;
+    } catch(e) {
+        detailBody.innerHTML = '<p style="text-align:center;color:#e63946;padding:30px;">Details load করা যায়নি।</p>';
+    }
+}
+
+function closeSosDetailModal() {
+    const modal = document.getElementById('sos-detail-modal');
     if (modal) modal.style.display = 'none';
 }
 

@@ -154,6 +154,9 @@ class SosController extends Controller
                 'crime_type'    => $request->crime_type,
                 'description'   => $request->description,
                 'status'        => 'active',
+                // Login ছাড়া SOS দিলে manually phone দেওয়া যাবে
+                'contact_phone' => $request->input('contact_phone'),
+                'contact_name'  => $request->input('contact_name'),
             ]);
             return response()->json(['success' => true, 'sos_id' => $sos->id]);
         } catch (\Exception $e) {
@@ -174,8 +177,8 @@ class SosController extends Controller
             }
             $sosData = [
                 'id'           => $alert->id,
-                'victim_name'  => $alert->user ? $alert->user->name : 'Anonymous',
-                'victim_phone' => $alert->user ? $alert->user->phone : null,
+                'victim_name'  => $alert->user ? $alert->user->name : ($alert->contact_name ?: 'Anonymous'),
+                'victim_phone' => $alert->user ? $alert->user->phone : $alert->contact_phone,
                 'location_text'=> $alert->location_text,
                 'crime_type'   => $alert->crime_type,
                 'description'  => $alert->description,
