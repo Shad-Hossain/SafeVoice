@@ -17,28 +17,72 @@ class AuthController extends Controller
             'phone'     => 'required|string|unique:users,phone',
             'password'  => 'required|min:8',
             'id_type'   => 'required|in:nid,birth_certificate',
-            'id_number' => 'required|string',
+            'id_number' => 'required|string|unique:users,id_number',
         ]);
+
+        // ── NID format validation ──────────────────────────────────
+        $cleanId = preg_replace('/\D/', '', $request->id_number);
+
+        if ($request->id_type === 'nid') {
+            if (!in_array(strlen($cleanId), [10, 17])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'NID must be 10 or 17 digits.'
+                ], 422);
+            }
+        }
+
+        if ($request->id_type === 'birth_certificate') {
+            if (strlen($cleanId) !== 17) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Birth Certificate number must be 17 digits.'
+                ], 422);
+            }
+        }
 
         $cleanPhone = preg_replace('/\D/', '', $request->phone);
         if (strlen($cleanPhone) === 13) $cleanPhone = substr($cleanPhone, 2);
+
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
 
         $idDocPath    = null;
         $profilePhoto = null;
 
         if ($request->hasFile('id_document')) {
-            $file      = $request->file('id_document');
-            $filename  = 'id_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file = $request->file('id_document');
+            $ext  = strtolower($file->getClientOriginalExtension());
+
+            if (!in_array($ext, $allowedExtensions)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID document must be JPG, PNG, or PDF.'
+                ], 422);
+            }
+
+            $filename  = 'id_' . uniqid() . '.' . $ext;
             $file->move(public_path('uploads'), $filename);
             $idDocPath = 'uploads/' . $filename;
         }
 
         if ($request->hasFile('profile_photo')) {
-            $file      = $request->file('profile_photo');
-            $filename  = 'photo_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file = $request->file('profile_photo');
+            $ext  = strtolower($file->getClientOriginalExtension());
+
+            if (!in_array(['jpg', 'jpeg', 'png', 'gif', 'webp'], [$ext]) && !in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile photo must be JPG, PNG, GIF, or WEBP.'
+                ], 422);
+            }
+
+            $filename     = 'photo_' . uniqid() . '.' . $ext;
             $file->move(public_path('uploads'), $filename);
             $profilePhoto = 'uploads/' . $filename;
         }
+
+        // ── Birth certificate → Pending, NID → Active ──────────────
+        $status = $request->id_type === 'birth_certificate' ? 'Pending' : 'Active';
 
         $user = User::create([
             'name'             => $request->name,
@@ -46,16 +90,27 @@ class AuthController extends Controller
             'phone'            => $cleanPhone,
             'password_hash'    => Hash::make($request->password),
             'id_type'          => $request->id_type,
-            'id_number'        => $request->id_number,
+            'id_number'        => $cleanId,
             'id_document_path' => $idDocPath,
             'location'         => $request->location ?? '',
             'profile_photo'    => $profilePhoto,
+            'status'           => $status,
         ]);
+
+        // Birth certificate → pending, এখনই login দেওয়া যাবে না
+        if ($status === 'Pending') {
+            return response()->json([
+                'success' => true,
+                'pending' => true,
+                'message' => 'Registration submitted! Your birth certificate is being reviewed by our team. You will be able to login once approved (usually within 24 hours).',
+            ]);
+        }
 
         $token = base64_encode($user->id . '|' . $user->email . '|' . time());
 
         return response()->json([
             'success' => true,
+            'pending' => false,
             'message' => 'Registration successful!',
             'token'   => $token,
             'user'    => [
@@ -79,6 +134,15 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             return response()->json(['success' => false, 'message' => 'Invalid email or password.'], 401);
+        }
+
+        // ── Pending account — birth cert review এর অপেক্ষায় ──────
+        if ($user->status === 'Pending') {
+            return response()->json([
+                'success' => false,
+                'pending' => true,
+                'message' => 'Your account is pending approval. Our team is reviewing your birth certificate. Please wait up to 24 hours.',
+            ], 403);
         }
 
         if ($user->status === 'Banned') {
@@ -123,7 +187,6 @@ class AuthController extends Controller
     {
         $action = $request->input('action');
 
-        // ── STEP 1: OTP পাঠাও ───────────────────────────────────
         if ($action === 'send_otp') {
             $request->validate(['email' => 'required|email']);
             $email = strtolower(trim($request->email));
@@ -153,7 +216,6 @@ class AuthController extends Controller
             return response()->json(['success' => true, 'message' => 'OTP sent to your email.']);
         }
 
-        // ── STEP 2: OTP verify করো ──────────────────────────────
         if ($action === 'verify_otp') {
             $request->validate([
                 'email' => 'required|email',
@@ -174,7 +236,6 @@ class AuthController extends Controller
             return response()->json(['success' => true, 'message' => 'OTP verified.']);
         }
 
-        // ── STEP 3: Password reset করো ──────────────────────────
         if ($action === 'reset') {
             $request->validate([
                 'email'        => 'required|email',
@@ -207,7 +268,6 @@ class AuthController extends Controller
         return response()->json(['success' => false, 'message' => 'Invalid action.'], 400);
     }
 
-    // ── PHPMailer দিয়ে OTP email পাঠাও ─────────────────────────
     private function sendOtpEmail(string $email, string $name, string $otp): array
     {
         try {
