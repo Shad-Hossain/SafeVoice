@@ -914,10 +914,16 @@
     z-index: 10000;
     overflow: hidden;
     box-shadow: 0 8px 40px #e6394650;
-    transform: translateX(360px);
+    transform: translateX(calc(100% + 40px));
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    visibility: hidden;
 }
-.incoming-alert-panel.visible { transform: translateX(0); }
+.incoming-alert-panel.visible {
+    transform: translateX(0);
+    pointer-events: auto;
+    visibility: visible;
+}
 
 .incoming-alert-pulse {
     height: 4px;
@@ -1023,7 +1029,8 @@
 .btn-call-police:hover { background: #e6394630; transform: translateY(-1px); }
 
 @media (max-width: 480px) {
-    .incoming-alert-panel { right: 10px; left: 10px; width: auto; }
+    .incoming-alert-panel { right: 10px; left: 10px; width: auto; transform: translateX(calc(100vw + 20px)); }
+    .incoming-alert-panel.visible { transform: translateX(0); }
     .crime-type-grid { grid-template-columns: repeat(2, 1fr); }
     .sv-modal { padding: 18px; }
 }
@@ -1116,4 +1123,21 @@
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+/* ── Modal Dismiss Button ─────────────────────────────────── */
+.btn-dismiss-modal {
+    width: 100%;
+    background: transparent;
+    border: 1px solid #1e2d4a;
+    color: #a0b4cc;
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background .2s, color .2s;
+}
+.btn-dismiss-modal:hover {
+    background: #1e2d4a;
+    color: #fff;
 }

@@ -125,6 +125,18 @@
             <i class="fas fa-times modal-close" onclick="closeModal()"></i>
         </div>
 
+        <!-- Consent Strip — always visible, no scroll needed -->
+        <div id="consentStrip" style="display:flex;gap:10px;padding:12px 20px;background:#060c18;border-bottom:1px solid #1e2d4a;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:11px;color:#a0b4cc;font-weight:600;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">⚖️ Legal:</span>
+                <span id="dLegalConsent" style="font-size:13px;color:#6b7280;">—</span>
+            </div>
+            <div style="flex:1;min-width:160px;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:11px;color:#a0b4cc;font-weight:600;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">📢 Publish:</span>
+                <span id="dPublishConsent" style="font-size:13px;color:#6b7280;">—</span>
+            </div>
+        </div>
+
         <div class="modal-body">
 
             <!-- Info grid -->
@@ -155,7 +167,6 @@
                 </div>
             </div>
 
-            <!-- Description -->
             <div class="detail-desc-box">
                 <span class="detail-label">Description</span>
                 <p id="dDesc">—</p>

@@ -189,8 +189,6 @@
     if (localStorage.getItem('isAdminLoggedIn') !== 'true') window.location.href = '/admin/login';
 </script>
 
-
-
 <div class="dashboard-layout">
     <aside class="sidebar">
         <ul class="sidebar-menu">
@@ -200,6 +198,14 @@
             <li id="nav-payments"><a href="#" onclick="showSection('payments')"><i class="fas fa-credit-card"></i> Payments</a></li>
             <li id="nav-sos"><a href="#" onclick="showSection('sos')"><i class="fas fa-exclamation-triangle"></i> SOS Alerts</a></li>
             <li id="nav-sos-evidence"><a href="#" onclick="showSection('sos-evidence')"><i class="fas fa-camera"></i> SOS Evidence <span id="evidencePendingBadge" style="display:none;background:#e63946;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;"></span></a></li>
+            <li id="nav-pending-accounts">
+                <a href="#" onclick="showSection('pending-accounts')">
+                    <i class="fas fa-user-clock"></i>
+                    Pending Accounts
+                    <span id="pendingAccountsBadge"
+                          style="display:none;background:#e63946;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;"></span>
+                </a>
+            </li>
         </ul>
         <div style="padding:14px 16px;border-top:1px solid #1e2d4a;margin-top:20px">
             <a href="{{ route('super-admin.login') }}" style="display:flex;align-items:center;gap:8px;color:#fbbf24;font-size:12px;font-weight:600;text-decoration:none;background:#fbbf2410;border:1px solid #fbbf2430;border-radius:8px;padding:9px 12px">
@@ -265,9 +271,9 @@
                     <option value="">All Statuses</option>
                     <option value="Submitted">Submitted</option>
                     <option value="Under Review">Under Review</option>
-                   <option value="PI Notification Sent">PI Notification Sent</option>
-<option value="PI Payment Pending">PI Payment Pending</option>
-<option value="Private Investigator Assigned">PI Assigned</option>
+                    <option value="PI Notification Sent">PI Notification Sent</option>
+                    <option value="PI Payment Pending">PI Payment Pending</option>
+                    <option value="Private Investigator Assigned">PI Assigned</option>
                     <option value="Resolved">Resolved</option>
                     <option value="Rejected">Rejected</option>
                 </select>
@@ -369,30 +375,24 @@
             </div>
         </div>
 
-        <!-- ══════════════════════════════════════════════════════
-             SOS EVIDENCE VERIFICATION SECTION
-        ══════════════════════════════════════════════════════ -->
+        <!-- SOS EVIDENCE VERIFICATION SECTION -->
         <div id="view-sos-evidence" style="display:none">
             <div class="welcome-bar">
                 <h1><i class="fas fa-camera" style="font-size:22px;margin-right:10px;color:#4f9eff"></i>SOS Evidence Verification</h1>
                 <p>Review and approve responders' evidence — approved evidence increases their leaderboard rank</p>
             </div>
-
-            <!-- Filter bar -->
             <div class="filter-bar">
                 <select id="evidenceFilterStatus" onchange="loadSosEvidence()">
+                    <option value="">All</option>
                     <option value="pending">Pending Review</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
-                    <option value="">All</option>
                 </select>
                 <button class="btn-refresh" onclick="loadSosEvidence()">
                     <i class="fas fa-sync-alt"></i> Refresh
                 </button>
                 <span id="evidenceCount" style="color:var(--text-secondary);font-size:13px;margin-left:auto"></span>
             </div>
-
-            <!-- Evidence cards grid -->
             <div id="evidenceCardGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
                 <div class="table-state" style="grid-column:1/-1">
                     <i class="fas fa-spinner fa-spin"></i> Loading evidence...
@@ -400,9 +400,59 @@
             </div>
         </div>
 
+        <!-- PENDING ACCOUNTS SECTION -->
+        <div id="view-pending-accounts" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-user-clock" style="font-size:22px;margin-right:10px;color:#fbbf24"></i>Pending Account Requests</h1>
+                <p>Users who registered with a birth certificate — review and approve or reject</p>
+            </div>
+            <div class="filter-bar">
+                <button class="btn-refresh" onclick="loadPendingAccounts()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <span id="pendingAccountsCount" style="color:var(--text-secondary);font-size:13px;margin-left:auto"></span>
+            </div>
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Birth Cert No.</th>
+                            <th>Registered</th>
+                            <th>Document</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pending-accounts-tbody">
+                        <tr><td colspan="8" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
 </div>
 
+<!-- Birth Certificate Image Modal -->
+<div id="bcDocModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;">
+    <div style="background:#0d1526;border-radius:16px;border:1px solid #1e2d4a;max-width:680px;width:90%;padding:24px;position:relative;">
+        <button onclick="closeBcDocModal()"
+                style="position:absolute;top:14px;right:16px;background:none;border:none;color:#a0b4cc;font-size:20px;cursor:pointer;">
+            <i class="fas fa-times"></i>
+        </button>
+        <h3 style="color:#fff;margin:0 0 16px;font-size:16px;">
+            <i class="fas fa-certificate" style="color:#fbbf24;margin-right:8px;"></i>
+            Birth Certificate Document
+        </h3>
+        <div id="bcDocContent" style="text-align:center;"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;" id="bcDocActions"></div>
+    </div>
+</div>
+
+<!-- Complaint Detail Modal -->
 <div class="view-modal-overlay" id="viewModal">
     <div class="view-modal">
         <h3><i class="fas fa-file-alt"></i> Complaint Details</h3>
@@ -418,8 +468,7 @@
     </div>
 </div>
 
-
-<!-- PI Notification Modal (Admin sends to user) -->
+<!-- PI Notification Modal -->
 <div class="pi-modal-overlay" id="piNotifyModal">
     <div class="pi-modal">
         <div class="pi-modal-icon"><i class="fas fa-user-secret"></i></div>
@@ -448,14 +497,8 @@
             <h3 style="color:#4f9eff;font-size:17px;margin:0;"><i class="fas fa-camera" style="margin-right:8px;"></i>Verify Evidence</h3>
             <button onclick="closeSosEvidenceModal()" style="background:transparent;border:none;color:#a0b4cc;font-size:18px;cursor:pointer;"><i class="fas fa-times"></i></button>
         </div>
-
-        <!-- Responder info -->
         <div id="evModalResponderInfo" style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;margin-bottom:16px;font-size:13px;"></div>
-
-        <!-- Evidence preview -->
         <div id="evModalPreview" style="margin-bottom:16px;text-align:center;"></div>
-
-        <!-- Admin note -->
         <div style="margin-bottom:16px;">
             <label style="color:#a0b4cc;font-size:12px;font-weight:600;display:block;margin-bottom:6px;">
                 <i class="fas fa-pen" style="color:#4f9eff;margin-right:4px;"></i>Admin Note <span style="color:#4a5568;font-weight:400">(optional — visible to user)</span>
@@ -463,7 +506,6 @@
             <textarea id="evModalNote" rows="3" placeholder="e.g. Clear evidence confirmed. / Photo not clear enough..."
                 style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;color:#fff;font-size:13px;padding:12px;resize:vertical;font-family:inherit;box-sizing:border-box;outline:none;"></textarea>
         </div>
-
         <div style="display:flex;gap:10px;">
             <button id="evModalRejectBtn" onclick="verifyEvidence('reject')"
                 style="flex:1;padding:13px;border-radius:10px;border:1px solid #e6394640;background:#e6394615;color:#e63946;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;">
@@ -476,7 +518,8 @@
         </div>
     </div>
 </div>
-<!-- Victim Evidence Modal — victim এর submit করা evidence দেখা -->
+
+<!-- Victim Evidence Modal -->
 <div id="victimEvidenceModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px;">
     <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
@@ -488,7 +531,8 @@
         </div>
     </div>
 </div>
-<!-- SOS Alert Detail Modal — Victim info + submitted evidence -->
+
+<!-- SOS Alert Detail Modal -->
 <div id="sosAlertDetailModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px;">
     <div style="background:#111c33;border:1px solid #1e2d4a;border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
@@ -501,7 +545,7 @@
     </div>
 </div>
 
-<!-- Evidence Request Modal (Admin → request more evidence from user) -->
+<!-- Evidence Request Modal -->
 <div class="er-modal-overlay" id="erRequestModal">
     <div class="er-modal">
         <div class="er-modal-icon"><i class="fas fa-file-upload"></i></div>
@@ -527,25 +571,29 @@
 <script src="{{ asset('js/main.js') }}"></script>
 <script src="{{ asset('js/theme.js') }}"></script>
 <script>
+
+// ── Section Navigation ────────────────────────────────────────
 function showSection(section, preFilter) {
-    ['dashboard','complaints','users','payments','sos','sos-evidence'].forEach(s => {
+    ['dashboard','complaints','users','payments','sos','sos-evidence','pending-accounts'].forEach(s => {
         document.getElementById('view-' + s).style.display = 'none';
         document.getElementById('nav-' + s)?.classList.remove('active');
     });
     document.getElementById('view-' + section).style.display = 'block';
     document.getElementById('nav-' + section)?.classList.add('active');
-    if (section === 'dashboard')  loadDashboard();
+
+    if (section === 'dashboard')        loadDashboard();
     if (section === 'complaints') {
         if (preFilter) document.getElementById('filterStatus').value = preFilter;
         loadComplaints();
     }
-    if (section === 'users')    loadUsers();
-    if (section === 'payments') loadPayments();
-    if (section === 'sos') loadSosAlerts();
-    if (section === 'sos-evidence') loadSosEvidence();
+    if (section === 'users')            loadUsers();
+    if (section === 'payments')         loadPayments();
+    if (section === 'sos')              loadSosAlerts();
+    if (section === 'sos-evidence')     loadSosEvidence();
+    if (section === 'pending-accounts') loadPendingAccounts();
 }
 
-// ── PAYMENTS ─────────────────────────────────────────────────
+// ── Payments ─────────────────────────────────────────────────
 async function loadPayments() {
     const tbody = document.getElementById('payments-tbody');
     tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
@@ -577,6 +625,7 @@ async function loadPayments() {
     }
 }
 
+// ── Users ─────────────────────────────────────────────────────
 async function loadUsers() {
     const tbody = document.getElementById('users-tbody');
     tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
@@ -632,6 +681,7 @@ function userStatusBadge(s) {
     return map[s] || `<span class="status">${s}</span>`;
 }
 
+// ── Dashboard ─────────────────────────────────────────────────
 async function loadDashboard() {
     document.getElementById('dashboard-loading').textContent = 'Loading...';
     try {
@@ -665,6 +715,7 @@ async function loadDashboard() {
     }
 }
 
+// ── Complaints ────────────────────────────────────────────────
 async function loadComplaints() {
     const status = document.getElementById('filterStatus').value;
     const type   = document.getElementById('filterType').value;
@@ -692,13 +743,13 @@ async function loadComplaints() {
                 <td style="text-align:center">${c.is_anonymous ? '<i class="fas fa-user-secret" style="color:#4f9eff" title="Anonymous"></i>' : '<i class="fas fa-user" style="color:var(--text-secondary)"></i>'}</td>
                 <td>
                     <select class="status-select ${statusClass(c.status)}" onchange="updateStatus('${c.complaint_id}', this)">
-                        <option ${c.status==='Submitted'        ? 'selected':''}>Submitted</option>
-                        <option ${c.status==='Under Review'     ? 'selected':''}>Under Review</option>
-                       <option ${c.status==='PI Notification Sent'          ? 'selected':''}>PI Notification Sent</option>
-<option ${c.status==='PI Payment Pending'            ? 'selected':''}>PI Payment Pending</option>
-<option ${c.status==='Private Investigator Assigned'  ? 'selected':''}>Private Investigator Assigned</option>
-                        <option ${c.status==='Resolved'         ? 'selected':''}>Resolved</option>
-                        <option ${c.status==='Rejected'         ? 'selected':''}>Rejected</option>
+                        <option ${c.status==='Submitted'                       ? 'selected':''}>Submitted</option>
+                        <option ${c.status==='Under Review'                    ? 'selected':''}>Under Review</option>
+                        <option ${c.status==='PI Notification Sent'           ? 'selected':''}>PI Notification Sent</option>
+                        <option ${c.status==='PI Payment Pending'             ? 'selected':''}>PI Payment Pending</option>
+                        <option ${c.status==='Private Investigator Assigned'  ? 'selected':''}>Private Investigator Assigned</option>
+                        <option ${c.status==='Resolved'                       ? 'selected':''}>Resolved</option>
+                        <option ${c.status==='Rejected'                       ? 'selected':''}>Rejected</option>
                     </select>
                 </td>
                 <td><button class="btn-view" onclick="viewComplaint(${JSON.stringify(c).replace(/"/g,'&quot;')})">
@@ -711,7 +762,7 @@ async function loadComplaints() {
     }
 }
 
-// PI notify state
+// ── PI Notification ───────────────────────────────────────────
 let piPendingComplaintId = null;
 let piPendingSelectEl    = null;
 let piPendingOldStatus   = null;
@@ -722,12 +773,10 @@ async function updateStatus(complaint_id, selectEl) {
     selectEl.dataset.prev = newStatus;
     selectEl.className = 'status-select ' + statusClass(newStatus);
 
-    // Intercept PI assignment — show notification modal first
     if (newStatus === 'Private Investigator Assigned') {
         piPendingComplaintId = complaint_id;
         piPendingSelectEl    = selectEl;
         piPendingOldStatus   = oldStatus;
-        // Revert select visually until user confirms
         selectEl.value = oldStatus;
         selectEl.className = 'status-select ' + statusClass(oldStatus);
         document.getElementById('piNotifyModal').classList.add('active');
@@ -736,10 +785,10 @@ async function updateStatus(complaint_id, selectEl) {
 
     try {
         const res  = await fetch('/api/complaints/update-status', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ complaint_id, status: newStatus })
-});
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ complaint_id, status: newStatus })
+        });
         const data = await res.json();
         if (!data.success) throw new Error(data.message);
         showToast('<i class="fas fa-check-circle"></i> Status updated to ' + newStatus);
@@ -758,14 +807,11 @@ function cancelPINotify() {
 async function confirmSendPINotify() {
     document.getElementById('piNotifyModal').classList.remove('active');
 
-    // 1. Store in localStorage so user dashboard sees it immediately
     const pending = JSON.parse(localStorage.getItem('sv-pi-notifications') || '[]');
-    // Remove any old notification for same complaint
     const updated = pending.filter(n => n.complaint_id !== piPendingComplaintId);
     updated.push({ complaint_id: piPendingComplaintId, timestamp: Date.now(), status: 'pending_payment' });
     localStorage.setItem('sv-pi-notifications', JSON.stringify(updated));
 
-    // 2. Also update DB via API
     try {
         await fetch('/api/pi_notification', {
             method:  'POST',
@@ -774,7 +820,6 @@ async function confirmSendPINotify() {
         });
     } catch(e) { /* backend optional */ }
 
-    // 3. Update status dropdown visually
     if (piPendingSelectEl) {
         piPendingSelectEl.value = 'PI Notification Sent';
         piPendingSelectEl.className = 'status-select s-under-review';
@@ -786,8 +831,8 @@ async function confirmSendPINotify() {
     loadComplaints();
 }
 
-// ─── Evidence Request (Admin) ─────────────────────────────────────────────────
-let currentViewComplaint = null; // store complaint currently open in modal
+// ── Evidence Request ──────────────────────────────────────────
+let currentViewComplaint = null;
 
 function openEvidenceRequestModal() {
     if (!currentViewComplaint) return;
@@ -829,12 +874,10 @@ async function sendEvidenceRequest() {
     }
 }
 
-// ─── Expired Evidence Notifications (Admin Dashboard) ────────────────────────
+// ── Expired Evidence Notifications ───────────────────────────
 async function loadExpiredEvidenceAlerts() {
     try {
-        // First trigger check-expired to update statuses
         await fetch('/api/evidence-request/check-expired', { method: 'POST', credentials: 'include' });
-        // Then fetch the expired list
         const res  = await fetch('/api/evidence-request/expired-list', { credentials: 'include' });
         const data = await res.json();
         if (!data.success || !data.expired || data.expired.length === 0) return;
@@ -858,13 +901,11 @@ async function loadExpiredEvidenceAlerts() {
 }
 
 function triggerPIFromExpired(complaintId) {
-    // Pre-fill PI modal for this complaint and show it
     piPendingComplaintId = complaintId;
     document.getElementById('piNotifyModal').classList.add('active');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ── Complaint Detail Modal ────────────────────────────────────
 function viewComplaint(c) {
     if (typeof c === 'string') c = JSON.parse(c);
     currentViewComplaint = c;
@@ -876,6 +917,16 @@ function viewComplaint(c) {
         <div class="detail-row"><span class="detail-label">Anonymous</span><span class="detail-value">${c.is_anonymous ? 'Yes' : 'No'}</span></div>
         <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusBadge(c.status)}</span></div>
         <div class="detail-row"><span class="detail-label">Submitted At</span><span class="detail-value">${formatDate(c.submitted_at)}</span></div>
+        <div style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px 14px;">
+                <div style="font-size:11px;color:#a0b4cc;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">⚖️ Legal Action</div>
+                <div style="font-size:13px;">${c.legal_consent === 'yes' ? '<span style="color:#4f9eff;font-weight:700;">✅ Yes — Wants to proceed legally</span>' : c.legal_consent === 'no' ? '<span style="color:#e63946;font-weight:700;">❌ No — Does not want legal action</span>' : '<span style="color:#6b7280;">— Not answered</span>'}</div>
+            </div>
+            <div style="flex:1;min-width:160px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px 14px;">
+                <div style="font-size:11px;color:#a0b4cc;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">📢 Publish Consent</div>
+                <div style="font-size:13px;">${c.publish_consent === 'yes' ? '<span style="color:#2ecc71;font-weight:700;">✅ Yes — Agreed to publish</span>' : c.publish_consent === 'no' ? '<span style="color:#e63946;font-weight:700;">❌ No — Does not want case published</span>' : '<span style="color:#6b7280;">— Not answered</span>'}</div>
+            </div>
+        </div>
         <div class="detail-label" style="margin-top:15px;display:block">Description</div>
         <div class="desc-box">${c.description || '—'}</div>
         <div class="detail-label" style="margin-top:18px;display:block"><i class="fas fa-paperclip" style="color:#4f9eff"></i> Evidence Files</div>
@@ -919,6 +970,7 @@ async function loadAdminDashboardEvidence(complaint_id) {
     }
 }
 
+// ── Helpers ───────────────────────────────────────────────────
 function formatType(t) {
     const map = { harassment:'Harassment', fare_overcharge:'Fare Overcharge', crime:'Crime', corruption:'Corruption', abuse:'Abuse', other:'Other' };
     return map[t] || t;
@@ -934,35 +986,35 @@ function formatDate(d) {
 
 function statusBadge(s) {
     const map = {
-        'Submitted':        '<span class="status review">Submitted</span>',
-        'Under Review':     '<span class="status pending">Under Review</span>',
-        'Private Investigator Assigned': '<span class="status" style="background:#a855f715;color:#c084fc;border:1px solid #a855f740;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Private Investigator Assigned</span>',
-        'Investigation':    '<span class="status" style="background:#f9731615;color:#fb923c;border:1px solid #f9731640;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Investigation</span>',
-        'Resolved':         '<span class="status resolved">Resolved</span>',
-        'Rejected':         '<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>'
+        'Submitted':                        '<span class="status review">Submitted</span>',
+        'Under Review':                     '<span class="status pending">Under Review</span>',
+        'Private Investigator Assigned':    '<span class="status" style="background:#a855f715;color:#c084fc;border:1px solid #a855f740;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Private Investigator Assigned</span>',
+        'Investigation':                    '<span class="status" style="background:#f9731615;color:#fb923c;border:1px solid #f9731640;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">Investigation</span>',
+        'Resolved':                         '<span class="status resolved">Resolved</span>',
+        'Rejected':                         '<span class="status" style="background:#ef444415;color:#f87171">Rejected</span>'
     };
     return map[s] || `<span class="status">${s}</span>`;
 }
 
 function statusClass(s) {
     const map = {
-        'Submitted':        's-submitted',
-        'Under Review':     's-under-review',
-        'Private Investigator Assigned': 's-officer-assigned',
-        'PI Notification Sent':         's-under-review',
-        'PI Payment Confirmed':         's-under-review',
-        'Resolved':         's-resolved',
-        'Rejected':         's-rejected'
+        'Submitted':                       's-submitted',
+        'Under Review':                    's-under-review',
+        'Private Investigator Assigned':   's-officer-assigned',
+        'PI Notification Sent':            's-under-review',
+        'PI Payment Confirmed':            's-under-review',
+        'Resolved':                        's-resolved',
+        'Rejected':                        's-rejected'
     };
     return map[s] || '';
 }
 
-// ── SOS EVIDENCE VERIFICATION ────────────────────────────────────
-let currentEvidenceRecord = null; // currently open evidence for verify
-const evidenceRecordsMap = {}; // id => full record object
+// ── SOS Evidence ──────────────────────────────────────────────
+let currentEvidenceRecord = null;
+const evidenceRecordsMap  = {};
 
 async function loadSosAlerts() {
-    const tbody  = document.getElementById('sos-alerts-tbody');
+    const tbody   = document.getElementById('sos-alerts-tbody');
     const countEl = document.getElementById('sosAlertsCount');
     if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
     try {
@@ -982,16 +1034,16 @@ async function loadSosAlerts() {
                    d.toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit' });
         };
         tbody.innerHTML = list.map(a => {
-            const statusClass = a.status === 'active' ? 'review' : 'resolved';
-            const statusLabel = a.status === 'active' ? 'Active' : (a.status || 'Unknown');
-            const user = a.user ? a.user.name : 'Anonymous';
+            const sClass = a.status === 'active' ? 'review' : 'resolved';
+            const sLabel = a.status === 'active' ? 'Active' : (a.status || 'Unknown');
+            const user   = a.user ? a.user.name : 'Anonymous';
             return `<tr>
                 <td><strong style="color:#e63946">SOS-${String(a.id).padStart(3,'0')}</strong></td>
                 <td>${user}</td>
                 <td>${a.location_text || '—'}</td>
                 <td>${a.crime_type || 'Not specified'}</td>
                 <td>${fmtTime(a.created_at)}</td>
-                <td><span class="status ${statusClass}">${statusLabel}</span></td>
+                <td><span class="status ${sClass}">${sLabel}</span></td>
                 <td>
                     <button onclick="openSosAlertDetail(${a.id})"
                         style="padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#1a3a6a,#2563eb);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
@@ -1005,23 +1057,18 @@ async function loadSosAlerts() {
     }
 }
 
-
 async function openSosAlertDetail(sosId) {
     const modal   = document.getElementById('sosAlertDetailModal');
     const content = document.getElementById('sosAlertDetailContent');
     modal.style.display = 'flex';
     content.innerHTML   = '<div style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i><p style="margin-top:12px;">Loading...</p></div>';
-
     try {
         const res  = await fetch(`/api/sos/alerts?sos_id=${sosId}`, { credentials: 'include' });
         const data = await res.json();
         if (!data.success || !data.sos) throw new Error(data.message || 'Not found');
-
-        const s = data.sos;
+        const s        = data.sos;
         const evidence = data.evidence || [];
-        const fmtT = (t) => t ? new Date(t).toLocaleString('en-BD') : '—';
-
-        // Evidence HTML
+        const fmtT     = (t) => t ? new Date(t).toLocaleString('en-BD') : '—';
         let evHtml = '';
         if (evidence.length > 0) {
             evHtml = evidence.map(e => {
@@ -1038,7 +1085,6 @@ async function openSosAlertDetail(sosId) {
         } else {
             evHtml = '<p style="color:#4a5568;font-size:13px;font-style:italic;">No evidence uploaded yet.</p>';
         }
-
         content.innerHTML = `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
                 <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:14px;">
@@ -1093,31 +1139,20 @@ async function loadSosEvidenceBadge() {
 }
 
 async function loadSosEvidence() {
-    const grid   = document.getElementById('evidenceCardGrid');
+    const grid    = document.getElementById('evidenceCardGrid');
     const countEl = document.getElementById('evidenceCount');
-    const status = document.getElementById('evidenceFilterStatus')?.value ?? 'pending';
+    const status  = document.getElementById('evidenceFilterStatus')?.value ?? '';
     grid.innerHTML = '<div class="table-state" style="grid-column:1/-1"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-
     try {
         const res  = await fetch('/api/admin/sos-evidence-pending', { credentials: 'include' });
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Failed');
-
         let list = data.pending || [];
-
-        // Client-side filter by selected status
         if (status) list = list.filter(r => r.evidence_status === status);
-
-        // Update pending badge in sidebar
         const pendingCount = (data.pending || []).filter(r => r.evidence_status === 'pending').length;
         const badge = document.getElementById('evidencePendingBadge');
-        if (badge) {
-            badge.textContent = pendingCount;
-            badge.style.display = pendingCount > 0 ? 'inline' : 'none';
-        }
-
+        if (badge) { badge.textContent = pendingCount; badge.style.display = pendingCount > 0 ? 'inline' : 'none'; }
         if (countEl) countEl.textContent = list.length + ' record(s)';
-
         if (list.length === 0) {
             grid.innerHTML = `<div class="table-state" style="grid-column:1/-1">
                 <i class="fas fa-check-circle" style="color:#2ecc71"></i>
@@ -1125,9 +1160,7 @@ async function loadSosEvidence() {
             </div>`;
             return;
         }
-
         grid.innerHTML = list.map(r => buildEvidenceCard(r)).join('');
-
     } catch(e) {
         grid.innerHTML = `<div class="table-state" style="grid-column:1/-1">
             <i class="fas fa-exclamation-triangle" style="color:#e63946"></i>
@@ -1137,18 +1170,11 @@ async function loadSosEvidence() {
 }
 
 function buildEvidenceCard(r) {
-    const statusColor = {
-        pending:  '#fbbf24', approved: '#2ecc71', rejected: '#e63946', none: '#4a5568'
-    }[r.evidence_status] || '#fff';
-    const statusLabel = {
-        pending: '⏳ Pending Review', approved: '✅ Approved', rejected: '❌ Rejected', none: 'No Evidence'
-    }[r.evidence_status] || r.evidence_status;
-
-    // Evidence thumbnail
+    const statusColor = { pending:'#fbbf24', approved:'#2ecc71', rejected:'#e63946', none:'#4a5568' }[r.evidence_status] || '#fff';
+    const statusLabel = { pending:'⏳ Pending Review', approved:'✅ Approved', rejected:'❌ Rejected', none:'No Evidence' }[r.evidence_status] || r.evidence_status;
     let previewHtml = '';
     if (r.evidence_path) {
-        const isImage = r.file_type === 'image';
-        if (isImage) {
+        if (r.file_type === 'image') {
             previewHtml = `<img src="/${r.evidence_path}" style="width:100%;height:160px;object-fit:cover;border-radius:10px;margin-bottom:12px;" />`;
         } else {
             previewHtml = `<div style="background:#0a0f1e;border-radius:10px;padding:20px;text-align:center;margin-bottom:12px;border:1px solid #1e2d4a;">
@@ -1162,34 +1188,28 @@ function buildEvidenceCard(r) {
             <p style="color:#4a5568;font-size:12px;margin-top:8px;">No file uploaded</p>
         </div>`;
     }
-
-    const sosInfo  = r.sos   ? `${r.sos.crime_type || 'SOS'} — ${r.sos.location_text || ''}` : 'SOS #' + r.sos_id;
-const userName = r.responder ? r.responder.name : 'Unknown';
-const userRank = r.responder ? r.responder.sos_helped_verified_count + ' verified' : '';
-const submittedAt = r.evidence_submitted_at ? formatDate(r.evidence_submitted_at) : '—';
-
-// Victim info
-const victimName  = r.sos && r.sos.user ? r.sos.user.name  : 'Anonymous';
-const victimPhone = r.sos && r.sos.user ? r.sos.user.phone : null;
-
-const showVerifyBtn = r.evidence_status === 'pending' && r.evidence_path;
-
+    const sosInfo     = r.sos   ? `${r.sos.crime_type || 'SOS'} — ${r.sos.location_text || ''}` : 'SOS #' + r.sos_id;
+    const userName    = r.responder ? r.responder.name : 'Unknown';
+    const userRank    = r.responder ? r.responder.sos_helped_verified_count : 0;
+    const submittedAt = r.evidence_submitted_at ? formatDate(r.evidence_submitted_at) : '—';
+    const victimName  = r.sos && r.sos.user ? r.sos.user.name  : 'Anonymous';
+    const victimPhone = r.sos && r.sos.user ? r.sos.user.phone : null;
+    const showVerifyBtn = r.evidence_status === 'pending' && r.evidence_path;
+    evidenceRecordsMap[r.id] = r;
     return `<div style="background:#111c33;border:1px solid #1e2d4a;border-radius:16px;padding:18px;display:flex;flex-direction:column;">
         ${previewHtml}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <span style="font-size:11px;color:${statusColor};font-weight:700;background:${statusColor}18;border:1px solid ${statusColor}30;border-radius:20px;padding:3px 10px;">
-                ${statusLabel}
-            </span>
+            <span style="font-size:11px;color:${statusColor};font-weight:700;background:${statusColor}18;border:1px solid ${statusColor}30;border-radius:20px;padding:3px 10px;">${statusLabel}</span>
             <span style="font-size:11px;color:#4a5568;">${submittedAt}</span>
         </div>
-       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
             <div style="width:36px;height:36px;border-radius:50%;background:#1e2d4a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <i class="fas fa-shield-alt" style="color:#4f9eff;font-size:14px;"></i>
             </div>
             <div>
                 <p style="margin:0;font-size:10px;color:#6a7fa0;text-transform:uppercase;letter-spacing:.4px;">Responder</p>
                 <p style="margin:0;font-weight:700;font-size:14px;">${userName}</p>
-                <p style="margin:0;color:#6a7fa0;font-size:12px;">${userRank} responses</p>
+                <p style="margin:0;color:#6a7fa0;font-size:12px;">${userRank} verified responses</p>
             </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:10px;">
@@ -1215,7 +1235,6 @@ const showVerifyBtn = r.evidence_status === 'pending' && r.evidence_path;
             <i class="fas fa-search"></i> Review Evidence
         </button>` : ''}
     </div>`;
-    evidenceRecordsMap[r.id] = r;
 }
 
 function openSosEvidenceModalById(id) {
@@ -1224,11 +1243,14 @@ function openSosEvidenceModalById(id) {
     openSosEvidenceModal(record);
 }
 
+function closeSosEvidenceModal() {
+    document.getElementById('sosEvidenceVerifyModal').style.display = 'none';
+    currentEvidenceRecord = null;
+}
+
 function openSosEvidenceModal(record) {
     currentEvidenceRecord = record;
     document.getElementById('evModalNote').value = '';
-
-    // Responder info
     const info = document.getElementById('evModalResponderInfo');
     const user = record.responder || {};
     const sos  = record.sos || {};
@@ -1241,8 +1263,6 @@ function openSosEvidenceModal(record) {
             <div><span style="color:#6a7fa0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">SOS Incident</span>
                 <p style="margin:3px 0 0;color:#a0b4cc;font-size:12px;">${sos.crime_type || '—'} · ${sos.location_text || '—'}</p></div>
         </div>`;
-
-    // Preview
     const preview = document.getElementById('evModalPreview');
     if (record.file_type === 'image') {
         preview.innerHTML = `<img src="/${record.evidence_path}" style="max-width:100%;max-height:260px;border-radius:12px;object-fit:contain;" />
@@ -1252,26 +1272,22 @@ function openSosEvidenceModal(record) {
     } else {
         preview.innerHTML = `<video src="/${record.evidence_path}" controls style="max-width:100%;border-radius:12px;"></video>`;
     }
-
     document.getElementById('sosEvidenceVerifyModal').style.display = 'flex';
 }
 
-// ── Victim Evidence Modal ────────────────────────────────────────
+// ── Victim Evidence Modal ─────────────────────────────────────
 async function openVictimEvidenceModal(sosId) {
     const modal   = document.getElementById('victimEvidenceModal');
     const content = document.getElementById('victimEvidenceContent');
     modal.style.display = 'flex';
     content.innerHTML = '<div style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin" style="font-size:24px;"></i><p style="margin-top:12px;">Loading victim evidence...</p></div>';
-
     try {
         const res  = await fetch(`/api/sos/victim-evidence?sos_id=${sosId}`, { credentials: 'include' });
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Failed');
-
         const s        = data.sos;
         const evidence = data.evidence || [];
         const fmtT     = (t) => t ? new Date(t).toLocaleString('en-BD') : '—';
-
         let evHtml = '';
         if (evidence.length > 0) {
             evHtml = evidence.map(e => {
@@ -1291,7 +1307,6 @@ async function openVictimEvidenceModal(sosId) {
                 <p style="margin:0;font-size:13px;">No evidence uploaded by victim yet.</p>
             </div>`;
         }
-
         content.innerHTML = `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
                 <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:12px;padding:12px;">
@@ -1335,31 +1350,23 @@ function closeVictimEvidenceModal() {
 
 async function verifyEvidence(action) {
     if (!currentEvidenceRecord) return;
-    const note    = document.getElementById('evModalNote').value.trim();
+    const note       = document.getElementById('evModalNote').value.trim();
     const approveBtn = document.getElementById('evModalApproveBtn');
     const rejectBtn  = document.getElementById('evModalRejectBtn');
-
     approveBtn.disabled = rejectBtn.disabled = true;
     approveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
     try {
         const res  = await fetch('/api/admin/sos-evidence-verify', {
             method:  'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                responder_id: currentEvidenceRecord.id,   // SosResponder PK
-                action,
-                note,
-            }),
+            body: JSON.stringify({ responder_id: currentEvidenceRecord.id, action, note }),
         });
         const data = await res.json();
-
         if (data.success) {
             closeSosEvidenceModal();
-            const emoji = action === 'approve' ? '✅' : '❌';
-            showToast(`${emoji} ${data.message}`);
-            loadSosEvidence(); // refresh the grid
+            showToast(`${action === 'approve' ? '✅' : '❌'} ${data.message}`);
+            loadSosEvidence();
         } else {
             throw new Error(data.message || 'Failed');
         }
@@ -1370,6 +1377,167 @@ async function verifyEvidence(action) {
     }
 }
 
+// ── Pending Accounts ──────────────────────────────────────────
+let currentPendingUserId = null;
+
+async function loadPendingAccounts() {
+    const tbody = document.getElementById('pending-accounts-tbody');
+    tbody.innerHTML = '<tr><td colspan="8" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    try {
+        const res  = await fetch('/api/admin/pending-accounts');
+        const data = await res.json();
+        if (!data.success) throw new Error();
+        const list  = data.users || [];
+        const badge = document.getElementById('pendingAccountsBadge');
+        if (list.length > 0) {
+            badge.style.display = 'inline';
+            badge.textContent   = list.length;
+        } else {
+            badge.style.display = 'none';
+        }
+        document.getElementById('pendingAccountsCount').textContent =
+            list.length ? `${list.length} pending request${list.length > 1 ? 's' : ''}` : 'No pending requests';
+        if (!list.length) {
+            tbody.innerHTML = `<tr><td colspan="8" class="table-state">
+                <i class="fas fa-check-circle" style="color:#2ecc71"></i><br>No pending accounts — all clear!
+            </td></tr>`;
+            return;
+        }
+        tbody.innerHTML = list.map((u, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td><strong style="color:#fff">${escHtml(u.name)}</strong></td>
+                <td style="color:#a0b4cc;font-size:13px">${escHtml(u.email)}</td>
+                <td style="color:#a0b4cc;font-size:13px">${escHtml(u.phone || '—')}</td>
+                <td><code style="color:#fbbf24;font-size:13px">${escHtml(u.id_number)}</code></td>
+                <td style="color:#a0b4cc;font-size:12px">${u.joined_at ? new Date(u.joined_at).toLocaleDateString('en-BD') : '—'}</td>
+                <td>
+                    ${u.id_document_path
+                        ? `<button onclick="viewBcDoc(${u.id}, '${escHtml(u.id_document_path)}', '${escHtml(u.name)}')"
+                                   style="background:#2563eb15;border:1px solid #2563eb40;color:#4f9eff;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;">
+                               <i class="fas fa-eye"></i> View
+                           </button>`
+                        : '<span style="color:#4a5568;font-size:12px;">No file</span>'
+                    }
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;">
+                        <button onclick="approveAccount(${u.id}, '${escHtml(u.name)}')"
+                                style="background:#2ecc7115;border:1px solid #2ecc7140;color:#2ecc71;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button onclick="rejectAccount(${u.id}, '${escHtml(u.name)}')"
+                                style="background:#e6394615;border:1px solid #e6394640;color:#e63946;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="8" class="table-state">Could not load pending accounts.</td></tr>';
+    }
+}
+
+function viewBcDoc(userId, docPath, userName) {
+    currentPendingUserId = userId;
+    const modal   = document.getElementById('bcDocModal');
+    const content = document.getElementById('bcDocContent');
+    const actions = document.getElementById('bcDocActions');
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(docPath);
+    const isPdf   = /\.pdf$/i.test(docPath);
+    const fullUrl = '/' + docPath;
+    if (isImage) {
+        content.innerHTML = `<img src="${fullUrl}" alt="Birth Certificate"
+            style="max-width:100%;max-height:70vh;border-radius:10px;border:1px solid #1e2d4a;"
+            onerror="this.outerHTML='<p style=color:#e63946>Image could not be loaded.</p>'"
+        />`;
+    } else if (isPdf) {
+        content.innerHTML = `<embed src="${fullUrl}" type="application/pdf"
+            style="width:100%;height:500px;border-radius:10px;" />`;
+    } else {
+        content.innerHTML = `<p style="color:#a0b4cc">
+            <a href="${fullUrl}" target="_blank" style="color:#4f9eff;">
+                <i class="fas fa-download"></i> Download Document
+            </a>
+        </p>`;
+    }
+    actions.innerHTML = `
+        <button onclick="closeBcDocModal()"
+                style="background:none;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:8px;padding:8px 20px;cursor:pointer;">
+            Close
+        </button>
+        <button onclick="approveAccount(${userId}, '${escHtml(userName)}'); closeBcDocModal();"
+                style="background:#2ecc71;border:none;color:#fff;border-radius:8px;padding:8px 20px;font-weight:700;cursor:pointer;">
+            <i class="fas fa-check"></i> Approve
+        </button>
+        <button onclick="rejectAccount(${userId}, '${escHtml(userName)}'); closeBcDocModal();"
+                style="background:#e63946;border:none;color:#fff;border-radius:8px;padding:8px 20px;font-weight:700;cursor:pointer;">
+            <i class="fas fa-times"></i> Reject
+        </button>
+    `;
+    modal.style.display = 'flex';
+}
+
+function closeBcDocModal() {
+    document.getElementById('bcDocModal').style.display = 'none';
+    document.getElementById('bcDocContent').innerHTML = '';
+    currentPendingUserId = null;
+}
+
+async function approveAccount(userId, userName) {
+    if (!confirm(`Approve account for "${userName}"?\n\nThey will be able to login immediately.`)) return;
+    try {
+        const res  = await fetch('/api/admin/approve-account', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() },
+            body:    JSON.stringify({ id: userId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`✅ ${userName}'s account approved!`);
+            loadPendingAccounts();
+        } else {
+            showToast('Approval failed: ' + (data.message || 'Unknown error'), true);
+        }
+    } catch (e) {
+        showToast('Network error. Please try again.', true);
+    }
+}
+
+async function rejectAccount(userId, userName) {
+    if (!confirm(`Reject and delete account request for "${userName}"?\n\nThis cannot be undone.`)) return;
+    try {
+        const res  = await fetch('/api/admin/reject-account', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrfToken() },
+            body:    JSON.stringify({ id: userId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`🗑️ ${userName}'s request rejected.`);
+            loadPendingAccounts();
+        } else {
+            showToast('Rejection failed: ' + (data.message || 'Unknown error'), true);
+        }
+    } catch (e) {
+        showToast('Network error. Please try again.', true);
+    }
+}
+
+async function checkPendingBadgeOnLoad() {
+    try {
+        const res  = await fetch('/api/admin/pending-accounts');
+        const data = await res.json();
+        if (data.success && data.count > 0) {
+            const badge = document.getElementById('pendingAccountsBadge');
+            badge.style.display = 'inline';
+            badge.textContent   = data.count;
+        }
+    } catch(e) {}
+}
+
+// ── Misc ──────────────────────────────────────────────────────
 function logout() {
     localStorage.removeItem('isAdminLoggedIn');
     window.location.href = '/admin/login';
@@ -1383,18 +1551,26 @@ function showToast(msg, isError) {
     setTimeout(() => t.remove(), 3000);
 }
 
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+// ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
     showSection('dashboard');
     document.getElementById('nav-dashboard').classList.add('active');
-    // Load expired evidence alerts on dashboard load
     loadExpiredEvidenceAlerts();
-    // Load SOS evidence badge count silently
     loadSosEvidenceBadge();
-    // Close Evidence Request modal on overlay click
+    checkPendingBadgeOnLoad();
     document.getElementById('erRequestModal').addEventListener('click', function(e) {
         if (e.target === this) closeEvidenceRequestModal();
     });
 });
+
 </script>
 @endsection
 

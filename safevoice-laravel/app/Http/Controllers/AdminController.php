@@ -60,6 +60,73 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'message' => 'User status updated to ' . $request->status]);
     }
 
+    // ── GET /api/admin/pending-accounts ──────────────────────────
+    // Birth certificate দিয়ে register করা pending users এর list
+    public function pendingAccounts()
+    {
+        $users = User::where('status', 'Pending')
+            ->where('id_type', 'birth_certificate')
+            ->orderByDesc('joined_at')
+            ->get([
+                'id', 'name', 'email', 'phone',
+                'id_number', 'id_document_path', 'joined_at'
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'users'   => $users,
+            'count'   => $users->count(),
+        ]);
+    }
+
+    // ── POST /api/admin/approve-account ──────────────────────────
+    public function approveAccount(Request $request)
+    {
+        $request->validate(['id' => 'required|integer']);
+
+        $user = User::where('id', $request->id)
+            ->where('status', 'Pending')
+            ->firstOrFail();
+
+        $user->update([
+            'status'           => 'Active',
+            'rejection_reason' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Account for {$user->name} approved successfully.",
+        ]);
+    }
+
+    // ── POST /api/admin/reject-account ───────────────────────────
+    public function rejectAccount(Request $request)
+    {
+        $request->validate([
+            'id'     => 'required|integer',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $user = User::where('id', $request->id)
+            ->where('status', 'Pending')
+            ->firstOrFail();
+
+        // Rejected user কে delete করো — ওরা আবার register করতে পারবে
+        $userName = $user->name;
+
+        // Document file delete করো
+        if ($user->id_document_path && file_exists(public_path($user->id_document_path))) {
+            unlink(public_path($user->id_document_path));
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Account request for {$userName} has been rejected and removed.",
+        ]);
+    }
+
     // GET /api/stats — home page public stats
     public function publicStats()
     {
@@ -76,5 +143,4 @@ class AdminController extends Controller
             'sos'      => $sos,
         ]);
     }
-
 }

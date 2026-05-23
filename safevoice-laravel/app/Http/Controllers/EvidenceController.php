@@ -62,8 +62,11 @@ class EvidenceController extends Controller
         // crime_type ও description SosAlert এ update করব
         $sosId = $request->sos_id;
         $updateData = [];
-        if ($request->filled('crime_type'))  $updateData['crime_type']  = $request->crime_type;
-        if ($request->filled('description')) $updateData['description'] = $request->description;
+        if ($request->filled('crime_type'))    $updateData['crime_type']    = $request->crime_type;
+        if ($request->filled('description'))   $updateData['description']   = $request->description;
+        // Anonymous user এর phone/name update
+        if ($request->filled('contact_phone')) $updateData['contact_phone'] = $request->contact_phone;
+        if ($request->filled('contact_name'))  $updateData['contact_name']  = $request->contact_name;
         if (!empty($updateData)) {
             \App\Models\SosAlert::where('id', $sosId)->update($updateData);
         }

@@ -167,10 +167,22 @@ body.light-mode { background: #070d1a !important; color: #fff !important; }
             <input type="hidden" id="crimeType" value="">
         </div>
 
-        <!-- Description -->
+        <!-- Description + Phone (side by side on larger screens) -->
         <div class="sv-form-group">
             <label><i class="fas fa-align-left"></i> Describe the situation</label>
-            <textarea id="crimeDesc" placeholder="What is happening? Where are you exactly? Describe the attacker..." rows="3"></textarea>
+            <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+                <textarea id="crimeDesc" placeholder="What is happening? Where are you exactly? Describe the attacker..." rows="3" style="flex:1;min-width:180px;"></textarea>
+                <!-- Non-logged-in user দের জন্য phone number field -->
+                <div id="anonPhoneField" style="display:none;flex-shrink:0;width:160px;">
+                    <label style="font-size:11px;color:#a0b4cc;display:block;margin-bottom:5px;"><i class="fas fa-phone" style="color:#e63946;"></i> Your Phone</label>
+                    <input type="tel" id="evidenceContactPhone"
+                        placeholder="01XXXXXXXXX"
+                        maxlength="13"
+                        style="width:100%;background:#0a0f1e;border:1px solid #e6394660;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"
+                        oninput="this.value=this.value.replace(/[^0-9+]/g,'')">
+                    <small style="color:#6b7280;font-size:10px;display:block;margin-top:3px;">Responders will call this</small>
+                </div>
+            </div>
         </div>
 
         <!-- Evidence Upload -->
@@ -273,6 +285,45 @@ body.light-mode { background: #070d1a !important; color: #fff !important; }
 
 <script src="{{ asset('js/main.js') }}"></script>
 <script src="{{ asset('js/sos.js') }}"></script>
+
+<!-- Anonymous SOS Modal — Login ছাড়া SOS দিলে phone number চাইবে -->
+<div id="anonymousSosModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:999999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#0d1117;border:1px solid #e6394666;border-radius:20px;padding:28px;max-width:420px;width:100%;">
+        <div style="text-align:center;margin-bottom:20px;">
+            <div style="width:60px;height:60px;border-radius:50%;background:#e6394622;border:2px solid #e6394666;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                <i class="fas fa-exclamation-triangle" style="font-size:26px;color:#e63946;"></i>
+            </div>
+            <h2 style="color:#fff;font-size:18px;margin-bottom:6px;">Emergency SOS</h2>
+            <p style="color:#a0b4cc;font-size:13px;line-height:1.6;">তুমি login করা নেই। Responders তোমার সাথে contact করতে পারবে না।<br>
+            নিচে তোমার <strong style="color:#e63946;">phone number</strong> দাও যাতে কেউ তোমাকে call করতে পারে।</p>
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">তোমার নাম (optional)</label>
+            <input type="text" id="anonName" placeholder="তোমার নাম..." maxlength="60"
+                style="width:100%;background:#0a0f1e;border:1px solid #e6394640;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="color:#a0b4cc;font-size:13px;display:block;margin-bottom:6px;">Phone Number <span style="color:#e63946;">*</span></label>
+            <input type="tel" id="anonPhone" placeholder="01XXXXXXXXX" maxlength="13"
+                style="width:100%;background:#0a0f1e;border:1px solid #e6394640;border-radius:8px;padding:10px 14px;color:#fff;font-size:15px;outline:none;box-sizing:border-box;letter-spacing:1px;"
+                oninput="this.value=this.value.replace(/[^0-9+]/g,'')">
+        </div>
+        <div id="anonSosErr" style="display:none;color:#e63946;font-size:12px;margin-bottom:12px;padding:8px;background:#e6394622;border-radius:8px;"></div>
+        <div style="display:flex;gap:10px;">
+            <button onclick="closeAnonymousSosModal()"
+                style="flex:1;background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:10px;padding:12px;font-size:14px;cursor:pointer;">
+                Cancel
+            </button>
+            <button onclick="proceedAnonymousSos()"
+                style="flex:2;background:#e63946;border:none;color:#fff;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;">
+                <i class="fas fa-broadcast-tower"></i> Send SOS Alert
+            </button>
+        </div>
+        <p style="text-align:center;color:#4a5568;font-size:11px;margin-top:14px;">
+            <a href="/login" style="color:#4f9eff;">Login করলে</a> location automatically track হয় এবং বেশি সুরক্ষা পাবে।
+        </p>
+    </div>
+</div>
 
 <script>
 // Crime type radio helper

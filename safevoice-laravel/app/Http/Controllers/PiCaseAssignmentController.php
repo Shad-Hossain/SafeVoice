@@ -9,7 +9,9 @@ use App\Models\PiCaseAssignment;
 use App\Models\User;
 use App\Models\SuperAdmin;
 use App\Models\ComplaintEvidence;
-
+use App\Models\PiPayment;
+use App\Models\UserNotification;
+use App\Models\SuperAdminNotification;
 /**
  * PI Case Assignment Controller
  * ─────────────────────────────
@@ -62,16 +64,40 @@ class PiCaseAssignmentController extends Controller
         if (!$pi) {
             // সব PI trial শেষ — Super Admin কে notify করো
             $this->notifySuperAdminAllRejected($complaint);
+ 
+            // User কে refund notification পাঠাও
+            $this->sendUserRefundEmail($complaint);
+ 
+            // Payment status refunded এ update করো
+            PiPayment::where('complaint_id', $complaintId)
+                ->where('status', 'confirmed')
+                ->update(['status' => 'refunded']);
+ 
             $complaint->update([
-                'status'             => 'PI Assignment Failed',
+                'status'              => 'PI Assignment Failed',
                 'current_pi_email_id' => null,
             ]);
+
+            // ── In-app notification: user কে জানাও refund আসছে ──
+            if ($complaint->user_id) {
+                UserNotification::notify(
+                    $complaint->user_id,
+                    'refund_initiated',
+                    '💰 Refund Processing',
+                    "দুঃখিত! Complaint {$complaint->complaint_id} এর জন্য কোনো PI পাওয়া যায়নি। তোমার payment ৩-৫ কার্যদিবসের মধ্যে refund হবে।",
+                    [
+                        'complaint_id' => $complaint->complaint_id,
+                        'action_url'   => '/dashboard',
+                        'icon'         => '💰',
+                    ]
+                );
+            }
+
             return [
                 'success' => false,
-                'message' => 'All PIs rejected. Super Admin notified.',
+                'message' => 'All PIs rejected. Super Admin notified. User refund email sent.',
             ];
         }
-
         // Unique signed token তৈরি করো
         $token = Str::random(48) . '_' . time();
 
@@ -228,6 +254,21 @@ return $this->htmlResponse(
 
         // পরের PI তে পাঠাও
         $result = $this->sendToNextPi($complaint->complaint_id);
+
+        // ── In-app notification: user কে জানাও search চলছে ──
+        if ($complaint->user_id && $result['success']) {
+            UserNotification::notify(
+                $complaint->user_id,
+                'status_update',
+                '🔄 Investigator Search Ongoing',
+                "তোমার complaint {$complaint->complaint_id} এর জন্য আমরা আরেকজন Investigator খুঁজছি। শীঘ্রই update পাবে।",
+                [
+                    'complaint_id' => $complaint->complaint_id,
+                    'action_url'   => '/track?id=' . $complaint->complaint_id,
+                    'icon'         => '🔄',
+                ]
+            );
+        }
 
         if ($result['success']) {
             $msg = "You rejected case {$complaint->complaint_id}. It has been forwarded to the next available investigator.";
@@ -530,6 +571,84 @@ HTML;
     // EMAIL: Super Admin কে notify করো — সব PI rejected
     // ─────────────────────────────────────────────────────────────
 
+
+     private function sendUserRefundEmail(Complaint $complaint): void
+    {
+        if (!$complaint->user_id) return;
+        $user = User::find($complaint->user_id);
+        if (!$user || !$user->email) return;
+ 
+        $type = ucfirst(str_replace('_', ' ', $complaint->type));
+ 
+        $html = <<<HTML
+<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#070d1a;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr><td align="center" style="padding:40px 20px;">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#0d1526;border-radius:16px;border:1px solid #1e2d4a;max-width:560px;">
+ 
+<tr><td style="background:linear-gradient(135deg,#7f1d1d,#450a0a);padding:28px 32px;border-radius:16px 16px 0 0;text-align:center;">
+  <div style="font-size:28px;margin-bottom:6px;">🛡️</div>
+  <h1 style="color:#fff;margin:0;font-size:20px;font-weight:700;">SafeVoice</h1>
+  <p style="color:#fca5a5;margin:4px 0 0;font-size:13px;">Important Update on Your Case</p>
+</td></tr>
+ 
+<tr><td style="padding:28px 32px 0;">
+  <p style="color:#a0b4cc;font-size:15px;margin:0 0 10px;">
+    Dear <strong style="color:#fff;">{$user->name}</strong>,
+  </p>
+  <p style="color:#a0b4cc;font-size:14px;line-height:1.7;margin:0 0 20px;">
+    We regret to inform you that we were unable to assign a
+    <strong style="color:#c084fc;">Private Investigator</strong> to your case at this time.
+    All available investigators have declined the assignment.
+  </p>
+</td></tr>
+ 
+<tr><td style="padding:0 32px 20px;">
+  <div style="background:#7f1d1d20;border:1px solid #dc262640;border-radius:12px;padding:18px 22px;text-align:center;">
+    <div style="font-size:11px;color:#fca5a5;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Case ID</div>
+    <div style="font-size:22px;font-weight:800;color:#ef4444;font-family:monospace;">{$complaint->complaint_id}</div>
+    <div style="font-size:13px;color:#a0b4cc;margin-top:6px;">Type: {$type}</div>
+  </div>
+</td></tr>
+ 
+<tr><td style="padding:0 32px 20px;">
+  <div style="background:#16a34a10;border-left:4px solid #16a34a;border-radius:8px;padding:16px 18px;">
+    <p style="color:#4ade80;font-size:14px;margin:0;font-weight:600;">
+      💰 Your payment will be refunded within 3–5 business days.
+    </p>
+    <p style="color:#a0b4cc;font-size:13px;margin:8px 0 0;">
+      The refund will be processed to your original payment method automatically.
+      If you have any questions, please contact our support team.
+    </p>
+  </div>
+</td></tr>
+ 
+<tr><td style="padding:0 32px 24px;">
+  <div style="background:#1e3a6e20;border-left:4px solid #4f9eff;border-radius:8px;padding:14px 18px;">
+    <p style="color:#a0b4cc;font-size:13px;margin:0;">
+      ℹ️ Our Super Admin has been notified and will manually review your case.
+      You may be contacted with further options.
+    </p>
+  </div>
+</td></tr>
+ 
+<tr><td style="border-top:1px solid #1e2d4a;padding:20px 32px;text-align:center;">
+  <p style="color:#3a4a5e;font-size:12px;margin:0;">© 2026 SafeVoice · Protecting voices, securing futures.</p>
+</td></tr>
+ 
+</table></td></tr></table>
+</body></html>
+HTML;
+ 
+        $this->sendMail(
+            $user->email,
+            $user->name,
+            "SafeVoice — Update on Case {$complaint->complaint_id} & Refund Notice",
+            $html
+        );
+    }
+
     private function notifySuperAdminAllRejected(Complaint $complaint): void
     {
         $superAdmin = SuperAdmin::first(); // বা where('is_primary', true)->first()
@@ -588,6 +707,18 @@ HTML;
             'Super Admin',
             "🔴 ACTION REQUIRED: All PIs Rejected Case {$complaint->complaint_id}",
             $html
+        );
+
+        // ── In-app notification: super admin dashboard এ দেখাবে ──
+        SuperAdminNotification::notify(
+            'all_pi_rejected',
+            '🔴 All PIs Rejected — Manual Action Required',
+            "Case {$complaint->complaint_id} ({$type}) এর জন্য সব {$rejectedCount} জন PI reject করেছে। Manual assignment দরকার।",
+            [
+                'complaint_id' => $complaint->complaint_id,
+                'action_url'   => '/super-admin/dashboard',
+                'icon'         => '⚠️',
+            ]
         );
     }
 

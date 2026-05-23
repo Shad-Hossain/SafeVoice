@@ -77,6 +77,204 @@ body {
 .topbar-btn:hover { border-color: var(--border2); color: var(--text); }
 .topbar-btn.danger:hover { border-color: var(--red); color: var(--red); }
 
+/* ── REFUND CARDS ── */
+.refund-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+}
+.refund-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    transition: border-color .2s;
+}
+.refund-card:hover { border-color: var(--border2); }
+.refund-card.pending   { border-left: 3px solid var(--red); }
+.refund-card.processed { border-left: 3px solid var(--green); opacity: .75; }
+.refund-card-top {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 10px; margin-bottom: 14px;
+}
+.refund-case-id {
+    font-family: 'Syne', sans-serif; font-size: 16px;
+    font-weight: 800; color: var(--text);
+}
+.refund-status-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: .6px; flex-shrink: 0;
+}
+.badge-pending   { background: var(--red-dim);   color: var(--red);   border: 1px solid var(--red); }
+.badge-processed { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+.refund-info {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px 12px; margin-bottom: 16px;
+}
+.refund-info-row  { font-size: 12px; }
+.refund-info-label{ color: var(--text-3); margin-bottom: 2px; }
+.refund-info-val  { color: var(--text); font-weight: 600; }
+.refund-info-val.amount { color: var(--gold); font-size: 15px; font-family: 'Syne', sans-serif; }
+.refund-info-val.method { color: var(--blue); }
+.refund-info-val.txn    { color: var(--purple); font-family: monospace; font-size: 11px; word-break: break-all; }
+.refund-note {
+    background: var(--red-dim); border: 1px solid var(--red);
+    border-radius: 8px; padding: 10px 12px;
+    font-size: 12px; color: #fca5a5;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.refund-note.done { background: var(--green-dim); border-color: var(--green); color: #86efac; }
+.btn-refund {
+    width: 100%; padding: 11px;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity .2s;
+}
+.btn-refund:hover    { opacity: .88; }
+.btn-refund:disabled { opacity: .45; cursor: not-allowed; }
+.btn-refund.done {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--green); cursor: default;
+}
+.refund-empty { text-align: center; padding: 60px 20px; color: var(--text-3); }
+.refund-empty i  { font-size: 40px; margin-bottom: 14px; display: block; opacity: .3; }
+.refund-empty h3 { font-size: 16px; color: var(--text-2); margin-bottom: 6px; }
+.refund-processed-at { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 8px; }
+
+/* ── NOTIFICATION BELL ── */
+.notif-bell-wrap {
+    position: relative;
+}
+.notif-bell {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    transition: .2s;
+    position: relative;
+}
+.notif-bell:hover { border-color: var(--gold-glow); color: var(--gold); }
+.notif-badge {
+    position: absolute;
+    top: -5px; right: -5px;
+    background: var(--red);
+    color: #fff;
+    font-size: 10px; font-weight: 700;
+    min-width: 18px; height: 18px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+    border: 2px solid var(--bg);
+    display: none;
+}
+.notif-badge.visible { display: flex; }
+
+.notif-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 380px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    z-index: 999;
+    display: none;
+    overflow: hidden;
+    animation: notifFadeIn .15s ease;
+}
+.notif-dropdown.open { display: block; }
+@keyframes notifFadeIn {
+    from { opacity:0; transform: translateY(-6px); }
+    to   { opacity:1; transform: translateY(0); }
+}
+.notif-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+}
+.notif-head-title {
+    font-size: 13px; font-weight: 700; color: var(--text);
+}
+.notif-mark-all {
+    background: transparent; border: none;
+    color: var(--gold); font-size: 11px; font-weight: 600;
+    cursor: pointer; padding: 4px 8px; border-radius: 6px;
+    transition: .15s; font-family: 'DM Sans', sans-serif;
+}
+.notif-mark-all:hover { background: var(--gold-dim); }
+
+.notif-list {
+    max-height: 380px;
+    overflow-y: auto;
+}
+.notif-list::-webkit-scrollbar { width: 4px; }
+.notif-list::-webkit-scrollbar-track { background: transparent; }
+.notif-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.notif-item {
+    display: flex; gap: 12px;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s;
+    position: relative;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: rgba(255,255,255,.03); }
+.notif-item.unread { background: var(--gold-dim); }
+.notif-item.unread:hover { background: rgba(245,158,11,.08); }
+.notif-icon-wrap {
+    width: 36px; height: 36px; flex-shrink: 0;
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+}
+.notif-content { flex: 1; min-width: 0; }
+.notif-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.notif-msg {
+    font-size: 11px; color: var(--text-2);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.notif-time {
+    font-size: 10px; color: var(--text-3);
+    margin-top: 4px;
+}
+.notif-unread-dot {
+    width: 7px; height: 7px;
+    background: var(--gold);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+    display: none;
+}
+.notif-item.unread .notif-unread-dot { display: block; }
+
+.notif-empty {
+    padding: 32px 18px;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 13px;
+}
+.notif-empty i { font-size: 28px; margin-bottom: 10px; display: block; opacity: .4; }
+
 /* ── LAYOUT ── */
 .layout { display: flex; padding-top: 60px; min-height: 100vh; }
 
@@ -470,6 +668,28 @@ textarea.form-input { resize: vertical; min-height: 72px; }
         <span class="topbar-badge">Super Admin</span>
     </a>
     <a href="/admin/dashboard" class="topbar-btn"><i class="fas fa-user-shield"></i> Normal Admin</a>
+
+    <!-- 🔔 Notification Bell -->
+    <div class="notif-bell-wrap" id="notifWrap">
+        <button class="notif-bell" id="notifBellBtn" title="Notifications">
+            <i class="fas fa-bell"></i>
+            <span class="notif-badge" id="notifBadge">0</span>
+        </button>
+
+        <div class="notif-dropdown" id="notifDropdown">
+            <div class="notif-head">
+                <span class="notif-head-title">🔔 Notifications</span>
+                <button class="notif-mark-all" id="notifMarkAll">Mark all read</button>
+            </div>
+            <div class="notif-list" id="notifList">
+                <div class="notif-empty">
+                    <i class="fas fa-bell-slash"></i>
+                    No notifications yet
+                </div>
+            </div>
+        </div>
+    </div>
+
     <button class="topbar-btn danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
 </header>
 
@@ -486,6 +706,10 @@ textarea.form-input { resize: vertical; min-height: 72px; }
             </a>
             <a class="nav-item" id="nav-cases" onclick="showSection('cases')">
                 <i class="fas fa-folder-open"></i> Active Cases
+            </a>
+            <a class="nav-item" id="nav-refunds" onclick="showSection('refunds')">
+                <i class="fas fa-money-bill-wave"></i> Refunds
+                <span id="refundNavBadge" style="margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:none;"></span>
             </a>
         </div>
         <div class="sidebar-footer">
@@ -626,6 +850,22 @@ textarea.form-input { resize: vertical; min-height: 72px; }
             </div>
         </div>
 
+        <!-- ── REFUNDS ── -->
+        <div class="section" id="view-refunds">
+            <div class="page-header">
+                <div>
+                    <div class="page-title"><i class="fas fa-money-bill-wave" style="color:var(--gold);margin-right:10px"></i>Refunds</div>
+                    <div class="page-sub">Users waiting for refund — all PIs rejected their case</div>
+                </div>
+                <button class="btn btn-ghost" onclick="loadRefunds()" style="gap:8px">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div id="refundsContent">
+                <div class="loading-state"><i class="fas fa-spinner fa-spin"></i>Loading refunds...</div>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -695,7 +935,7 @@ function logout() {
 }
 
 function showSection(s) {
-    ['investigators','overview','cases'].forEach(id => {
+    ['investigators','overview','cases','refunds'].forEach(id => {
         document.getElementById('view-'+id).classList.remove('active');
         document.getElementById('nav-'+id)?.classList.remove('active');
     });
@@ -704,6 +944,7 @@ function showSection(s) {
     if (s === 'investigators') loadPIs();
     if (s === 'overview')      loadOverview();
     if (s === 'cases')         loadCases();
+    if (s === 'refunds')       loadRefunds();
 }
 
 let allPIs = [];
@@ -1049,6 +1290,313 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch(e) {}
     showSection('investigators');
 });
+
+// ═══════════════════════════════════════════════════════════════
+// 💰 REFUNDS
+// ═══════════════════════════════════════════════════════════════
+
+async function loadRefunds() {
+    const el = document.getElementById('refundsContent');
+    el.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i>Loading refunds...</div>';
+
+    try {
+        const res  = await fetch('/api/super-admin/refunds');
+        const data = await res.json();
+        if (!data.success) throw new Error('Failed');
+
+        const all     = data.refunds || [];
+        const pending = all.filter(r => r.status !== 'processed');
+
+        // Sidebar badge
+        const badge = document.getElementById('refundNavBadge');
+        if (pending.length > 0) {
+            badge.textContent = pending.length;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+
+        if (all.length === 0) {
+            el.innerHTML = `
+                <div class="refund-empty">
+                    <i class="fas fa-check-circle" style="color:var(--green);opacity:.5"></i>
+                    <h3>No Refunds Pending</h3>
+                    <p style="font-size:13px">সব cases এর payment OK আছে।</p>
+                </div>`;
+            return;
+        }
+
+        // Summary bar
+        const totalAmt = pending.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
+        const summaryHtml = pending.length > 0 ? `
+            <div style="background:var(--red-dim);border:1px solid var(--red);border-radius:12px;
+                        padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <span style="font-size:20px;">⚠️</span>
+                <div>
+                    <div style="font-size:13px;font-weight:700;color:var(--red);">${pending.length} Refund${pending.length>1?'s':''} Pending</div>
+                    <div style="font-size:12px;color:var(--text-2);">Total: <strong style="color:var(--gold);">৳${totalAmt.toLocaleString()}</strong> — manually send via bKash/Nagad then click "Mark Refunded"</div>
+                </div>
+            </div>` : '';
+
+        el.innerHTML = summaryHtml + `<div class="refund-grid" id="refundGrid"></div>`;
+
+        const grid = document.getElementById('refundGrid');
+        grid.innerHTML = all.map(r => buildRefundCard(r)).join('');
+
+    } catch(e) {
+        el.innerHTML = '<div class="loading-state" style="color:var(--red)"><i class="fas fa-exclamation-triangle"></i> Failed to load refunds.</div>';
+    }
+}
+
+function buildRefundCard(r) {
+    const isDone = r.refund_status === 'processed';
+    const method = (r.payment_method || '—').toUpperCase();
+    const methodColors = { BKASH:'#e40046', NAGAD:'#f7941d', ROCKET:'#8b3db5', BANK:'#3b82f6' };
+    const mColor = methodColors[method] || 'var(--blue)';
+
+    const paidAt    = r.confirmed_at  ? new Date(r.confirmed_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const failedAt  = r.failed_at     ? new Date(r.failed_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})    : '—';
+    const processAt = r.processed_at  ? new Date(r.processed_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
+
+    return `
+    <div class="refund-card ${isDone ? 'processed' : 'pending'}" id="rcard-${r.id}">
+        <div class="refund-card-top">
+            <div>
+                <div class="refund-case-id">${escHtml(r.complaint_id)}</div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:2px;">${escHtml(r.type || '—')}</div>
+            </div>
+            <span class="refund-status-badge ${isDone ? 'badge-processed' : 'badge-pending'}">
+                ${isDone ? '✅ Refunded' : '🔴 Pending'}
+            </span>
+        </div>
+
+        <div class="refund-info">
+            <div class="refund-info-row">
+                <div class="refund-info-label">Amount</div>
+                <div class="refund-info-val amount">৳${parseFloat(r.amount||0).toLocaleString()}</div>
+            </div>
+            <div class="refund-info-row">
+                <div class="refund-info-label">Method</div>
+                <div class="refund-info-val method" style="color:${mColor}">${method}</div>
+            </div>
+            <div class="refund-info-row">
+                <div class="refund-info-label">Sender Number</div>
+                <div class="refund-info-val sender">${escHtml(r.sender_number || '—')}</div>
+            </div>
+            <div class="refund-info-row">
+                <div class="refund-info-label">TXN ID</div>
+                <div class="refund-info-val txn">${escHtml(r.txn_id || '—')}</div>
+            </div>
+            <div class="refund-info-row">
+                <div class="refund-info-label">User</div>
+                <div class="refund-info-val" style="color:var(--text-2)">${escHtml(r.user_name || 'Anonymous')}</div>
+            </div>
+            <div class="refund-info-row">
+                <div class="refund-info-label">User Email</div>
+                <div class="refund-info-val" style="color:var(--blue);font-size:11px;word-break:break-all">${escHtml(r.user_email || '—')}</div>
+            </div>
+            <div class="refund-info-row">
+                <div class="refund-info-label">Paid On</div>
+                <div class="refund-info-val" style="color:var(--text-2)">${paidAt}</div>
+            </div>
+            <div class="refund-info-row">
+                <div class="refund-info-label">PI Failed On</div>
+                <div class="refund-info-val" style="color:var(--text-2)">${failedAt}</div>
+            </div>
+        </div>
+
+        <div class="refund-note ${isDone ? 'done' : ''}">
+            ${isDone
+                ? '<i class="fas fa-check-circle"></i> Refund marked as processed.'
+                : '<i class="fas fa-exclamation-circle"></i> Send ৳' + parseFloat(r.amount||0).toLocaleString() + ' to <strong>' + escHtml(r.sender_number||'—') + '</strong> via ' + method + ', then click below.'}
+        </div>
+
+        ${isDone
+            ? `<button class="btn-refund done" disabled><i class="fas fa-check"></i> Refund Done</button>
+               ${processAt ? `<div class="refund-processed-at">Marked on ${processAt}</div>` : ''}`
+            : `<button class="btn-refund" id="rbtn-${r.id}" onclick="markRefunded(${r.id})">
+                   <i class="fas fa-check-circle"></i> Mark as Refunded
+               </button>`
+        }
+    </div>`;
+}
+
+async function markRefunded(paymentId) {
+    const btn = document.getElementById('rbtn-' + paymentId);
+    if (!btn) return;
+    if (!confirm('টাকা পাঠিয়েছেন? Confirm করলে user কে notification যাবে।')) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+    try {
+        const res  = await fetch('/api/super-admin/refunds/mark-processed', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            },
+            body: JSON.stringify({ payment_id: paymentId }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            // Reload the section to reflect changes
+            loadRefunds();
+        } else {
+            alert('Error: ' + (data.message || 'Something went wrong'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Mark as Refunded';
+        }
+    } catch(e) {
+        alert('Network error. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Mark as Refunded';
+    }
+}
+
+// Load refund badge count on page load
+async function loadRefundBadge() {
+    try {
+        const res  = await fetch('/api/super-admin/refunds/pending-count');
+        const data = await res.json();
+        const count = data.pending_count || 0;
+        const badge = document.getElementById('refundNavBadge');
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+        }
+    } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🔔 SUPER ADMIN NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════
+
+const notifBellBtn   = document.getElementById('notifBellBtn');
+const notifDropdown  = document.getElementById('notifDropdown');
+const notifBadge     = document.getElementById('notifBadge');
+const notifList      = document.getElementById('notifList');
+const notifMarkAll   = document.getElementById('notifMarkAll');
+
+let notifOpen = false;
+
+// ── Bell button toggle ───────────────────────────────────────
+notifBellBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notifOpen = !notifOpen;
+    notifDropdown.classList.toggle('open', notifOpen);
+    if (notifOpen) fetchNotifications();
+});
+
+// ── Close on outside click ───────────────────────────────────
+document.addEventListener('click', (e) => {
+    if (!document.getElementById('notifWrap').contains(e.target)) {
+        notifOpen = false;
+        notifDropdown.classList.remove('open');
+    }
+});
+
+// ── Mark all read ─────────────────────────────────────────────
+notifMarkAll.addEventListener('click', async () => {
+    try {
+        await fetch('/api/super-admin/notifications/mark-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            },
+            body: JSON.stringify({}),
+        });
+        fetchNotifications();
+    } catch(e) {}
+});
+
+// ── Fetch & render notifications ──────────────────────────────
+async function fetchNotifications() {
+    try {
+        const res  = await fetch('/api/super-admin/notifications');
+        const data = await res.json();
+        if (!data.success) return;
+
+        // Badge
+        const count = data.unread_count || 0;
+        notifBadge.textContent = count > 99 ? '99+' : count;
+        notifBadge.classList.toggle('visible', count > 0);
+
+        // List
+        const items = data.notifications || [];
+        if (items.length === 0) {
+            notifList.innerHTML = `
+                <div class="notif-empty">
+                    <i class="fas fa-bell-slash"></i>
+                    No notifications yet
+                </div>`;
+            return;
+        }
+
+        notifList.innerHTML = items.map(n => `
+            <div class="notif-item ${n.is_read ? '' : 'unread'}"
+                 data-id="${n.id}"
+                 onclick="handleNotifClick(${n.id}, '${n.action_url || '/super-admin/dashboard'}')">
+                <div class="notif-icon-wrap">${n.icon || '⚠️'}</div>
+                <div class="notif-content">
+                    <div class="notif-title">${escHtml(n.title)}</div>
+                    <div class="notif-msg">${escHtml(n.message)}</div>
+                    <div class="notif-time">${timeAgo(n.created_at)}</div>
+                </div>
+                <div class="notif-unread-dot"></div>
+            </div>`
+        ).join('');
+
+    } catch(e) {}
+}
+
+// ── Click a notification: mark read ──────────────────────────
+async function handleNotifClick(id, url) {
+    try {
+        await fetch('/api/super-admin/notifications/mark-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            },
+            body: JSON.stringify({ id }),
+        });
+        fetchNotifications();
+    } catch(e) {}
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function escHtml(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    if (diff <  60) return 'just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+}
+
+// ── Poll unread count every 30 seconds ───────────────────────
+async function pollUnreadCount() {
+    try {
+        const res  = await fetch('/api/super-admin/notifications/unread-count');
+        const data = await res.json();
+        if (!data.success) return;
+        const count = data.unread_count || 0;
+        notifBadge.textContent = count > 99 ? '99+' : count;
+        notifBadge.classList.toggle('visible', count > 0);
+    } catch(e) {}
+}
+
+// Initial load + start polling
+fetchNotifications();
+setInterval(pollUnreadCount, 30000);
+loadRefundBadge();
+setInterval(loadRefundBadge, 60000);
 </script>
 </body>
 </html>

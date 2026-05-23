@@ -126,6 +126,49 @@ function cancelHold() {
 
 // ── ACTIVATE SOS ─────────────────────────────────────────────────
 async function activateSOS() {
+    // Login ছাড়া থাকলে phone number modal দেখাবো
+    const svUserRaw = localStorage.getItem('sv_user');
+    const svUser    = svUserRaw ? JSON.parse(svUserRaw) : {};
+    const userId    = svUser.id || 0;
+
+    if (!userId) {
+        // Login ছাড়া — phone number দিতে বলব
+        showAnonymousSosModal();
+        return;
+    }
+
+    await _doActivateSOS(userId, null, null);
+}
+
+// ── ANONYMOUS SOS MODAL ──────────────────────────────────────────
+function showAnonymousSosModal() {
+    cancelHold(); // Hold animation reset
+    const modal = document.getElementById('anonymousSosModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeAnonymousSosModal() {
+    const modal = document.getElementById('anonymousSosModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function proceedAnonymousSos() {
+    const phoneInput = document.getElementById('anonPhone');
+    const nameInput  = document.getElementById('anonName');
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const name  = nameInput  ? nameInput.value.trim()  : 'Anonymous';
+
+    if (!phone || phone.length < 10) {
+        const errEl = document.getElementById('anonSosErr');
+        if (errEl) { errEl.textContent = 'অনুগ্রহ করে সঠিক phone number দাও।'; errEl.style.display = 'block'; }
+        return;
+    }
+
+    closeAnonymousSosModal();
+    await _doActivateSOS(0, phone, name);
+}
+
+async function _doActivateSOS(userId, contactPhone, contactName) {
     sosActive = true;
     const btn  = document.getElementById('sosBtn');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
@@ -136,17 +179,20 @@ async function activateSOS() {
         btn.querySelector('small').textContent = 'Broadcasting alert';
     }
     updateStatusBar('Sending SOS alert...', true);
-    // sv_user localStorage থেকে user_id নেওয়া — session cookie কাজ না করলেও চলবে
-    const svUserRaw = localStorage.getItem('sv_user');
-    const svUser    = svUserRaw ? JSON.parse(svUserRaw) : {};
-    const userId    = svUser.id || 0;
 
     try {
         // STEP 1: Create SOS
         const createRes  = await fetch('/api/sos/create', {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-            body: JSON.stringify({ latitude: currentLat, longitude: currentLng, location: currentLocation, user_id: userId }),
+            body: JSON.stringify({
+                latitude:      currentLat,
+                longitude:     currentLng,
+                location:      currentLocation,
+                user_id:       userId,
+                contact_phone: contactPhone,
+                contact_name:  contactName,
+            }),
         });
         if (!createRes.ok) {
             showError('Server error (' + createRes.status + '). Please try again.');
@@ -242,6 +288,20 @@ function openEvidenceModal() {
     if (!modal) return;
     modal.style.display = 'flex';
     setTimeout(() => modal.classList.add('visible'), 10);
+
+    // Login ছাড়া থাকলে phone field দেখাব
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+    const isLoggedIn = !!(svUser.id || svUser.user_id);
+    const phoneField = document.getElementById('anonPhoneField');
+    if (phoneField) {
+        phoneField.style.display = isLoggedIn ? 'none' : 'block';
+    }
+    // Anonymous modal থেকে phone নেওয়া হয়ে থাকলে pre-fill করি
+    const anonPhoneInput = document.getElementById('anonPhone');
+    const evidencePhoneInput = document.getElementById('evidenceContactPhone');
+    if (!isLoggedIn && anonPhoneInput && evidencePhoneInput && anonPhoneInput.value) {
+        evidencePhoneInput.value = anonPhoneInput.value;
+    }
 }
 
 function closeEvidenceModal() {
@@ -281,10 +341,21 @@ async function submitEvidence() {
     const fileInput = document.getElementById('evidenceFile');
     const submitBtn = document.getElementById('submitEvidenceBtn');
     if (!crimeType) { showModalMsg('Please select a crime type', 'error'); return; }
+
     const formData = new FormData();
     formData.append('sos_id',      currentSOSId);
     formData.append('crime_type',  crimeType);
     formData.append('description', desc);
+
+    // Anonymous user এর phone number যোগ করি (DB তে update হবে)
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+    if (!svUser.id && !svUser.user_id) {
+        const phone = document.getElementById('evidenceContactPhone')?.value?.trim() || '';
+        const name  = document.getElementById('anonName')?.value?.trim() || '';
+        if (phone) formData.append('contact_phone', phone);
+        if (name)  formData.append('contact_name', name);
+    }
+
     if (fileInput && fileInput.files[0]) formData.append('evidence[0]', fileInput.files[0]);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     if (csrf) formData.append('_token', csrf);
@@ -363,14 +434,36 @@ function viewSOSDetails() {
     const panel = document.getElementById('incomingAlertPanel');
     const sosId = panel?.dataset.sosId;
     if (!sosId) return;
+
+    // 1. Record respond in DB
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     fetch('/api/sos/respond', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-        body:    JSON.stringify({ sos_id: parseInt(sosId), action: 'respond' }),
+        body:    JSON.stringify({ sos_id: parseInt(sosId) }),
     });
-    openSOSDetailsModal(sosId);
+
+    // 2. Dismiss the incoming panel immediately
     dismissIncomingAlert();
+
+    // 3. Fetch victim coords then open Google Maps navigation (my location → victim)
+    fetch(`/api/sos/alerts?sos_id=${sosId}`, { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.sos) {
+                const lat = data.sos.latitude;
+                const lng = data.sos.longitude;
+                if (lat && lng) {
+                    // Google Maps: directions from current location to victim
+                    window.open(
+                        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`,
+                        '_blank'
+                    );
+                }
+            }
+        })
+        .catch(() => {});
+    // No modal — navigation IS the response
 }
 
 function dismissIncomingAlert() {
@@ -420,10 +513,15 @@ function renderSOSDetails(sos, evidence, sosId) {
             <div><label>Alert Time</label><strong>${formatTime(sos.created_at)}</strong></div></div>
         <div class="sos-detail-evidence"><label><i class="fas fa-paperclip"></i> Evidence</label><div>${evidenceHtml}</div></div>
         <div class="sos-detail-actions">
-            <a href="https://maps.google.com?q=${sos.latitude},${sos.longitude}" target="_blank" class="btn-navigate">
-                <i class="fas fa-directions"></i> Navigate to Location</a>
+            <button onclick="navigateToVictim('${sos.latitude}','${sos.longitude}')" class="btn-navigate">
+                <i class="fas fa-directions"></i> Navigate to Spot</button>
             ${sos.victim_phone ? `<a href="tel:${sos.victim_phone}" class="btn-call-victim"><i class="fas fa-phone"></i> Call Victim</a>` : ''}
             <a href="tel:999" class="btn-call-police"><i class="fas fa-shield-alt"></i> Call Police</a>
+        </div>
+        <div style="margin-top:12px;">
+            <button onclick="closeSOSDetailsModal()" class="btn-dismiss-modal">
+                <i class="fas fa-times"></i> Dismiss
+            </button>
         </div>
 
         <!-- ── RESPONDER EVIDENCE UPLOAD ─────────────────────── -->
@@ -605,4 +703,14 @@ function cancelSOS() {
         const el = document.getElementById(id);
         if (el) el.textContent = 0;
     });
+}
+
+// ── NAVIGATION HELPER ─────────────────────────────────────────────
+// Google Maps directions: browser/device current location → victim
+function navigateToVictim(lat, lng) {
+    if (!lat || !lng) return;
+    window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`,
+        '_blank'
+    );
 }
