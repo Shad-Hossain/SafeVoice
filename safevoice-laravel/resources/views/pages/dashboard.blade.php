@@ -746,7 +746,6 @@ async function openSosDetailFromDashboard(sosId) {
     const activeModal = document.getElementById('active-sos-modal');
     if (activeModal) activeModal.style.display = 'none';
 
-    // Details modal দেখাই
     const detailModal = document.getElementById('sos-detail-modal');
     const detailBody  = document.getElementById('sos-detail-body');
     if (!detailModal || !detailBody) return;
@@ -755,6 +754,9 @@ async function openSosDetailFromDashboard(sosId) {
     detailBody.innerHTML = '<p style="text-align:center;padding:30px;color:#a0b4cc;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
 
     try {
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const userId = svUser.id || svUser.user_id || 0;
+
         const res  = await fetch('/api/sos/alerts?sos_id=' + sosId, { credentials: 'include' });
         const data = await res.json();
         if (!data.success || !data.sos) throw new Error();
@@ -763,6 +765,9 @@ async function openSosDetailFromDashboard(sosId) {
         const lat = s.latitude;
         const lng = s.longitude;
         const mapsUrl = (lat && lng) ? `https://maps.google.com?q=${lat},${lng}` : null;
+
+        // Check কি user আগে respond করেছে
+        const alreadyResponded = s.i_responded || false;
 
         detailBody.innerHTML = `
             <div style="display:flex;flex-direction:column;gap:12px;">
@@ -791,16 +796,35 @@ async function openSosDetailFromDashboard(sosId) {
                     <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">Description</div>
                     <div style="color:#e2e8f0;font-size:13px;line-height:1.5;">${s.description}</div>
                 </div>` : ''}
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
-                    ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" style="flex:1;background:#1a4a6e;border:none;color:#fff;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;min-width:140px;">
+
+                <!-- Action Buttons: Navigate / Call -->
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" style="flex:1;background:#1a4a6e;color:#fff;padding:10px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;min-width:130px;">
                         <i class="fas fa-directions"></i> Navigate to Spot
                     </a>` : ''}
-                    ${s.victim_phone ? `<a href="tel:${s.victim_phone}" style="flex:1;background:#1a4a1a;border:none;color:#2ecc71;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #2ecc7140;min-width:140px;">
+                    ${s.victim_phone ? `<a href="tel:${s.victim_phone}" style="flex:1;background:#1a4a1a;color:#2ecc71;padding:10px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #2ecc7140;min-width:130px;">
                         <i class="fas fa-phone"></i> Call Victim
                     </a>` : ''}
-                    <a href="tel:999" style="flex:1;background:#e6394611;border:1px solid #e6394640;color:#e63946;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;min-width:120px;">
-                        <i class="fas fa-shield-alt"></i> Call Police
+                    <a href="tel:999" style="flex:1;background:#e6394611;border:1px solid #e6394640;color:#e63946;padding:10px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;min-width:100px;">
+                        <i class="fas fa-shield-alt"></i> Police
                     </a>
+                </div>
+
+                <!-- Respond / Dismiss Row -->
+                <div style="display:flex;gap:8px;border-top:1px solid #1e2d4a;padding-top:12px;">
+                    <button onclick="dismissSosFromDashboard(${sosId})"
+                        style="flex:1;background:transparent;border:1px solid #2a3f5f;color:#a0b4cc;padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">
+                        <i class="fas fa-times"></i> Dismiss
+                    </button>
+                    ${alreadyResponded
+                        ? `<div style="flex:2;background:#1a3a2a;border:1px solid #2ecc7140;color:#2ecc71;padding:10px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;">
+                            <i class="fas fa-check-circle"></i> Already Responded
+                           </div>`
+                        : `<button onclick="respondToSosFromDashboard(${sosId})" id="respond-btn-${sosId}"
+                            style="flex:2;background:#e63946;border:none;color:#fff;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                            <i class="fas fa-hands-helping"></i> Respond to SOS
+                           </button>`
+                    }
                 </div>
             </div>`;
     } catch(e) {
@@ -808,6 +832,50 @@ async function openSosDetailFromDashboard(sosId) {
     }
 }
 
+async function respondToSosFromDashboard(sosId) {
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+    const userId = svUser.id || svUser.user_id;
+    if (!userId) { alert('Please login to respond.'); return; }
+
+    const btn  = document.getElementById('respond-btn-' + sosId);
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Responding...'; }
+
+    try {
+        const res  = await fetch('/api/sos/respond', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ sos_id: sosId, user_id: userId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            // ── Close modal immediately ──
+            closeSosDetailModal();
+
+            // ── Open Google Maps navigation: my location → victim ──
+            const alertRes  = await fetch('/api/sos/alerts?sos_id=' + sosId, { credentials: 'include' });
+            const alertData = await alertRes.json();
+            if (alertData.success && alertData.sos) {
+                const lat = alertData.sos.latitude;
+                const lng = alertData.sos.longitude;
+                if (lat && lng) {
+                    window.open(
+                        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`,
+                        '_blank'
+                    );
+                }
+            }
+        }
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-hands-helping"></i> Respond to SOS'; }
+    }
+}
+
+function dismissSosFromDashboard(sosId) {
+    closeSosDetailModal();
+}
+
+// ── MISSING FUNCTION — was called but never defined ──
 function closeSosDetailModal() {
     const modal = document.getElementById('sos-detail-modal');
     if (modal) modal.style.display = 'none';

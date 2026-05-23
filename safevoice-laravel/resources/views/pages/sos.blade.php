@@ -167,10 +167,22 @@ body.light-mode { background: #070d1a !important; color: #fff !important; }
             <input type="hidden" id="crimeType" value="">
         </div>
 
-        <!-- Description -->
+        <!-- Description + Phone (side by side on larger screens) -->
         <div class="sv-form-group">
             <label><i class="fas fa-align-left"></i> Describe the situation</label>
-            <textarea id="crimeDesc" placeholder="What is happening? Where are you exactly? Describe the attacker..." rows="3"></textarea>
+            <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+                <textarea id="crimeDesc" placeholder="What is happening? Where are you exactly? Describe the attacker..." rows="3" style="flex:1;min-width:180px;"></textarea>
+                <!-- Non-logged-in user দের জন্য phone number field -->
+                <div id="anonPhoneField" style="display:none;flex-shrink:0;width:160px;">
+                    <label style="font-size:11px;color:#a0b4cc;display:block;margin-bottom:5px;"><i class="fas fa-phone" style="color:#e63946;"></i> Your Phone</label>
+                    <input type="tel" id="evidenceContactPhone"
+                        placeholder="01XXXXXXXXX"
+                        maxlength="13"
+                        style="width:100%;background:#0a0f1e;border:1px solid #e6394660;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;outline:none;box-sizing:border-box;"
+                        oninput="this.value=this.value.replace(/[^0-9+]/g,'')">
+                    <small style="color:#6b7280;font-size:10px;display:block;margin-top:3px;">Responders will call this</small>
+                </div>
+            </div>
         </div>
 
         <!-- Evidence Upload -->
