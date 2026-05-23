@@ -10,6 +10,10 @@ use App\Http\Controllers\PrivateInvestigatorController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceRequestController;
+use App\Http\Controllers\LawyerAuthController;
+use App\Http\Controllers\LawyerController;
+use App\Http\Controllers\LegalRequestController;
+use App\Http\Controllers\AdminLegalController;
 
 // ── Auth ─────────────────────────────────────────────────────
 Route::post('/register',         [AuthController::class, 'register']);
@@ -147,3 +151,98 @@ Route::get('/notifications',              [UserNotificationController::class, 'i
 Route::get('/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
 Route::post('/notifications/mark-read',   [UserNotificationController::class, 'markRead']);
 Route::delete('/notifications/{id}',      [UserNotificationController::class, 'destroy']);
+
+// Register — ID card দিয়ে (OCR auto-extract হবে, status = pending)
+Route::post('/lawyer/register',        [LawyerAuthController::class, 'register']);
+
+// Login — শুধু approved lawyers লগিন করতে পারবে
+Route::post('/lawyer/login',           [LawyerAuthController::class, 'login']);
+Route::post('/lawyer/logout',          [LawyerAuthController::class, 'logout']);
+
+// Profile — OCR extracted fields (bar_council_id, name_from_id) read-only
+Route::get('/lawyer/profile',          [LawyerAuthController::class, 'profile']);
+Route::post('/lawyer/profile/update',  [LawyerAuthController::class, 'updateProfile']);
+Route::post('/lawyer/fcm-token',       [LawyerAuthController::class, 'updateFcmToken']);
+
+
+// ════════════════════════════════════════════════════════════════════
+// LAWYER PANEL — Requests & Cases
+// ════════════════════════════════════════════════════════════════════
+
+// সব open requests দেখবে (filter: case_type, min_budget, max_budget)
+Route::get('/lawyer/open-requests',    [LawyerController::class, 'openRequests']);
+
+// Single request detail (full description)
+Route::get('/lawyer/request/{id}',     [LawyerController::class, 'showRequest']);
+
+// Offer করবে: accept / counter / reject
+Route::post('/lawyer/offer',           [LawyerController::class, 'makeOffer']);
+
+// My pending offers history
+Route::get('/lawyer/my-offers',        [LawyerController::class, 'myOffers']);
+
+// My accepted cases
+Route::get('/lawyer/my-cases',         [LawyerController::class, 'myCases']);
+
+// Case status update (note + ongoing/solved)
+// solved করলে → user কে 70% payment notification যাবে
+Route::post('/lawyer/case/update',     [LawyerController::class, 'updateCaseStatus']);
+
+
+// ════════════════════════════════════════════════════════════════════
+// USER — Legal Requests
+// ════════════════════════════════════════════════════════════════════
+
+// Legal request create (সব approved lawyer notification পাবে)
+Route::post('/legal/request',          [LegalRequestController::class, 'store']);
+
+// My requests list
+Route::get('/legal/my-requests',       [LegalRequestController::class, 'myRequests']);
+
+// Single request detail (offers সহ)
+Route::get('/legal/request/{id}',      [LegalRequestController::class, 'show']);
+
+// Lawyer এর offer accept করবে
+// Response এ 30% advance payment info আসবে
+Route::post('/legal/accept-offer',     [LegalRequestController::class, 'acceptOffer']);
+
+// Payment submit (advance 30% বা completion 70%)
+// Admin confirm করলে তবেই case status change হবে
+Route::post('/legal/payment',          [LegalRequestController::class, 'submitPayment']);
+
+
+// ════════════════════════════════════════════════════════════════════
+// ADMIN — Lawyer Management
+// ════════════════════════════════════════════════════════════════════
+
+// Pending lawyers list (ID card image সহ — admin verify করবে)
+Route::get('/admin/lawyers/pending',         [AdminLegalController::class, 'pendingLawyers']);
+
+// সব lawyers (status filter optional: pending/approved/rejected/suspended)
+Route::get('/admin/lawyers',                 [AdminLegalController::class, 'allLawyers']);
+
+// Approve — admin চাইলে OCR correction করতে পারবে
+Route::post('/admin/lawyers/approve',        [AdminLegalController::class, 'approveLawyer']);
+
+// Reject — reason দিতে হবে
+Route::post('/admin/lawyers/reject',         [AdminLegalController::class, 'rejectLawyer']);
+
+// Suspend / Reactivate
+Route::post('/admin/lawyers/update-status',  [AdminLegalController::class, 'updateLawyerStatus']);
+
+
+// ════════════════════════════════════════════════════════════════════
+// ADMIN — Legal Payments
+// ════════════════════════════════════════════════════════════════════
+
+// Pending payments (advance + completion)
+Route::get('/admin/legal/payments/pending',  [AdminLegalController::class, 'pendingPayments']);
+
+// Payment confirm → case status automatically update হবে
+Route::post('/admin/legal/payments/confirm', [AdminLegalController::class, 'confirmPayment']);
+
+// Payment reject (invalid txn)
+Route::post('/admin/legal/payments/reject',  [AdminLegalController::class, 'rejectPayment']);
+
+// All legal requests overview
+Route::get('/admin/legal/requests',          [AdminLegalController::class, 'allRequests']);
