@@ -16,6 +16,7 @@ class ComplaintController extends Controller
             ->select('id','complaint_id','type','incident_date','location',
                      'description','is_anonymous','status','submitted_at','updated_at',
                      'assigned_pi_id','pi_assigned_at','payment_deadline','user_id',
+                     'anonymous_user_id',
                      'legal_consent','publish_consent','admin_message',
                      'user_name as reporter_name');
 
@@ -82,6 +83,23 @@ class ComplaintController extends Controller
 
         if (!$userId) {
             return response()->json(['success' => false, 'message' => 'Please login first.'], 401);
+        }
+
+        // Probation বা Suspended user নতুন complaint করতে পারবে না
+        $user = User::find($userId);
+        if ($user && $user->status === 'Probation') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is currently on probation. You cannot submit new complaints until your pending evidence review is resolved.',
+                'status'  => 'Probation',
+            ], 403);
+        }
+        if ($user && in_array($user->status, ['Suspended', 'Banned'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is suspended. You cannot submit new complaints.',
+                'status'  => $user->status,
+            ], 403);
         }
 
         $request->validate([

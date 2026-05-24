@@ -13,6 +13,7 @@ class EvidenceRequest extends Model
         'admin_note',
         'status',
         'deadline',
+        'days',
         'responded_at',
         'skip_until',
     ];

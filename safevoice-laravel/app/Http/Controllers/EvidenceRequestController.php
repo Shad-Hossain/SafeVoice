@@ -5,6 +5,8 @@ use Illuminate\Http\Request;
 use App\Models\EvidenceRequest;
 use App\Models\Complaint;
 use App\Models\ComplaintEvidence;
+use App\Models\User;
+use App\Models\UserNotification;
 use App\Http\Controllers\FcmController;
 use Carbon\Carbon;
 
@@ -42,6 +44,14 @@ class EvidenceRequestController extends Controller
             'skip_until'   => null,
             'responded_at' => null,
         ]);
+
+        // 30-day notice refresh হলেও Probation নিশ্চিত করো
+        if ($days === 30 && $complaint->user_id) {
+            User::where('id', $complaint->user_id)
+                ->where('status', 'Active')
+                ->update(['status' => 'Probation']);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Evidence request refreshed. User will be notified.',
@@ -59,9 +69,31 @@ class EvidenceRequestController extends Controller
     ]);
 
     if ($complaint->user_id) {
-        $label = $days === 30
-            ? "You have received a 30-day official notice period to submit evidence."
-            : "Admin has requested additional evidence for your complaint. You have 7 days to respond.";
+        // ── 30-day notice → user কে Probation-এ দাও ──────────
+        if ($days === 30) {
+            User::where('id', $complaint->user_id)
+                ->whereIn('status', ['Active'])
+                ->update(['status' => 'Probation']);
+
+            $deadline = Carbon::now()->addDays(30)->format('d M Y');
+
+            // In-app notification
+            UserNotification::notify(
+                (int) $complaint->user_id,
+                'probation_notice',
+                '⚠️ Your Account is Under Review',
+                "Your complaint {$request->complaint_id} has been flagged for review. Your account has been placed on probation. You have 30 days (until {$deadline}) to submit supporting evidence. During this period you cannot submit new complaints or use SOS.",
+                [
+                    'complaint_id' => $request->complaint_id,
+                    'deadline'     => $deadline,
+                    'icon'         => '⚠️',
+                ]
+            );
+
+            $label = "⚠️ Your account is now on probation. You have 30 days to submit evidence for complaint {$request->complaint_id}. Deadline: {$deadline}.";
+        } else {
+            $label = "Admin has requested additional evidence for your complaint. You have 7 days to respond.";
+        }
 
         FcmController::sendToUser(
             $complaint->user_id,
@@ -73,7 +105,9 @@ class EvidenceRequestController extends Controller
 
     return response()->json([
         'success'    => true,
-        'message'    => 'Evidence request sent. User will be notified on next login.',
+        'message'    => $days === 30
+            ? 'User has been placed on probation and notified.'
+            : 'Evidence request sent. User will be notified on next login.',
         'request_id' => $evidenceRequest->id,
     ]);
 }
@@ -177,6 +211,24 @@ class EvidenceRequestController extends Controller
             'status'       => 'submitted',
             'responded_at' => Carbon::now(),
         ]);
+
+        // 30-day notice ছিল এবং evidence submit হলো → Probation থেকে Active করো
+        if ($evReq->days >= 30 && $userId) {
+            User::where('id', $userId)
+                ->where('status', 'Probation')
+                ->update(['status' => 'Active']);
+
+            UserNotification::notify(
+                (int) $userId,
+                'probation_lifted',
+                '✅ Probation Lifted — Account Restored',
+                "Thank you for submitting your evidence for complaint {$evReq->complaint_id}. Your account has been restored to Active status. We will review your submission.",
+                [
+                    'complaint_id' => $evReq->complaint_id,
+                    'icon'         => '✅',
+                ]
+            );
+        }
 
         return response()->json(['success' => true, 'message' => 'Evidence submitted successfully.']);
     }

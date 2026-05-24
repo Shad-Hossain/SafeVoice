@@ -7,3 +7,9 @@ Schedule::command('safevoice:auto-reject')->hourly();
 
 // Auto-expire pending PI assignments after 48h — runs every hour
 Schedule::command('safevoice:expire-pi-assignments')->hourly();
+
+// Evidence deadline processing — runs daily at midnight
+// → 30-day expired: auto-suspend user
+// → 7-day expired: send PI notification to user
+// → 2-month suspended: auto-reactivate account
+Schedule::command('safevoice:process-evidence-deadlines')->dailyAt('00:00');

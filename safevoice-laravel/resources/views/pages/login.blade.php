@@ -231,6 +231,18 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
             else localStorage.removeItem('sv_remember_email');
             showToast(`Welcome back, ${data.user.name}!`, 'success');
             setTimeout(() => window.location.href = '/dashboard', 1000);
+        } else if (data.suspended) {
+            btnReset(this, '<i class="fas fa-sign-in-alt"></i> Login');
+            showAccountBlockModal({
+                type:        'suspended',
+                strike:       data.strike,
+                ordinal:      data.strike_ordinal,
+                activateOn:   data.activation_date,
+                remaining:    data.remaining,
+            });
+        } else if (data.banned) {
+            btnReset(this, '<i class="fas fa-sign-in-alt"></i> Login');
+            showAccountBlockModal({ type: 'banned' });
         } else {
             showToast(data.message || 'Login failed.', 'error');
             btnReset(this, '<i class="fas fa-sign-in-alt"></i> Login');
@@ -241,11 +253,70 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
     }
 });
 
+// ── Account Block Modal ────────────────────────────────────────
+function showAccountBlockModal({ type, strike, ordinal, activateOn, remaining }) {
+    const existing = document.getElementById('accountBlockModal');
+    if (existing) existing.remove();
+
+    let icon, title, color, body;
+
+    if (type === 'banned') {
+        icon  = '🚫';
+        title = 'Account Permanently Banned';
+        color = '#e63946';
+        body  = `
+            <p style="color:#cbd5e1;font-size:14px;line-height:1.7;margin:0 0 12px;">
+                Your account has been <strong style="color:#e63946;">permanently banned</strong>
+                from SafeVoice due to repeated fake complaint submissions.
+            </p>
+            <p style="color:#6b7280;font-size:13px;margin:0;">This action cannot be reversed.</p>`;
+    } else {
+        icon  = '⚠️';
+        title = 'Account Suspended';
+        color = '#f39c12';
+        const remainMsg = remaining > 0
+            ? `<span style="color:#e63946;font-weight:700;">${remaining} more suspension${remaining === 1 ? '' : 's'}</span> and your account will be <strong>permanently banned</strong>.`
+            : `<span style="color:#e63946;font-weight:700;">This is your final warning.</span>`;
+        body  = `
+            <div style="background:#0a0f1e;border:1px solid #f39c1240;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr>
+                        <td style="color:#a0b4cc;font-size:12px;font-weight:600;padding:6px 0;width:130px;">Suspension</td>
+                        <td style="color:#f39c12;font-size:13px;font-weight:700;">${ordinal} suspension (${strike}/3)</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#a0b4cc;font-size:12px;font-weight:600;padding:6px 0;">Duration</td>
+                        <td style="color:#fff;font-size:13px;">60 days</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#a0b4cc;font-size:12px;font-weight:600;padding:6px 0;">Reactivation</td>
+                        <td style="color:#2ecc71;font-size:13px;font-weight:700;">${activateOn}</td>
+                    </tr>
+                </table>
+            </div>
+            <p style="color:#a0b4cc;font-size:13px;line-height:1.6;margin:0;">${remainMsg}</p>`;
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'accountBlockModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:#00000088;display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+    modal.innerHTML = `
+        <div style="background:#0d1525;border:1px solid ${color}40;border-radius:16px;max-width:420px;width:100%;padding:32px 28px;text-align:center;box-shadow:0 20px 60px #00000060;">
+            <div style="font-size:40px;margin-bottom:12px;">${icon}</div>
+            <h3 style="color:#fff;font-size:18px;font-weight:700;margin:0 0 20px;">${title}</h3>
+            <div style="text-align:left;">${body}</div>
+            <button onclick="document.getElementById('accountBlockModal').remove()"
+                style="margin-top:24px;background:${color};color:#fff;border:none;border-radius:10px;padding:11px 32px;font-size:14px;font-weight:700;cursor:pointer;width:100%;">
+                OK
+            </button>
+        </div>`;
+    document.body.appendChild(modal);
+
 document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !document.getElementById('fpModal').classList.contains('active'))
         document.getElementById('loginBtn').click();
 });
-
+}
 // ─── FORGOT PASSWORD ───────────────────────────────────────────
 let fpEmail='', fpOtp='', timerInterval=null;
 const fpModal = document.getElementById('fpModal');
@@ -331,4 +402,4 @@ document.getElementById('fpResetBtn').addEventListener('click', async function()
 
 @section('scripts')
 <script src="{{ asset('js/theme.js') }}"></script>
-@endsection
+@endsection 

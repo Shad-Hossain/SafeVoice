@@ -210,6 +210,25 @@ class SosController extends Controller
                 ?? $request->input('user_id')
                 ?? 0;
 
+        // Probation বা Suspended user SOS করতে পারবে না
+        if ($userId) {
+            $user = User::find($userId);
+            if ($user && $user->status === 'Probation') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account is on probation. SOS is disabled until your evidence review is resolved.',
+                    'status'  => 'Probation',
+                ], 403);
+            }
+            if ($user && in_array($user->status, ['Suspended', 'Banned'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account is suspended. SOS is currently disabled.',
+                    'status'  => $user->status,
+                ], 403);
+            }
+        }
+
         try {
             $sos = new SosAlert();
             $sos->user_id       = $userId ?: null;
@@ -238,9 +257,9 @@ class SosController extends Controller
             if (!$alert) {
                 return response()->json(['success' => false, 'message' => 'SOS not found'], 404);
             }
-            $currentUserId = (int) request()->session()->get('user_id')
-                          ?: (int) request()->query('user_id')
-                          ?: 0;
+            $currentUserId = (int) ($request->session()->get('user_id')
+                          ?? $request->query('user_id')
+                          ?? 0);
             $responderIds = $alert->responders ? $alert->responders->pluck('responder_id')->toArray() : [];
 
             $sosData = [

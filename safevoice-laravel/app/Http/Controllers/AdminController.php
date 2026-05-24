@@ -44,20 +44,71 @@ class AdminController extends Controller
     // GET /api/admin/users
     public function users()
     {
-        $users = User::orderByDesc('joined_at')->get();
+        // Banned user গুলো admin-এর কাছে দেখাবে না
+        $users = User::whereNotIn('status', ['Banned'])
+            ->orderByDesc('joined_at')
+            ->get();
         return response()->json(['success' => true, 'users' => $users]);
     }
 
     // POST /api/admin/users/update-status
+    // Admin শুধু Active / Probation / Suspended করতে পারবে।
+    // Banned করতে পারবে না — 3 বার Suspend হলে system auto-ban করবে।
     public function updateUserStatus(Request $request)
     {
         $request->validate([
             'id'     => 'required|integer',
-            'status' => 'required|in:Active,Suspended,Probation,Banned',
+            'status' => 'required|in:Active,Suspended,Probation',
         ]);
 
-        User::where('id', $request->id)->update(['status' => $request->status]);
-        return response()->json(['success' => true, 'message' => 'User status updated to ' . $request->status]);
+        $user = User::where('id', $request->id)
+            ->whereNotIn('status', ['Banned']) // Banned user কে admin touch করতে পারবে না
+            ->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User not found or already banned.'], 404);
+        }
+
+        $newStatus        = $request->status;
+        $suspensionCount  = $user->suspension_count ?? 0;
+
+        // Suspended করলে count বাড়াও
+        if ($newStatus === 'Suspended') {
+            $suspensionCount++;
+
+            // ৩ বার suspend হলে auto-ban — admin কে জানাবে না কাকে ban করা হলো
+            if ($suspensionCount >= 3) {
+                $user->update([
+                    'status'           => 'Banned',
+                    'suspension_count' => $suspensionCount,
+                ]);
+                // Admin কে শুধু বলো "action taken" — কার name/id বলো না
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User has reached the suspension limit. System has taken automatic action.',
+                    'auto_banned' => true,
+                ]);
+            }
+
+            $user->update([
+                'status'           => 'Suspended',
+                'suspension_count' => $suspensionCount,
+                'suspended_until'  => \Carbon\Carbon::now()->addMonths(2),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "User suspended. ({$suspensionCount}/3 suspensions — auto-ban at 3)",
+            ]);
+        }
+
+        // Active বা Probation
+        $user->update(['status' => $newStatus]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User status updated to ' . $newStatus,
+        ]);
     }
 
     // ── GET /api/admin/pending-accounts ──────────────────────────

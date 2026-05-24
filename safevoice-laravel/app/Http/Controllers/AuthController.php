@@ -146,11 +146,34 @@ class AuthController extends Controller
         }
 
         if ($user->status === 'Banned') {
-            return response()->json(['success' => false, 'message' => 'Your account has been banned.'], 403);
+            return response()->json([
+                'success'    => false,
+                'banned'     => true,
+                'message'    => 'Your account has been permanently banned from SafeVoice due to repeated fake complaint submissions. This action cannot be reversed.',
+            ], 403);
         }
 
         if ($user->status === 'Suspended') {
-            return response()->json(['success' => false, 'message' => 'Your account is suspended.'], 403);
+            $count       = $user->suspension_count ?? 1;
+            $ordinal     = ['', '1st', '2nd', '3rd'][$count] ?? "{$count}th";
+            $remaining   = 3 - $count;
+            $activateOn  = $user->suspended_until
+                ? \Carbon\Carbon::parse($user->suspended_until)->format('d M Y')
+                : 'soon';
+
+            $strikeMsg = $remaining > 0
+                ? "{$remaining} more suspension" . ($remaining === 1 ? '' : 's') . " and your account will be permanently banned."
+                : "This is your final warning.";
+
+            return response()->json([
+                'success'         => false,
+                'suspended'       => true,
+                'strike'          => $count,
+                'strike_ordinal'  => $ordinal,
+                'activation_date' => $activateOn,
+                'remaining'       => $remaining,
+                'message'         => "Your account has been suspended due to a fake complaint submission.\n\nThis is your {$ordinal} suspension ({$count}/3).\nYour account will be reactivated on: {$activateOn}.\n\n{$strikeMsg}",
+            ], 403);
         }
 
         $token = base64_encode($user->id . '|' . $user->email . '|' . time());
