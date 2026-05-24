@@ -316,6 +316,29 @@
                 <h1><i class="fas fa-users" style="font-size:22px;margin-right:10px"></i>User Management</h1>
                 <p>Ban, suspend, or manage user accounts</p>
             </div>
+
+            <!-- User ID Search -->
+            <div style="margin-bottom:20px;padding:16px 20px;border-radius:14px;border:1px solid #1e3a5f;background:linear-gradient(135deg,#0a1628,#0d1f3c);">
+                <p style="margin:0 0 10px 0;font-size:13px;color:#4f9eff;font-weight:700;text-transform:uppercase;letter-spacing:.6px;">
+                    <i class="fas fa-search" style="margin-right:6px;"></i> Search User by ID
+                </p>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <input type="number" id="userIdSearchInput" placeholder="Enter User ID (e.g. 5)"
+                        style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:10px 14px;color:#fff;font-size:14px;width:220px;outline:none;"
+                        onkeydown="if(event.key==='Enter') searchUserById()" />
+                    <button onclick="searchUserById()"
+                        style="background:#4f9eff;color:#000;border:none;border-radius:10px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <button onclick="clearUserSearch()"
+                        style="background:#1e2d4a;color:#a0b4cc;border:1px solid #1e2d4a;border-radius:10px;padding:10px 16px;font-size:13px;cursor:pointer;">
+                        Clear
+                    </button>
+                </div>
+                <!-- Search Result -->
+                <div id="userSearchResult" style="display:none;margin-top:16px;"></div>
+            </div>
+
             <div class="complaints-table">
                 <table>
                     <thead>
@@ -653,6 +676,103 @@ async function loadUsers() {
     } catch(e) {
         tbody.innerHTML = '<tr><td colspan="7" class="table-state">Could not load users.</td></tr>';
     }
+}
+
+async function searchUserById() {
+    const input = document.getElementById('userIdSearchInput');
+    const result = document.getElementById('userSearchResult');
+    const uid = (input.value || '').trim();
+    if (!uid || isNaN(uid)) {
+        result.style.display = 'block';
+        result.innerHTML = '<p style="color:#f39c12;font-size:13px;"><i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i>Please enter a valid User ID number.</p>';
+        return;
+    }
+    result.style.display = 'block';
+    result.innerHTML = '<p style="color:#a0b4cc;font-size:13px;"><i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Searching...</p>';
+    try {
+        const res  = await fetch(`/api/admin/user/${encodeURIComponent(uid)}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+            result.innerHTML = `<p style="color:#e63946;font-size:13px;"><i class="fas fa-times-circle" style="margin-right:6px;"></i>${data.message || 'User not found.'}</p>`;
+            return;
+        }
+        const u  = data.user;
+        const cs = data.complaints || [];
+        const joinedDate = u.joined_at ? new Date(u.joined_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+        const statusColors = { Active:'#2ecc71', Suspended:'#f39c12', Banned:'#e63946', Probation:'#f39c12', Pending:'#a0b4cc' };
+        const sc = statusColors[u.status] || '#fff';
+        const complaintsHtml = cs.length === 0
+            ? '<p style="color:#6b7280;font-size:12px;margin:8px 0 0 0;">No complaints filed.</p>'
+            : `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">` +
+              cs.map(c => `
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:8px 12px;font-size:12px;">
+                    <span style="color:#4f9eff;font-weight:700;">${c.complaint_id}</span>
+                    <span style="color:#6b7280;margin:0 6px;">•</span>
+                    <span style="color:#a0b4cc;">${c.type || '—'}</span>
+                    <span style="color:#6b7280;margin:0 6px;">•</span>
+                    <span style="color:${statusColors[c.status]||'#fff'};font-weight:600;">${c.status}</span>
+                </div>`).join('') + '</div>';
+        result.innerHTML = `
+            <div style="border-radius:12px;border:1px solid #1e3a5f;background:#060d1a;overflow:hidden;">
+                <div style="padding:14px 16px;background:linear-gradient(90deg,#0d1f3c,#060d1a);display:flex;align-items:center;gap:14px;">
+                    <div style="width:44px;height:44px;border-radius:50%;background:#1e2d4a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fas fa-user" style="color:#4f9eff;font-size:20px;"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="color:#fff;font-weight:700;font-size:16px;">${u.name}</div>
+                        <div style="color:#4f9eff;font-size:13px;">${u.email}</div>
+                    </div>
+                    <span style="background:${sc}22;color:${sc};border:1px solid ${sc}55;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;">${u.status}</span>
+                </div>
+                <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">User ID</div>
+                        <div style="color:#fff;font-family:monospace;font-size:14px;font-weight:700;">#${u.id}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Phone</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${u.phone || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">ID Type</div>
+                        <div style="color:#a0b4cc;font-size:13px;text-transform:capitalize;">${(u.id_type||'—').replace('_',' ')}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">ID Number</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${u.id_number || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Joined</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${joinedDate}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Complaints Filed</div>
+                        <div style="color:#fff;font-size:14px;font-weight:700;">${u.complaints_count}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Location</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${u.location || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">SOS Helped</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${u.sos_helped_count || 0} times</div>
+                    </div>
+                </div>
+                <div style="padding:0 16px 14px 16px;">
+                    <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Complaints</div>
+                    ${complaintsHtml}
+                </div>
+            </div>`;
+    } catch(e) {
+        result.innerHTML = '<p style="color:#e63946;font-size:13px;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>Network error. Please try again.</p>';
+    }
+}
+
+function clearUserSearch() {
+    document.getElementById('userIdSearchInput').value = '';
+    const r = document.getElementById('userSearchResult');
+    r.style.display = 'none';
+    r.innerHTML = '';
 }
 
 async function updateUserStatus(id, selectEl) {

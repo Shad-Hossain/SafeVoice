@@ -50,7 +50,28 @@ class ComplaintController extends Controller
             return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
         }
 
-        return response()->json(['success' => true, 'complaint' => $complaint]);
+        // Non-anonymous হলে submitter এর name ও email যোগ করো
+        $submittedBy = null;
+        if (!$complaint->is_anonymous && $complaint->user_id) {
+            $user = User::where('id', $complaint->user_id)
+                ->select('id', 'name', 'email', 'phone', 'status')
+                ->first();
+            if ($user) {
+                $submittedBy = [
+                    'user_id' => $user->id,
+                    'name'    => $user->name,
+                    'email'   => $user->email,
+                    'phone'   => $user->phone,
+                    'status'  => $user->status,
+                ];
+            }
+        }
+
+        return response()->json([
+            'success'      => true,
+            'complaint'    => $complaint,
+            'submitted_by' => $submittedBy,
+        ]);
     }
 
     // POST /api/complaints/submit

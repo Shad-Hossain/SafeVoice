@@ -14,64 +14,69 @@ class EvidenceRequestController extends Controller
     // POST /api/evidence-request/create
     // Admin → request more evidence from user for a complaint
     // ─────────────────────────────────────────────────────────
-    public function create(Request $request)
-    {
-        $request->validate([
-            'complaint_id' => 'required|string',
-            'admin_note'   => 'nullable|string|max:1000',
-        ]);
+   public function create(Request $request)
+{
+    $request->validate([
+        'complaint_id' => 'required|string',
+        'admin_note'   => 'nullable|string|max:1000',
+        'days'         => 'nullable|integer|in:7,30',
+    ]);
 
-        $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
-        if (!$complaint) {
-            return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
-        }
+    $days = $request->input('days', 7); // default 7, or 30 for fake/notice period
 
-        // Check if there's already an active (pending/skipped) request for this complaint
-        $existing = EvidenceRequest::where('complaint_id', $request->complaint_id)
-            ->whereIn('status', ['pending', 'skipped'])
-            ->first();
+    $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
+    if (!$complaint) {
+        return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
+    }
 
-        if ($existing) {
-            // Refresh it — update note, reset deadline
-            $existing->update([
-                'admin_note'   => $request->input('admin_note', ''),
-                'status'       => 'pending',
-                'deadline'     => Carbon::now()->addDays(7),
-                'skip_until'   => null,
-                'responded_at' => null,
-            ]);
-            return response()->json([
-                'success' => true,
-                'message' => 'Evidence request refreshed. User will be notified.',
-                'request_id' => $existing->id,
-            ]);
-        }
+    $existing = EvidenceRequest::where('complaint_id', $request->complaint_id)
+        ->whereIn('status', ['pending', 'skipped'])
+        ->first();
 
-        $evidenceRequest = EvidenceRequest::create([
-            'complaint_id' => $request->complaint_id,
-            'user_id'      => $complaint->user_id,
+    if ($existing) {
+        $existing->update([
             'admin_note'   => $request->input('admin_note', ''),
             'status'       => 'pending',
-            'deadline'     => Carbon::now()->addDays(7),
+            'deadline'     => Carbon::now()->addDays($days),
+            'days'         => $days,
+            'skip_until'   => null,
+            'responded_at' => null,
         ]);
-
-        // FCM Push — notify user immediately
-        if ($complaint->user_id) {
-            FcmController::sendToUser(
-                $complaint->user_id,
-                '📋 Evidence Request — ' . $request->complaint_id,
-                'Admin has requested additional evidence for your complaint. You have 7 days to respond.',
-                ['type' => 'evidence_request', 'complaint_id' => $request->complaint_id, 'url' => '/dashboard']
-            );
-        }
-
         return response()->json([
-            'success'    => true,
-            'message'    => 'Evidence request sent. User will be notified on next login.',
-            'request_id' => $evidenceRequest->id,
+            'success' => true,
+            'message' => 'Evidence request refreshed. User will be notified.',
+            'request_id' => $existing->id,
         ]);
     }
 
+    $evidenceRequest = EvidenceRequest::create([
+        'complaint_id' => $request->complaint_id,
+        'user_id'      => $complaint->user_id,
+        'admin_note'   => $request->input('admin_note', ''),
+        'status'       => 'pending',
+        'deadline'     => Carbon::now()->addDays($days),
+        'days'         => $days,
+    ]);
+
+    if ($complaint->user_id) {
+        $label = $days === 30
+            ? "You have received a 30-day official notice period to submit evidence."
+            : "Admin has requested additional evidence for your complaint. You have 7 days to respond.";
+
+        FcmController::sendToUser(
+            $complaint->user_id,
+            '📋 Evidence Request — ' . $request->complaint_id,
+            $label,
+            ['type' => 'evidence_request', 'complaint_id' => $request->complaint_id, 'url' => '/dashboard']
+        );
+    }
+
+    return response()->json([
+        'success'    => true,
+        'message'    => 'Evidence request sent. User will be notified on next login.',
+        'request_id' => $evidenceRequest->id,
+    ]);
+}
     // ─────────────────────────────────────────────────────────
     // GET /api/evidence-request/pending
     // User → get their pending evidence request (for notification modal)

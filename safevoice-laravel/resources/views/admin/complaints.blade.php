@@ -167,6 +167,14 @@
                 </div>
             </div>
 
+            <!-- Submitted By — only shows User ID (non-anonymous) -->
+            <div id="submittedByBox" style="display:none;margin-top:4px;">
+                <div class="detail-item">
+                    <span class="detail-label">Submitted By</span>
+                    <span class="detail-value" id="sbUserId" style="font-family:monospace;color:#4f9eff;font-weight:700;">—</span>
+                </div>
+            </div>
+
             <div class="detail-desc-box">
                 <span class="detail-label">Description</span>
                 <p id="dDesc">—</p>

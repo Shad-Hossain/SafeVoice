@@ -127,6 +127,36 @@ class AdminController extends Controller
         ]);
     }
 
+    // GET /api/admin/user/{id} — user ID দিয়ে search, password ছাড়া সব details
+    public function getUserById($id)
+    {
+        $user = User::where('id', $id)
+            ->select(
+                'id', 'name', 'email', 'phone',
+                'id_type', 'id_number',
+                'location', 'profile_photo', 'status',
+                'complaints_count', 'sos_helped_count',
+                'joined_at'
+            )
+            ->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'No user found with ID ' . $id], 404);
+        }
+
+        // User এর complaints (সংখ্যা ও সংক্ষিপ্ত list)
+        $complaints = \App\Models\Complaint::where('user_id', $id)
+            ->select('complaint_id', 'type', 'status', 'submitted_at')
+            ->orderByDesc('submitted_at')
+            ->get();
+
+        return response()->json([
+            'success'    => true,
+            'user'       => $user,
+            'complaints' => $complaints,
+        ]);
+    }
+
     // GET /api/stats — home page public stats
     public function publicStats()
     {

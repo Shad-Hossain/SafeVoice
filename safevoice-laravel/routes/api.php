@@ -41,6 +41,7 @@ Route::post('/admin/logout',              [AdminController::class, 'logout']);
 Route::get('/stats',                      [AdminController::class, 'publicStats']);
 Route::get('/admin/users',                [AdminController::class, 'users']);
 Route::get('/manage_user',                [AdminController::class, 'users']); // legacy
+Route::get('/admin/user/{id}',            [AdminController::class, 'getUserById']);
 Route::post('/admin/users/update-status', [AdminController::class, 'updateUserStatus']);
 
 // ── Pending Accounts (Birth Certificate Review) ───────────────

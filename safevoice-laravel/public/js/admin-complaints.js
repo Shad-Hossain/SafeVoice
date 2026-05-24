@@ -195,6 +195,17 @@ async function openModal(id) {
     document.getElementById('detailModal').classList.add('active');
     loadEvidence(id);
     loadEvidenceRequestStatus(id);
+
+    // Submitted By — non-anonymous হলে শুধু User ID দেখাও
+    const sbBox = document.getElementById('submittedByBox');
+    if (sbBox) {
+        if (!anon && c.user_id) {
+            document.getElementById('sbUserId').textContent = 'User ID: #' + c.user_id;
+            sbBox.style.display = 'block';
+        } else {
+            sbBox.style.display = 'none';
+        }
+    }
 }
 
 async function loadEvidenceRequestStatus(complaint_id) {
