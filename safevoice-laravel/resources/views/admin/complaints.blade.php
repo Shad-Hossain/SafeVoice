@@ -165,11 +165,8 @@
                     <span class="detail-label">Anonymous</span>
                     <span class="detail-value" id="dAnon">—</span>
                 </div>
-            </div>
-
-            <!-- Submitted By — only shows User ID (non-anonymous) -->
-            <div id="submittedByBox" style="display:none;margin-top:4px;">
-                <div class="detail-item">
+                <!-- Submitted By — non-anonymous হলে User ID দেখাবে -->
+                <div id="submittedByBox" style="display:none;" class="detail-item">
                     <span class="detail-label">Submitted By</span>
                     <span class="detail-value" id="sbUserId" style="font-family:monospace;color:#4f9eff;font-weight:700;">—</span>
                 </div>

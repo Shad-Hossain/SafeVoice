@@ -381,6 +381,13 @@ function nextStep(step) {
     if (step === 2) {
         if (!document.getElementById('incidentType').value) { alert('Please select an incident type.'); return; }
         if (!document.getElementById('incidentDate').value) { alert('Please select the date and time.'); return; }
+
+        // Date validation — ভবিষ্যৎ বা অস্বাভাবিক date reject করো
+        const dateVal = new Date(document.getElementById('incidentDate').value);
+        const now     = new Date();
+        const minDate = new Date('2000-01-01');
+        if (dateVal > now) { alert('Incident date cannot be in the future.'); return; }
+        if (dateVal < minDate) { alert('Please enter a valid incident date (after year 2000).'); return; }
     }
     if (step === 3) {
         if (document.getElementById('description').value.trim().length < 20) {
@@ -704,6 +711,17 @@ function showSelectedFiles(files) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Incident date — max = আজকের datetime, min = 2000
+    const dateInput = document.getElementById('incidentDate');
+    if (dateInput) {
+        const now = new Date();
+        // datetime-local format: YYYY-MM-DDTHH:MM
+        const pad = n => String(n).padStart(2, '0');
+        const maxVal = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        dateInput.setAttribute('max', maxVal);
+        dateInput.setAttribute('min', '2000-01-01T00:00');
+    }
+
     var box   = document.getElementById('uploadBox');
     var input = document.getElementById('evidenceFiles');
     if (box && input) {
