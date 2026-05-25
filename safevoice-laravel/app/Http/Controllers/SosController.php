@@ -62,13 +62,12 @@ class SosController extends Controller
 
         $alerterId   = $request->session()->get('user_id', 0) ?: (int)$request->input('user_id', 0);
         $alerter     = $alerterId ? User::find($alerterId) : null;
-        // Anonymous SOS এর জন্য contact_name বা 'Someone' দেখাবে
         $alerterName = $alerter ? $alerter->name : ($request->input('contact_name') ?: 'Someone');
         $location    = $request->location ?: 'Unknown location';
 
         // Smart radius — 1 → 2 → 3 → 7 km পর্যন্ত খুঁজবে
-        $radii        = [1, 2, 3, 7]; // kilometers
-        $nearbyUsers  = collect();
+        $radii       = [1, 2, 3, 7];
+        $nearbyUsers = collect();
 
         foreach ($radii as $km) {
             $nearbyUsers = $this->getUsersWithinRadius($lat, $lng, $km, $alerterId);
@@ -82,7 +81,6 @@ class SosController extends Controller
         $notifiedCount = 0;
 
         if ($nearbyUsers->isNotEmpty()) {
-            // FCM push পাঠাও
             $userIds = $nearbyUsers->pluck('id')->toArray();
             FcmController::sendToUsers(
                 $userIds,
@@ -91,7 +89,6 @@ class SosController extends Controller
                 ['type' => 'sos', 'sos_id' => (string)$sosId, 'url' => '/sos']
             );
 
-            // SosNotification record তৈরি করো
             foreach ($nearbyUsers as $u) {
                 SosNotification::firstOrCreate([
                     'sos_id'           => $sosId,
@@ -112,44 +109,98 @@ class SosController extends Controller
 
     // ─────────────────────────────────────────────────────────
     // Haversine formula দিয়ে radius এর মধ্যে active users খোঁজো
-    // Active = last 15 মিনিটে location update করেছে + FCM token আছে
+    //
+    // INNER JOIN fcm_tokens  → শুধু যাদের FCM token আছে তারা
+    // LEFT JOIN sos_responders → কে আগে respond করেছে সেটা জানতে
+    // Haversine distance_km → সবচেয়ে কাছের user আগে (ORDER BY ASC)
+    // Fallback (7km) → সব FCM users কে notify
     // ─────────────────────────────────────────────────────────
     private function getUsersWithinRadius(float $lat, float $lng, int $km, int $excludeId)
     {
-        // FCM token আছে এবং location set আছে এমন users কে radius এর মধ্যে খুঁজি
-        $usersWithLocation = User::where('id', '!=', $excludeId)
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->whereExists(function ($query) {
-                $query->select(DB::raw(1))  // Fix: removed leading backslash
-                      ->from('fcm_tokens')
-                      ->whereColumn('fcm_tokens.user_id', 'users.id');
-            })
-            ->whereRaw("
-                (6371 * acos(
-                    cos(radians(?)) *
-                    cos(radians(latitude)) *
-                    cos(radians(longitude) - radians(?)) +
-                    sin(radians(?)) *
-                    sin(radians(latitude))
-                )) <= ?
-            ", [$lat, $lng, $lat, $km])
-            ->get(['id', 'name', 'latitude', 'longitude']);
+        // ── Primary Query ──────────────────────────────────────
+        // users INNER JOIN fcm_tokens  (FCM token থাকতেই হবে)
+        // LEFT JOIN sos_responders     (আগে কতবার respond করেছে — experience দেখতে)
+        // Haversine দিয়ে distance_km calculate, radius এর মধ্যে filter
+        // ORDER BY distance_km ASC — সবচেয়ে কাছের user সবার আগে
+        $users = DB::select("
+            SELECT
+                u.id,
+                u.name,
+                u.latitude,
+                u.longitude,
+                ft.token                        AS fcm_token,
+                COUNT(sr.id)                    AS total_responds,
+                ROUND(
+                    (6371 * ACOS(
+                        COS(RADIANS(:lat1)) *
+                        COS(RADIANS(u.latitude)) *
+                        COS(RADIANS(u.longitude) - RADIANS(:lng1)) +
+                        SIN(RADIANS(:lat2)) *
+                        SIN(RADIANS(u.latitude))
+                    )), 4
+                )                               AS distance_km
+            FROM users u
+            INNER JOIN fcm_tokens ft
+                ON ft.user_id = u.id
+            LEFT JOIN sos_responders sr
+                ON sr.responder_id = u.id
+            WHERE u.id        != :excludeId
+              AND u.latitude  IS NOT NULL
+              AND u.longitude IS NOT NULL
+              AND (
+                    6371 * ACOS(
+                        COS(RADIANS(:lat3)) *
+                        COS(RADIANS(u.latitude)) *
+                        COS(RADIANS(u.longitude) - RADIANS(:lng2)) +
+                        SIN(RADIANS(:lat4)) *
+                        SIN(RADIANS(u.latitude))
+                    )
+                  ) <= :km
+            GROUP BY u.id, u.name, u.latitude, u.longitude, ft.token
+            ORDER BY distance_km ASC
+        ", [
+            'lat1'      => $lat,
+            'lng1'      => $lng,
+            'lat2'      => $lat,
+            'lat3'      => $lat,
+            'lng2'      => $lng,
+            'lat4'      => $lat,
+            'excludeId' => $excludeId,
+            'km'        => $km,
+        ]);
 
-        // যদি radius এর মধ্যে location-tracked users না পাই
-        // এবং সর্বোচ্চ radius (7km) এ আছি — তাহলে সব FCM users কে notify করব
-        // কারণ অনেক user location share করে না কিন্তু FCM আছে
-        if ($usersWithLocation->isEmpty() && $km >= 7) {
-            return User::where('id', '!=', $excludeId)
-                ->whereExists(function ($query) {
-                    $query->select(DB::raw(1))  // Fix: removed leading backslash
-                          ->from('fcm_tokens')
-                          ->whereColumn('fcm_tokens.user_id', 'users.id');
-                })
-                ->get(['id', 'name', 'latitude', 'longitude']);
+        if (!empty($users)) {
+            return collect($users);
         }
 
-        return $usersWithLocation;
+        // ── Fallback Query (শুধু 7km এ) ───────────────────────
+        // Location নেই কিন্তু FCM token আছে — এমন সব users কে notify
+        // users INNER JOIN fcm_tokens
+        // LEFT JOIN sos_responders (experience দেখতে)
+        if ($km >= 7) {
+            $fallback = DB::select("
+                SELECT
+                    u.id,
+                    u.name,
+                    u.latitude,
+                    u.longitude,
+                    ft.token        AS fcm_token,
+                    COUNT(sr.id)    AS total_responds,
+                    NULL            AS distance_km
+                FROM users u
+                INNER JOIN fcm_tokens ft
+                    ON ft.user_id = u.id
+                LEFT JOIN sos_responders sr
+                    ON sr.responder_id = u.id
+                WHERE u.id != :excludeId
+                GROUP BY u.id, u.name, u.latitude, u.longitude, ft.token
+                ORDER BY total_responds DESC
+            ", ['excludeId' => $excludeId]);
+
+            return collect($fallback);
+        }
+
+        return collect();
     }
 
     // POST /api/sos/create
@@ -159,8 +210,26 @@ class SosController extends Controller
                 ?? $request->input('user_id')
                 ?? 0;
 
+        // Probation বা Suspended user SOS করতে পারবে না
+        if ($userId) {
+            $user = User::find($userId);
+            if ($user && $user->status === 'Probation') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account is on probation. SOS is disabled until your evidence review is resolved.',
+                    'status'  => 'Probation',
+                ], 403);
+            }
+            if ($user && in_array($user->status, ['Suspended', 'Banned'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account is suspended. SOS is currently disabled.',
+                    'status'  => $user->status,
+                ], 403);
+            }
+        }
+
         try {
-            // Fix: use new + fill + save so intelephense resolves $sos as SosAlert (not array<string,mixed>)
             $sos = new SosAlert();
             $sos->user_id       = $userId ?: null;
             $sos->latitude      = $request->latitude;
@@ -179,7 +248,6 @@ class SosController extends Controller
     }
 
     // GET /api/sos/alerts
-    // Optional: ?sos_id=123 দিলে single alert + evidence return করবে
     public function alerts(Request $request)
     {
         $sosId = $request->query('sos_id');
@@ -189,24 +257,23 @@ class SosController extends Controller
             if (!$alert) {
                 return response()->json(['success' => false, 'message' => 'SOS not found'], 404);
             }
-            // Current user respond করেছে কিনা — cast each individually so intelephense sees int, not mixed
-            $currentUserId = (int) request()->session()->get('user_id')
-                          ?: (int) request()->query('user_id')
-                          ?: 0;
+            $currentUserId = (int) ($request->session()->get('user_id')
+                          ?? $request->query('user_id')
+                          ?? 0);
             $responderIds = $alert->responders ? $alert->responders->pluck('responder_id')->toArray() : [];
 
             $sosData = [
-                'id'           => $alert->id,
-                'victim_name'  => $alert->user ? $alert->user->name : ($alert->contact_name ?: 'Anonymous'),
-                'victim_phone' => $alert->user ? $alert->user->phone : $alert->contact_phone,
-                'location_text'=> $alert->location_text,
-                'crime_type'   => $alert->crime_type,
-                'description'  => $alert->description,
-                'latitude'     => $alert->latitude,
-                'longitude'    => $alert->longitude,
-                'created_at'   => $alert->created_at,
-                'status'       => $alert->status,
-                'i_responded'  => in_array((int)$currentUserId, $responderIds),
+                'id'              => $alert->id,
+                'victim_name'     => $alert->user ? $alert->user->name : ($alert->contact_name ?: 'Anonymous'),
+                'victim_phone'    => $alert->user ? $alert->user->phone : $alert->contact_phone,
+                'location_text'   => $alert->location_text,
+                'crime_type'      => $alert->crime_type,
+                'description'     => $alert->description,
+                'latitude'        => $alert->latitude,
+                'longitude'       => $alert->longitude,
+                'created_at'      => $alert->created_at,
+                'status'          => $alert->status,
+                'i_responded'     => in_array((int)$currentUserId, $responderIds),
                 'responder_count' => count($responderIds),
             ];
             $evidence = $alert->evidence ?? [];
@@ -264,7 +331,7 @@ class SosController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $sosId  = $request->sos_id;
+        $sosId = $request->sos_id;
 
         SosResponder::firstOrCreate([
             'sos_id'       => $sosId,
@@ -278,10 +345,7 @@ class SosController extends Controller
         return response()->json(['success' => true, 'message' => 'Response recorded']);
     }
 
-    // ─────────────────────────────────────────────────────────
     // GET /api/sos/my-responds
-    // লগড-ইন user যে SOS গুলোতে respond করেছে সেগুলোর list
-    // ─────────────────────────────────────────────────────────
     public function myResponds(Request $request)
     {
         $userId = $request->session()->get('user_id')
@@ -301,32 +365,28 @@ class SosController extends Controller
         $mapped = $responds->map(function ($r) {
             $sos = $r->sos;
             return [
-                'responder_record_id'  => $r->id,
-                'sos_id'               => $r->sos_id,
-                'responded_at'         => $r->responded_at,
-                'evidence_path'        => $r->evidence_path,
-                'file_type'            => $r->file_type,
-                'evidence_status'      => $r->evidence_status ?? 'not_submitted',
-                'evidence_submitted_at'=> $r->evidence_submitted_at,
-                'admin_note'           => $r->admin_note,
-                'verified_at'          => $r->verified_at,
-                // SOS info
-                'victim_name'          => $sos && $sos->user ? $sos->user->name : 'Anonymous',
-                'location_text'        => $sos ? $sos->location_text : null,
-                'crime_type'           => $sos ? $sos->crime_type    : null,
-                'description'          => $sos ? $sos->description   : null,
-                'sos_status'           => $sos ? $sos->status        : null,
-                'sos_created_at'       => $sos ? $sos->created_at    : null,
+                'responder_record_id'   => $r->id,
+                'sos_id'                => $r->sos_id,
+                'responded_at'          => $r->responded_at,
+                'evidence_path'         => $r->evidence_path,
+                'file_type'             => $r->file_type,
+                'evidence_status'       => $r->evidence_status ?? 'not_submitted',
+                'evidence_submitted_at' => $r->evidence_submitted_at,
+                'admin_note'            => $r->admin_note,
+                'verified_at'           => $r->verified_at,
+                'victim_name'           => $sos && $sos->user ? $sos->user->name : 'Anonymous',
+                'location_text'         => $sos ? $sos->location_text : null,
+                'crime_type'            => $sos ? $sos->crime_type    : null,
+                'description'           => $sos ? $sos->description   : null,
+                'sos_status'            => $sos ? $sos->status        : null,
+                'sos_created_at'        => $sos ? $sos->created_at    : null,
             ];
         });
 
         return response()->json(['success' => true, 'responds' => $mapped]);
     }
 
-    // ─────────────────────────────────────────────────────────
     // GET /api/sos/victim-evidence?sos_id=123
-    // Victim এর submit করা evidence দেখা
-    // ─────────────────────────────────────────────────────────
     public function victimEvidence(Request $request)
     {
         $sosId = $request->query('sos_id');
@@ -355,10 +415,7 @@ class SosController extends Controller
         ]);
     }
 
-    // ─────────────────────────────────────────────────────────
     // POST /api/sos/submit-responder-evidence
-    // Responder evidence upload করবে (my responds list থেকে)
-    // ─────────────────────────────────────────────────────────
     public function submitResponderEvidence(Request $request)
     {
         $userId = $request->session()->get('user_id')
@@ -375,6 +432,7 @@ class SosController extends Controller
 
         $sosId = $request->sos_id;
 
+        /** @var SosResponder $responder */
         $responder = SosResponder::where('sos_id', $sosId)
             ->where('responder_id', $userId)
             ->first();
@@ -409,9 +467,9 @@ class SosController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Evidence submitted successfully. Admin will review and approve.',
-            'evidence_path' => $filePath,
+            'success'        => true,
+            'message'        => 'Evidence submitted successfully. Admin will review and approve.',
+            'evidence_path'  => $filePath,
         ]);
     }
 
@@ -430,8 +488,9 @@ class SosController extends Controller
             'evidence' => 'required|file|mimes:jpg,jpeg,png,mp4,mov,avi|max:51200',
         ]);
 
-        $sosId  = $request->sos_id;
+        $sosId = $request->sos_id;
 
+        /** @var SosResponder $responder */
         $responder = SosResponder::where('sos_id', $sosId)
             ->where('responder_id', $userId)
             ->first();
@@ -462,7 +521,6 @@ class SosController extends Controller
     // GET /api/admin/sos-evidence-pending
     public function adminPendingEvidence(Request $request)
     {
-        // সব records আনো — frontend নিজেই status দিয়ে filter করে
         $pending = SosResponder::with([
             'sos:id,location_text,crime_type,created_at,user_id',
             'sos.user:id,name,phone',
@@ -483,6 +541,7 @@ class SosController extends Controller
             'note'         => 'nullable|string|max:500',
         ]);
 
+        /** @var SosResponder $responder */
         $responder = SosResponder::find($request->responder_id);
         if (!$responder) {
             return response()->json(['success' => false, 'message' => 'Record not found'], 404);
@@ -590,10 +649,7 @@ class SosController extends Controller
         return '🎖️ Active';
     }
 
-    // ─────────────────────────────────────────────────────────
     // GET /api/sos/all-requests
-    // আজ পর্যন্ত সকল SOS requests (সব user এর)
-    // ─────────────────────────────────────────────────────────
     public function allSosRequests(Request $request)
     {
         $userId = $request->session()->get('user_id')
@@ -609,27 +665,24 @@ class SosController extends Controller
             ->map(function ($a) use ($userId) {
                 $responderIds = $a->responders ? $a->responders->pluck('responder_id')->toArray() : [];
                 return [
-                    'id'             => $a->id,
-                    'victim_name'    => $a->user ? $a->user->name : 'Anonymous',
-                    'location_text'  => $a->location_text,
-                    'crime_type'     => $a->crime_type,
-                    'description'    => $a->description,
-                    'latitude'       => $a->latitude,
-                    'longitude'      => $a->longitude,
-                    'status'         => $a->status,
-                    'created_at'     => $a->created_at,
-                    'responder_count'=> count($responderIds),
-                    'i_responded'    => in_array((int)$userId, $responderIds),
+                    'id'              => $a->id,
+                    'victim_name'     => $a->user ? $a->user->name : 'Anonymous',
+                    'location_text'   => $a->location_text,
+                    'crime_type'      => $a->crime_type,
+                    'description'     => $a->description,
+                    'latitude'        => $a->latitude,
+                    'longitude'       => $a->longitude,
+                    'status'          => $a->status,
+                    'created_at'      => $a->created_at,
+                    'responder_count' => count($responderIds),
+                    'i_responded'     => in_array((int)$userId, $responderIds),
                 ];
             });
 
         return response()->json(['success' => true, 'alerts' => $alerts]);
     }
 
-    // ─────────────────────────────────────────────────────────
     // GET /api/sos/active-recent
-    // গত 30 মিনিটের মধ্যে দেওয়া active SOS alerts
-    // ─────────────────────────────────────────────────────────
     public function activeRecentAlerts(Request $request)
     {
         $userId = $request->session()->get('user_id')
@@ -649,18 +702,20 @@ class SosController extends Controller
             ->map(function ($a) use ($userId) {
                 $responderIds = $a->responders ? $a->responders->pluck('responder_id')->toArray() : [];
                 return [
-                    'id'             => $a->id,
-                    'victim_name'    => $a->user ? $a->user->name : 'Anonymous',
-                    'location_text'  => $a->location_text,
-                    'crime_type'     => $a->crime_type,
-                    'description'    => $a->description,
-                    'latitude'       => $a->latitude,
-                    'longitude'      => $a->longitude,
-                    'status'         => $a->status,
-                    'created_at'     => $a->created_at,
-                    'responder_count'=> count($responderIds),
-                    'i_responded'    => in_array((int)$userId, $responderIds),
-                    'minutes_ago'    => $a->created_at ? (int) now()->diffInMinutes(Carbon::parse($a->created_at)) : null,  // Fix: \Carbon\Carbon -> Carbon
+                    'id'              => $a->id,
+                    'victim_name'     => $a->user ? $a->user->name : 'Anonymous',
+                    'location_text'   => $a->location_text,
+                    'crime_type'      => $a->crime_type,
+                    'description'     => $a->description,
+                    'latitude'        => $a->latitude,
+                    'longitude'       => $a->longitude,
+                    'status'          => $a->status,
+                    'created_at'      => $a->created_at,
+                    'responder_count' => count($responderIds),
+                    'i_responded'     => in_array((int)$userId, $responderIds),
+                    'minutes_ago'     => $a->created_at
+                        ? (int) now()->diffInMinutes(Carbon::parse($a->created_at))
+                        : null,
                 ];
             });
 
@@ -678,12 +733,12 @@ class SosController extends Controller
             return response()->json(['success' => false, 'message' => 'sos_id required'], 422);
         }
 
+        /** @var SosAlert $sos */
         $sos = SosAlert::find($sosId);
         if (!$sos) {
             return response()->json(['success' => false, 'message' => 'SOS not found'], 404);
         }
 
-        // Shudhu jini SOS diyechen tini-i cancel korte parben
         if ($userId && $sos->user_id && $sos->user_id != $userId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }

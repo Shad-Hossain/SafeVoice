@@ -5,6 +5,8 @@ use Illuminate\Http\Request;
 use App\Models\EvidenceRequest;
 use App\Models\Complaint;
 use App\Models\ComplaintEvidence;
+use App\Models\User;
+use App\Models\UserNotification;
 use App\Http\Controllers\FcmController;
 use Carbon\Carbon;
 
@@ -14,64 +16,123 @@ class EvidenceRequestController extends Controller
     // POST /api/evidence-request/create
     // Admin → request more evidence from user for a complaint
     // ─────────────────────────────────────────────────────────
-    public function create(Request $request)
-    {
-        $request->validate([
-            'complaint_id' => 'required|string',
-            'admin_note'   => 'nullable|string|max:1000',
-        ]);
+   public function create(Request $request)
+{
+    $request->validate([
+        'complaint_id' => 'required|string',
+        'admin_note'   => 'nullable|string|max:1000',
+        'days'         => 'nullable|integer|in:7,30',
+    ]);
 
-        $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
-        if (!$complaint) {
-            return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
-        }
+    $days = $request->input('days', 7); // default 7, or 30 for fake/notice period
 
-        // Check if there's already an active (pending/skipped) request for this complaint
-        $existing = EvidenceRequest::where('complaint_id', $request->complaint_id)
-            ->whereIn('status', ['pending', 'skipped'])
-            ->first();
+    $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
+    if (!$complaint) {
+        return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
+    }
 
-        if ($existing) {
-            // Refresh it — update note, reset deadline
-            $existing->update([
-                'admin_note'   => $request->input('admin_note', ''),
-                'status'       => 'pending',
-                'deadline'     => Carbon::now()->addDays(7),
-                'skip_until'   => null,
-                'responded_at' => null,
-            ]);
+    $existing = EvidenceRequest::where('complaint_id', $request->complaint_id)
+        ->whereIn('status', ['pending', 'skipped'])
+        ->first();
+
+    if ($existing) {
+        // User exist করে কিনা check করো
+        $checkId = $complaint->user_id ?? $complaint->anonymous_user_id;
+        if (!$checkId || !User::where('id', $checkId)->exists()) {
             return response()->json([
-                'success' => true,
-                'message' => 'Evidence request refreshed. User will be notified.',
-                'request_id' => $existing->id,
-            ]);
+                'success' => false,
+                'message' => 'Cannot send evidence request — the user account no longer exists.',
+            ], 422);
         }
 
-        $evidenceRequest = EvidenceRequest::create([
-            'complaint_id' => $request->complaint_id,
-            'user_id'      => $complaint->user_id,
+        $existing->update([
             'admin_note'   => $request->input('admin_note', ''),
             'status'       => 'pending',
-            'deadline'     => Carbon::now()->addDays(7),
+            'deadline'     => Carbon::now()->addDays($days),
+            'days'         => $days,
+            'skip_until'   => null,
+            'responded_at' => null,
         ]);
 
-        // FCM Push — notify user immediately
-        if ($complaint->user_id) {
-            FcmController::sendToUser(
-                $complaint->user_id,
-                '📋 Evidence Request — ' . $request->complaint_id,
-                'Admin has requested additional evidence for your complaint. You have 7 days to respond.',
-                ['type' => 'evidence_request', 'complaint_id' => $request->complaint_id, 'url' => '/dashboard']
-            );
+        // 30-day notice refresh হলেও Probation নিশ্চিত করো
+        if ($days === 30 && ($complaint->user_id || $complaint->anonymous_user_id)) {
+            // anonymous হলেও anonymous_user_id দিয়ে Probation set করো
+            $existingTargetId = $complaint->user_id ?? $complaint->anonymous_user_id;
+            User::where('id', $existingTargetId)
+                ->where('status', 'Active')
+                ->update(['status' => 'Probation']);
         }
 
         return response()->json([
-            'success'    => true,
-            'message'    => 'Evidence request sent. User will be notified on next login.',
-            'request_id' => $evidenceRequest->id,
+            'success' => true,
+            'message' => 'Evidence request refreshed. User will be notified.',
+            'request_id' => $existing->id,
         ]);
     }
 
+    // anonymous complaint হলে anonymous_user_id use করো
+    $targetUserId = $complaint->user_id ?? $complaint->anonymous_user_id;
+
+    // User exist করে কিনা check করো
+    if (!$targetUserId || !User::where('id', $targetUserId)->exists()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Cannot send evidence request — the user account no longer exists.',
+        ], 422);
+    }
+
+    $evidenceRequest = EvidenceRequest::create([
+        'complaint_id' => $request->complaint_id,
+        'user_id'      => $targetUserId,
+        'admin_note'   => $request->input('admin_note', ''),
+        'status'       => 'pending',
+        'deadline'     => Carbon::now()->addDays($days),
+        'days'         => $days,
+    ]);
+
+    if ($targetUserId) {
+        // ── 30-day notice → user কে Probation-এ দাও ──────────
+        if ($days === 30) {
+            User::where('id', $targetUserId)
+                ->whereIn('status', ['Active'])
+                ->update(['status' => 'Probation']);
+
+            $deadline = Carbon::now()->addDays(30)->format('d M Y');
+
+            // In-app notification
+            UserNotification::notify(
+                (int) $targetUserId,
+                'probation_notice',
+                '⚠️ Your Account is Under Review',
+                "Your complaint {$request->complaint_id} has been flagged for review. Your account has been placed on probation. You have 30 days (until {$deadline}) to submit supporting evidence. During this period you cannot submit new complaints or use SOS.",
+                [
+                    'complaint_id' => $request->complaint_id,
+                    'deadline'     => $deadline,
+                    'icon'         => '⚠️',
+                ]
+            );
+
+            $label = "⚠️ Your account is now on probation. You have 30 days to submit evidence for complaint {$request->complaint_id}. Deadline: {$deadline}.";
+        } else {
+            $label = "Admin has requested additional evidence for your complaint. You have 7 days to respond.";
+        }
+
+        FcmController::sendToUser(
+            $targetUserId,
+            '📋 Evidence Request — ' . $request->complaint_id,
+            $label,
+            ['type' => 'evidence_request', 'complaint_id' => $request->complaint_id, 'url' => '/dashboard']
+        );
+    }
+
+    return response()->json([
+        'success'    => true,
+        'message'    => $days === 30
+            ? 'User has been placed on probation and notified.'
+            : 'Evidence request sent. User will be notified on next login.',
+        'request_id' => $evidenceRequest->id,
+    ]);
+}
     // ─────────────────────────────────────────────────────────
     // GET /api/evidence-request/pending
     // User → get their pending evidence request (for notification modal)
@@ -172,6 +233,24 @@ class EvidenceRequestController extends Controller
             'status'       => 'submitted',
             'responded_at' => Carbon::now(),
         ]);
+
+        // 30-day notice ছিল এবং evidence submit হলো → Probation থেকে Active করো
+        if ($evReq->days >= 30 && $userId) {
+            User::where('id', $userId)
+                ->where('status', 'Probation')
+                ->update(['status' => 'Active']);
+
+            UserNotification::notify(
+                (int) $userId,
+                'probation_lifted',
+                '✅ Probation Lifted — Account Restored',
+                "Thank you for submitting your evidence for complaint {$evReq->complaint_id}. Your account has been restored to Active status. We will review your submission.",
+                [
+                    'complaint_id' => $evReq->complaint_id,
+                    'icon'         => '✅',
+                ]
+            );
+        }
 
         return response()->json(['success' => true, 'message' => 'Evidence submitted successfully.']);
     }

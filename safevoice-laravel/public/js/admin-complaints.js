@@ -135,7 +135,6 @@ function showToast() {
 }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// Safe init — DOM ready হলে event bind করো
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('detailModal');
     if (modal) {
@@ -145,7 +144,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (reqModal) {
         reqModal.addEventListener('click', function(e) { if (e.target === this) closeReqEvidenceModal(); });
     }
-    // Check for expired evidence requests on page load
     checkExpiredEvidenceRequests();
 });
 
@@ -167,7 +165,6 @@ async function openModal(id) {
     document.getElementById('dAnon').textContent     = anon ? 'Yes' : 'No';
     document.getElementById('dDesc').textContent     = c.description || '—';
 
-    // ── Consent fields ────────────────────────────────────────
     const lc = c.legal_consent;
     const pc = c.publish_consent;
     const legalEl   = document.getElementById('dLegalConsent');
@@ -186,7 +183,6 @@ async function openModal(id) {
     sel.value = c.status || 'Submitted';
     document.getElementById('adminMsgInput').value = c.admin_message || '';
 
-    // Hide/show Request Evidence button — only show if complaint has a user (not 100% anonymous with no user_id)
     const reqBtn = document.getElementById('btnReqEvidence');
     if (reqBtn) {
         reqBtn.style.display = (anon && !c.user_id) ? 'none' : 'inline-flex';
@@ -195,6 +191,63 @@ async function openModal(id) {
     document.getElementById('detailModal').classList.add('active');
     loadEvidence(id);
     loadEvidenceRequestStatus(id);
+
+    // ── Submitted By ──────────────────────────────────────────
+    // API থেকে fresh data নিয়ে user details দেখাও
+    const sbBox = document.getElementById('submittedByBox');
+    const sbEl  = document.getElementById('sbUserId');
+    if (sbBox && sbEl) {
+        sbBox.style.display = 'none';
+        if (!anon) {
+            fetch(`/api/complaints/${encodeURIComponent(id)}`, { credentials: 'include' })
+                .then(r => r.json())
+                .then(data => {
+                    let uid = null, name = null, email = null, phone = null, status = null;
+                    if (data.submitted_by) {
+                        uid    = data.submitted_by.user_id;
+                        name   = data.submitted_by.name;
+                        email  = data.submitted_by.email;
+                        phone  = data.submitted_by.phone;
+                        status = data.submitted_by.status;
+                    } else if (data.complaint) {
+                        uid = data.complaint.user_id || data.complaint.anonymous_user_id;
+                    }
+                    if (uid) {
+                        sbEl.textContent = 'User ID: #' + uid;
+                        // Name
+                        const nameEl = document.getElementById('sbUserName');
+                        const nameVal = document.getElementById('sbNameVal');
+                        if (nameEl && nameVal && name) {
+                            nameVal.textContent = name;
+                            nameEl.style.display = 'flex';
+                        }
+                        // Email
+                        const emailEl = document.getElementById('sbUserEmail');
+                        const emailVal = document.getElementById('sbEmailVal');
+                        if (emailEl && emailVal && email) {
+                            emailVal.textContent = email;
+                            emailEl.style.display = 'flex';
+                        }
+                        // Phone
+                        const phoneEl = document.getElementById('sbUserPhone');
+                        const phoneVal = document.getElementById('sbPhoneVal');
+                        if (phoneEl && phoneVal && phone) {
+                            phoneVal.textContent = phone;
+                            phoneEl.style.display = 'flex';
+                        }
+                        // Status badge
+                        const statusEl = document.getElementById('sbUserStatus');
+                        if (statusEl && status) {
+                            const sc = {Active:'#2ecc71', Suspended:'#e63946', Banned:'#e63946', Probation:'#f39c12'}[status] || '#a0b4cc';
+                            statusEl.innerHTML = `<span style="background:${sc}22;color:${sc};border:1px solid ${sc}55;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;">${status}</span>`;
+                            statusEl.style.display = 'block';
+                        }
+                        sbBox.style.display = 'block';
+                    }
+                })
+                .catch(() => {});
+        }
+    }
 }
 
 async function loadEvidenceRequestStatus(complaint_id) {
@@ -238,14 +291,43 @@ async function loadEvidenceRequestStatus(complaint_id) {
     }
 }
 
+function selectEvidenceMode(days) {
+    document.getElementById('selectedEvidenceDays').value = days;
+    const btn7  = document.getElementById('mode7Btn');
+    const btn30 = document.getElementById('mode30Btn');
+    const desc  = document.getElementById('reqEvDescription');
+    const sendBtn = document.getElementById('reqEvSendBtn');
+
+    if (days === 7) {
+        btn7.style.border  = '2px solid #4f9eff';
+        btn7.style.background = '#060c18';
+        btn30.style.border = '2px solid #1e2d4a';
+        btn30.style.background = '#060c18';
+        desc.innerHTML = `User will be notified to submit additional evidence for complaint <strong id="reqEvComplaintId" style="color:#4f9eff;">${esc(activeId||'')}</strong>. They will have <strong style="color:#f39c12;">7 days</strong> to respond.`;
+        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send 7-Day Request';
+        sendBtn.style.background = 'linear-gradient(135deg,#b45309,#f59e0b)';
+    } else {
+        btn30.style.border  = '2px solid #e63946';
+        btn30.style.background = '#1a060a';
+        btn7.style.border  = '2px solid #1e2d4a';
+        btn7.style.background = '#060c18';
+        desc.innerHTML = `⚠️ This complaint has been flagged as potentially <strong style="color:#e63946;">fake</strong>. User will receive a <strong style="color:#e63946;">30-day official notice</strong> for complaint <strong style="color:#4f9eff;">${esc(activeId||'')}</strong> to submit evidence proving their innocence. If they fail to respond, further action will be taken.`;
+        sendBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Send 30-Day Notice';
+        sendBtn.style.background = 'linear-gradient(135deg,#991b1b,#e63946)';
+    }
+}
+
 function openRequestEvidenceModal() {
     if (!activeId) return;
-    document.getElementById('reqEvComplaintId').textContent = activeId;
+    // Reset to default 7-day mode
+    selectEvidenceMode(7);
     document.getElementById('reqEvNote').value = '';
     document.getElementById('reqEvStatus').style.display = 'none';
     document.getElementById('reqEvExisting').style.display = 'none';
+    // Set complaint ID text in description
+    const idEl = document.getElementById('reqEvComplaintId');
+    if (idEl) idEl.textContent = activeId;
 
-    // Check if there's already an active request
     fetch(`/api/evidence-request/admin-list?complaint_id=${encodeURIComponent(activeId)}`, { credentials: 'include' })
         .then(r => r.json())
         .then(data => {
@@ -255,7 +337,8 @@ function openRequestEvidenceModal() {
                     const box  = document.getElementById('reqEvExisting');
                     const info = document.getElementById('reqEvExistingInfo');
                     box.style.display = 'block';
-                    info.textContent  = `Status: ${active.status} | Sent: ${new Date(active.requested_at).toLocaleDateString('en-GB')} | Deadline: ${new Date(active.deadline).toLocaleDateString('en-GB')}. Sending again will refresh the deadline.`;
+                    const prevDays = active.days || 7;
+                    info.textContent  = `Status: ${active.status} | Mode: ${prevDays}-day | Sent: ${new Date(active.requested_at).toLocaleDateString('en-GB')} | Deadline: ${new Date(active.deadline).toLocaleDateString('en-GB')}. Sending again will refresh the deadline.`;
                 }
             }
         }).catch(() => {});
@@ -269,6 +352,7 @@ function closeReqEvidenceModal() {
 
 async function sendEvidenceRequest() {
     const note   = document.getElementById('reqEvNote').value.trim();
+    const days   = parseInt(document.getElementById('selectedEvidenceDays').value) || 7;
     const btn    = document.getElementById('reqEvSendBtn');
     const status = document.getElementById('reqEvStatus');
 
@@ -280,7 +364,7 @@ async function sendEvidenceRequest() {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ complaint_id: activeId, admin_note: note }),
+            body: JSON.stringify({ complaint_id: activeId, admin_note: note, days: days }),
         });
         const data = await res.json();
 
@@ -290,7 +374,6 @@ async function sendEvidenceRequest() {
             status.style.border     = '1px solid #2ecc71';
             status.style.color      = '#2ecc71';
             status.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
-            // Refresh evidence request status in main modal
             setTimeout(() => {
                 closeReqEvidenceModal();
                 loadEvidenceRequestStatus(activeId);
@@ -310,16 +393,15 @@ async function sendEvidenceRequest() {
     }
 
     btn.disabled  = false;
-    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Request';
+    const curDays = parseInt(document.getElementById('selectedEvidenceDays').value) || 7;
+    btn.innerHTML = curDays === 30
+        ? '<i class="fas fa-exclamation-triangle"></i> Send 30-Day Notice'
+        : '<i class="fas fa-paper-plane"></i> Send 7-Day Request';
 }
 
-// Check for expired evidence requests and show admin banner
 async function checkExpiredEvidenceRequests() {
     try {
-        // First trigger expiry check
         await fetch('/api/evidence-request/check-expired', { method: 'POST', credentials: 'include' });
-
-        // Then get expired list
         const res  = await fetch('/api/evidence-request/expired-list', { credentials: 'include' });
         const data = await res.json();
 
@@ -333,7 +415,6 @@ async function checkExpiredEvidenceRequests() {
         text.innerHTML = `${data.expired.length} case(s) failed to submit evidence on time: <strong style="color:#f39c12;">${esc(cases)}</strong>. Consider sending PI notification to the involved users.`;
         banner.style.display = 'flex';
 
-        // Insert banner before the table
         const mainContent = document.querySelector('.main-content');
         const filterBar   = document.querySelector('.filter-bar');
         if (mainContent && filterBar) {

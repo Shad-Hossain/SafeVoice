@@ -165,6 +165,29 @@
                     <span class="detail-label">Anonymous</span>
                     <span class="detail-value" id="dAnon">—</span>
                 </div>
+                <!-- Submitted By — non-anonymous হলে User details দেখাবে -->
+                <div id="submittedByBox" style="display:none;" class="detail-item" style="grid-column:1/-1;">
+                    <span class="detail-label">Submitted By</span>
+                    <div id="sbUserCard" style="margin-top:6px;background:#060c18;border:1px solid #1e2d4a;border-radius:10px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-id-badge" style="color:#4f9eff;font-size:16px;"></i>
+                            <span id="sbUserId" style="font-family:monospace;color:#4f9eff;font-weight:700;font-size:14px;">—</span>
+                        </div>
+                        <div id="sbUserName" style="display:none;align-items:center;gap:6px;">
+                            <i class="fas fa-user" style="color:#a0b4cc;font-size:12px;"></i>
+                            <span id="sbNameVal" style="color:#e2e8f0;font-size:13px;font-weight:600;"></span>
+                        </div>
+                        <div id="sbUserEmail" style="display:none;align-items:center;gap:6px;">
+                            <i class="fas fa-envelope" style="color:#a0b4cc;font-size:12px;"></i>
+                            <span id="sbEmailVal" style="color:#a0b4cc;font-size:13px;"></span>
+                        </div>
+                        <div id="sbUserPhone" style="display:none;align-items:center;gap:6px;">
+                            <i class="fas fa-phone" style="color:#a0b4cc;font-size:12px;"></i>
+                            <span id="sbPhoneVal" style="color:#a0b4cc;font-size:13px;"></span>
+                        </div>
+                        <div id="sbUserStatus" style="display:none;"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="detail-desc-box">
@@ -237,20 +260,44 @@
 
 <!-- REQUEST EVIDENCE MODAL -->
 <div class="modal-overlay" id="reqEvidenceModal">
-    <div class="modal-box" style="max-width:480px;">
+    <div class="modal-box" style="max-width:500px;">
         <div class="modal-header">
-            <h3><i class="fas fa-file-upload" style="color:#f39c12;margin-right:8px;"></i> Request More Evidence</h3>
+            <h3><i class="fas fa-file-upload" style="color:#f39c12;margin-right:8px;"></i> Request Evidence</h3>
             <i class="fas fa-times modal-close" onclick="closeReqEvidenceModal()"></i>
         </div>
         <div class="modal-body">
-            <p style="color:#a0b4cc;font-size:13px;margin-bottom:16px;">
-                User will receive a notification asking them to submit additional evidence for complaint
+
+            <!-- Mode Selector -->
+            <div style="display:flex;gap:10px;margin-bottom:16px;">
+                <div id="mode7Btn" onclick="selectEvidenceMode(7)"
+                     style="flex:1;cursor:pointer;border-radius:10px;padding:12px 14px;border:2px solid #4f9eff;background:#060c18;transition:all .2s;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                        <i class="fas fa-clock" style="color:#4f9eff;font-size:14px;"></i>
+                        <span style="color:#4f9eff;font-weight:700;font-size:13px;">7-Day Request</span>
+                    </div>
+                    <p style="margin:0;color:#a0b4cc;font-size:11px;line-height:1.4;">Normal evidence request. User has 7 days to upload supporting files.</p>
+                </div>
+                <div id="mode30Btn" onclick="selectEvidenceMode(30)"
+                     style="flex:1;cursor:pointer;border-radius:10px;padding:12px 14px;border:2px solid #1e2d4a;background:#060c18;transition:all .2s;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                        <i class="fas fa-exclamation-triangle" style="color:#e63946;font-size:14px;"></i>
+                        <span style="color:#e63946;font-weight:700;font-size:13px;">30-Day Notice</span>
+                    </div>
+                    <p style="margin:0;color:#a0b4cc;font-size:11px;line-height:1.4;">Complaint appears fake. User must prove themselves innocent within 30 days or further action will be taken.</p>
+                </div>
+            </div>
+            <input type="hidden" id="selectedEvidenceDays" value="7">
+
+            <!-- Dynamic description -->
+            <p id="reqEvDescription" style="color:#a0b4cc;font-size:13px;margin-bottom:16px;">
+                User will be notified to submit additional evidence for complaint
                 <strong id="reqEvComplaintId" style="color:#4f9eff;"></strong>.
                 They will have <strong style="color:#f39c12;">7 days</strong> to respond.
             </p>
+
             <div class="control-group">
                 <label><i class="fas fa-comment-alt"></i> Note to User <span style="color:#4a5568;font-size:11px;">(optional)</span></label>
-                <textarea class="msg-textarea" id="reqEvNote" placeholder="e.g. Please upload clearer photos of the incident, or a receipt showing the correct fare amount..." style="height:100px;"></textarea>
+                <textarea class="msg-textarea" id="reqEvNote" placeholder="e.g. Please upload clearer photos of the incident..." style="height:90px;"></textarea>
             </div>
             <div id="reqEvStatus" style="margin-top:12px;font-size:13px;display:none;padding:10px 14px;border-radius:8px;"></div>
             <!-- Existing request info -->
@@ -262,7 +309,7 @@
         <div class="modal-footer">
             <button class="btn-decline" onclick="closeReqEvidenceModal()">Cancel</button>
             <button class="btn-accept" id="reqEvSendBtn" onclick="sendEvidenceRequest()" style="background:linear-gradient(135deg,#b45309,#f59e0b);">
-                <i class="fas fa-paper-plane"></i> Send Request
+                <i class="fas fa-paper-plane"></i> Send 7-Day Request
             </button>
         </div>
     </div>

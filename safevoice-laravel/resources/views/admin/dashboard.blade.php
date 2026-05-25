@@ -316,6 +316,29 @@
                 <h1><i class="fas fa-users" style="font-size:22px;margin-right:10px"></i>User Management</h1>
                 <p>Ban, suspend, or manage user accounts</p>
             </div>
+
+            <!-- User ID Search -->
+            <div style="margin-bottom:20px;padding:16px 20px;border-radius:14px;border:1px solid #1e3a5f;background:linear-gradient(135deg,#0a1628,#0d1f3c);">
+                <p style="margin:0 0 10px 0;font-size:13px;color:#4f9eff;font-weight:700;text-transform:uppercase;letter-spacing:.6px;">
+                    <i class="fas fa-search" style="margin-right:6px;"></i> Search User by ID
+                </p>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <input type="number" id="userIdSearchInput" placeholder="Enter User ID (e.g. 5)"
+                        style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:10px 14px;color:#fff;font-size:14px;width:220px;outline:none;"
+                        onkeydown="if(event.key==='Enter') searchUserById()" />
+                    <button onclick="searchUserById()"
+                        style="background:#4f9eff;color:#000;border:none;border-radius:10px;padding:10px 20px;font-weight:700;font-size:14px;cursor:pointer;">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <button onclick="clearUserSearch()"
+                        style="background:#1e2d4a;color:#a0b4cc;border:1px solid #1e2d4a;border-radius:10px;padding:10px 16px;font-size:13px;cursor:pointer;">
+                        Clear
+                    </button>
+                </div>
+                <!-- Search Result -->
+                <div id="userSearchResult" style="display:none;margin-top:16px;"></div>
+            </div>
+
             <div class="complaints-table">
                 <table>
                     <thead>
@@ -549,11 +572,33 @@
 <div class="er-modal-overlay" id="erRequestModal">
     <div class="er-modal">
         <div class="er-modal-icon"><i class="fas fa-file-upload"></i></div>
-        <h3>Request Additional Evidence</h3>
+        <h3>Request Evidence</h3>
         <div class="er-modal-cid" id="erModalComplaintId"></div>
+
+        <!-- Mode Selector -->
+        <div style="display:flex;gap:10px;margin:14px 0;">
+            <div id="erMode7Btn" onclick="selectErMode(7)"
+                 style="flex:1;cursor:pointer;border-radius:10px;padding:11px 12px;border:2px solid #4f9eff;background:#0a0f1e;transition:all .2s;">
+                <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
+                    <i class="fas fa-clock" style="color:#4f9eff;font-size:13px;"></i>
+                    <span style="color:#4f9eff;font-weight:700;font-size:12px;">7-Day Request</span>
+                </div>
+                <p style="margin:0;color:#a0b4cc;font-size:10px;line-height:1.4;">Normal evidence request. User has 7 days to upload supporting files.</p>
+            </div>
+            <div id="erMode30Btn" onclick="selectErMode(30)"
+                 style="flex:1;cursor:pointer;border-radius:10px;padding:11px 12px;border:2px solid #1e2d4a;background:#0a0f1e;transition:all .2s;">
+                <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
+                    <i class="fas fa-exclamation-triangle" style="color:#e63946;font-size:13px;"></i>
+                    <span style="color:#e63946;font-weight:700;font-size:12px;">30-Day Notice</span>
+                </div>
+                <p style="margin:0;color:#a0b4cc;font-size:10px;line-height:1.4;">Complaint appears fake. User must prove innocence within 30 days.</p>
+            </div>
+        </div>
+        <input type="hidden" id="erSelectedDays" value="7">
+
         <label class="er-note-label"><i class="fas fa-pen" style="color:#d97706;margin-right:6px;"></i>Message to User <span style="color:#4a5568;font-weight:400">(optional)</span></label>
         <textarea class="er-note-textarea" id="erAdminNoteInput" placeholder="e.g. Please upload a clearer photo of the incident location or any witness statement..."></textarea>
-        <div class="er-modal-info">
+        <div class="er-modal-info" id="erModeInfo">
             <i class="fas fa-info-circle"></i>
             User will receive a notification to submit more evidence.
             They can upload files instantly or skip for <strong>7 days</strong>.
@@ -562,7 +607,7 @@
         <div class="er-modal-btns">
             <button class="btn-cancel-req" onclick="closeEvidenceRequestModal()">Cancel</button>
             <button class="btn-send-req" id="erSendBtn" onclick="sendEvidenceRequest()">
-                <i class="fas fa-paper-plane"></i> Send Request
+                <i class="fas fa-paper-plane"></i> Send 7-Day Request
             </button>
         </div>
     </div>
@@ -646,13 +691,109 @@ async function loadUsers() {
                         <option ${u.status==='Active'    ? 'selected':''} value="Active">✅ Active</option>
                         <option ${u.status==='Probation' ? 'selected':''} value="Probation">⚠️ Probation</option>
                         <option ${u.status==='Suspended' ? 'selected':''} value="Suspended">🚫 Suspended</option>
-                        <option ${u.status==='Banned'    ? 'selected':''} value="Banned">❌ Banned</option>
                     </select>
                 </td>
             </tr>`).join('');
     } catch(e) {
         tbody.innerHTML = '<tr><td colspan="7" class="table-state">Could not load users.</td></tr>';
     }
+}
+
+async function searchUserById() {
+    const input = document.getElementById('userIdSearchInput');
+    const result = document.getElementById('userSearchResult');
+    const uid = (input.value || '').trim();
+    if (!uid || isNaN(uid)) {
+        result.style.display = 'block';
+        result.innerHTML = '<p style="color:#f39c12;font-size:13px;"><i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i>Please enter a valid User ID number.</p>';
+        return;
+    }
+    result.style.display = 'block';
+    result.innerHTML = '<p style="color:#a0b4cc;font-size:13px;"><i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Searching...</p>';
+    try {
+        const res  = await fetch(`/api/admin/user/${encodeURIComponent(uid)}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) {
+            result.innerHTML = `<p style="color:#e63946;font-size:13px;"><i class="fas fa-times-circle" style="margin-right:6px;"></i>${data.message || 'User not found.'}</p>`;
+            return;
+        }
+        const u  = data.user;
+        const cs = data.complaints || [];
+        const joinedDate = u.joined_at ? new Date(u.joined_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+        const statusColors = { Active:'#2ecc71', Suspended:'#f39c12', Banned:'#e63946', Probation:'#f39c12', Pending:'#a0b4cc' };
+        const sc = statusColors[u.status] || '#fff';
+        const complaintsHtml = cs.length === 0
+            ? '<p style="color:#6b7280;font-size:12px;margin:8px 0 0 0;">No complaints filed.</p>'
+            : `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">` +
+              cs.map(c => `
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;padding:8px 12px;font-size:12px;">
+                    <span style="color:#4f9eff;font-weight:700;">${c.complaint_id}</span>
+                    <span style="color:#6b7280;margin:0 6px;">•</span>
+                    <span style="color:#a0b4cc;">${c.type || '—'}</span>
+                    <span style="color:#6b7280;margin:0 6px;">•</span>
+                    <span style="color:${statusColors[c.status]||'#fff'};font-weight:600;">${c.status}</span>
+                </div>`).join('') + '</div>';
+        result.innerHTML = `
+            <div style="border-radius:12px;border:1px solid #1e3a5f;background:#060d1a;overflow:hidden;">
+                <div style="padding:14px 16px;background:linear-gradient(90deg,#0d1f3c,#060d1a);display:flex;align-items:center;gap:14px;">
+                    <div style="width:44px;height:44px;border-radius:50%;background:#1e2d4a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fas fa-user" style="color:#4f9eff;font-size:20px;"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="color:#fff;font-weight:700;font-size:16px;">${u.name}</div>
+                        <div style="color:#4f9eff;font-size:13px;">${u.email}</div>
+                    </div>
+                    <span style="background:${sc}22;color:${sc};border:1px solid ${sc}55;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;">${u.status}</span>
+                </div>
+                <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">User ID</div>
+                        <div style="color:#fff;font-family:monospace;font-size:14px;font-weight:700;">#${u.id}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Phone</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${u.phone || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">ID Type</div>
+                        <div style="color:#a0b4cc;font-size:13px;text-transform:capitalize;">${(u.id_type||'—').replace('_',' ')}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">ID Number</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${u.id_number || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Joined</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${joinedDate}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Complaints Filed</div>
+                        <div style="color:#fff;font-size:14px;font-weight:700;">${u.complaints_count}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Location</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${u.location || '—'}</div>
+                    </div>
+                    <div>
+                        <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">SOS Helped</div>
+                        <div style="color:#a0b4cc;font-size:13px;">${u.sos_helped_count || 0} times</div>
+                    </div>
+                </div>
+                <div style="padding:0 16px 14px 16px;">
+                    <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Complaints</div>
+                    ${complaintsHtml}
+                </div>
+            </div>`;
+    } catch(e) {
+        result.innerHTML = '<p style="color:#e63946;font-size:13px;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>Network error. Please try again.</p>';
+    }
+}
+
+function clearUserSearch() {
+    document.getElementById('userIdSearchInput').value = '';
+    const r = document.getElementById('userSearchResult');
+    r.style.display = 'none';
+    r.innerHTML = '';
 }
 
 async function updateUserStatus(id, selectEl) {
@@ -664,10 +805,19 @@ async function updateUserStatus(id, selectEl) {
             body: JSON.stringify({ id, status })
         });
         const data = await res.json();
-        if (data.success) showToast('<i class="fas fa-check-circle"></i> User status → ' + status);
-        else throw new Error();
+        if (data.success) {
+            if (data.auto_banned) {
+                showToast('<i class="fas fa-shield-alt"></i> System has automatically taken action on a user.');
+                loadUsers();
+            } else {
+                showToast('<i class="fas fa-check-circle"></i> ' + data.message);
+            }
+        } else {
+            throw new Error(data.message || 'Failed');
+        }
     } catch(e) {
-        showToast('<i class="fas fa-times-circle"></i> Failed to update', true);
+        showToast('<i class="fas fa-times-circle"></i> ' + (e.message || 'Failed to update'), true);
+        loadUsers();
     }
 }
 
@@ -834,13 +984,34 @@ async function confirmSendPINotify() {
 // ── Evidence Request ──────────────────────────────────────────
 let currentViewComplaint = null;
 
+function selectErMode(days) {
+    document.getElementById('erSelectedDays').value = days;
+    const btn7   = document.getElementById('erMode7Btn');
+    const btn30  = document.getElementById('erMode30Btn');
+    const info   = document.getElementById('erModeInfo');
+    const sendBtn = document.getElementById('erSendBtn');
+    if (days === 7) {
+        btn7.style.border  = '2px solid #4f9eff'; btn7.style.background  = '#060c18';
+        btn30.style.border = '2px solid #1e2d4a'; btn30.style.background = '#0a0f1e';
+        info.innerHTML = '<i class="fas fa-info-circle"></i> User will receive a notification to submit more evidence. They can upload files instantly or skip for <strong>7 days</strong>. If they fail to submit within 7 days, you will be automatically notified.';
+        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send 7-Day Request';
+        sendBtn.style.background = '';
+    } else {
+        btn30.style.border = '2px solid #e63946'; btn30.style.background = '#1a060a';
+        btn7.style.border  = '2px solid #1e2d4a'; btn7.style.background  = '#0a0f1e';
+        info.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#e63946;"></i> <strong style="color:#e63946;">Fake complaint notice.</strong> User will receive an official 30-day notice to submit evidence proving their complaint is valid. If they fail to respond, further action will be taken against them.';
+        sendBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Send 30-Day Notice';
+        sendBtn.style.background = 'linear-gradient(135deg,#991b1b,#e63946)';
+    }
+}
+
 function openEvidenceRequestModal() {
     if (!currentViewComplaint) return;
     document.getElementById('erModalComplaintId').textContent = currentViewComplaint.complaint_id;
     document.getElementById('erAdminNoteInput').value = '';
+    selectErMode(7); // reset to 7-day default
     const btn = document.getElementById('erSendBtn');
     btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Request';
     document.getElementById('erRequestModal').classList.add('active');
 }
 
@@ -852,6 +1023,7 @@ async function sendEvidenceRequest() {
     const complaintId = currentViewComplaint?.complaint_id;
     if (!complaintId) return;
     const note = document.getElementById('erAdminNoteInput').value.trim();
+    const days = parseInt(document.getElementById('erSelectedDays').value) || 7;
     const btn  = document.getElementById('erSendBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
@@ -859,12 +1031,12 @@ async function sendEvidenceRequest() {
         const res  = await fetch('/api/evidence-request/create', {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ complaint_id: complaintId, admin_note: note }),
+            body: JSON.stringify({ complaint_id: complaintId, admin_note: note, days: days }),
         });
         const data = await res.json();
         closeEvidenceRequestModal();
         if (data.success) {
-            showToast('<i class="fas fa-check-circle"></i> Evidence request sent to user for ' + complaintId);
+            showToast('<i class="fas fa-check-circle"></i> ' + days + '-day evidence request sent for ' + complaintId);
         } else {
             showToast('<i class="fas fa-exclamation-circle"></i> ' + (data.message || 'Failed to send request'), true);
         }
@@ -915,6 +1087,7 @@ function viewComplaint(c) {
         <div class="detail-row"><span class="detail-label">Incident Date</span><span class="detail-value">${c.incident_date ? formatDate(c.incident_date) : '—'}</span></div>
         <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value">${c.location || '—'}</span></div>
         <div class="detail-row"><span class="detail-label">Anonymous</span><span class="detail-value">${c.is_anonymous ? 'Yes' : 'No'}</span></div>
+        ${!c.is_anonymous ? `<div class="detail-row"><span class="detail-label">Submitted By</span><div id="sbCardDash" style="background:#060c18;border:1px solid #1e2d4a;border-radius:10px;padding:8px 12px;margin-top:4px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;"><span id="sbUidDash" style="font-family:monospace;color:#4f9eff;font-weight:700;font-size:13px;"><i class="fas fa-spinner fa-spin" style="font-size:11px;"></i> Loading...</span></div></div>` : ""}
         <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusBadge(c.status)}</span></div>
         <div class="detail-row"><span class="detail-label">Submitted At</span><span class="detail-value">${formatDate(c.submitted_at)}</span></div>
         <div style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap;">
@@ -933,6 +1106,31 @@ function viewComplaint(c) {
         <div id="adminDashboardEvidenceList" style="margin-top:8px;"><p style="color:#4a5568;font-size:13px;"><i class="fas fa-spinner fa-spin"></i> Loading evidence...</p></div>`;
     document.getElementById('viewModal').classList.add('active');
     loadAdminDashboardEvidence(c.complaint_id);
+    if (!c.is_anonymous) fetchSubmittedBy(c.complaint_id);
+}
+
+async function fetchSubmittedBy(complaint_id) {
+    const card = document.getElementById('sbCardDash');
+    const uid  = document.getElementById('sbUidDash');
+    if (!card || !uid) return;
+    try {
+        const res  = await fetch(`/api/complaints/${encodeURIComponent(complaint_id)}`, { credentials: 'include' });
+        const data = await res.json();
+        let sb = data.submitted_by;
+        let userId = sb?.user_id || data.complaint?.user_id || data.complaint?.anonymous_user_id;
+        if (!userId) { card.innerHTML = '<span style="color:#4a5568;font-size:12px;">Not available</span>'; return; }
+        const sc = {Active:'#2ecc71',Suspended:'#e63946',Banned:'#e63946',Probation:'#f39c12'}[sb?.status] || '#a0b4cc';
+        card.innerHTML = `
+            <span style="font-family:monospace;color:#4f9eff;font-weight:700;font-size:13px;">User ID: #${userId}</span>
+            ${sb?.name  ? `<span style="display:flex;align-items:center;gap:5px;"><i class="fas fa-user" style="color:#a0b4cc;font-size:11px;"></i><span style="color:#e2e8f0;font-size:13px;font-weight:600;">${sb.name}</span></span>` : ''}
+            ${sb?.email ? `<span style="display:flex;align-items:center;gap:5px;"><i class="fas fa-envelope" style="color:#a0b4cc;font-size:11px;"></i><span style="color:#a0b4cc;font-size:12px;">${sb.email}</span></span>` : ''}
+            ${sb?.phone ? `<span style="display:flex;align-items:center;gap:5px;"><i class="fas fa-phone" style="color:#a0b4cc;font-size:11px;"></i><span style="color:#a0b4cc;font-size:12px;">${sb.phone}</span></span>` : ''}
+            ${sb?.status ? `<span style="background:${sc}22;color:${sc};border:1px solid ${sc}55;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;">${sb.status}</span>` : ''}
+        `;
+    } catch(e) {
+        const uid = document.getElementById('sbUidDash');
+        if (uid) uid.textContent = 'Could not load';
+    }
 }
 
 async function loadAdminDashboardEvidence(complaint_id) {

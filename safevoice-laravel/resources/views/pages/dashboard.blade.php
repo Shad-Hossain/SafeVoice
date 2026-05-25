@@ -231,7 +231,8 @@
             <div class="welcome-bar">
                 <div>
                     <h1>Welcome back, <span id="welcomeName">User</span>! 👋</h1>
-                    <p>Here's what's happening with your complaints</p>
+                    <p style="margin:2px 0 0 0;font-size:13px;color:#4f9eff;font-weight:600;font-family:monospace;">ID: <span id="welcomeUserId" style="color:#a0b4cc;">#—</span></p>
+                    <p style="margin:4px 0 0 0;">Here's what's happening with your complaints</p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
                     <!-- 🔔 BELL NOTIFICATION ICON -->
@@ -479,6 +480,8 @@ document.documentElement.style.visibility = 'hidden';
     if (navEl) navEl.textContent = user.name || 'User';
     var welcomeEl = document.getElementById('welcomeName');
     if (welcomeEl) welcomeEl.textContent = user.name || 'User';
+    var uidEl = document.getElementById('welcomeUserId');
+    if (uidEl) uidEl.textContent = '#' + (user.id || '—');
     document.documentElement.style.visibility = 'visible';
 })();
 // ── Load user profile from localStorage ────────

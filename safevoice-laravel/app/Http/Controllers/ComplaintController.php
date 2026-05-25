@@ -16,6 +16,7 @@ class ComplaintController extends Controller
             ->select('id','complaint_id','type','incident_date','location',
                      'description','is_anonymous','status','submitted_at','updated_at',
                      'assigned_pi_id','pi_assigned_at','payment_deadline','user_id',
+                     'anonymous_user_id',
                      'legal_consent','publish_consent','admin_message',
                      'user_name as reporter_name');
 
@@ -50,7 +51,28 @@ class ComplaintController extends Controller
             return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
         }
 
-        return response()->json(['success' => true, 'complaint' => $complaint]);
+        // Non-anonymous হলে submitter এর name ও email যোগ করো
+        $submittedBy = null;
+        if (!$complaint->is_anonymous && $complaint->user_id) {
+            $user = User::where('id', $complaint->user_id)
+                ->select('id', 'name', 'email', 'phone', 'status')
+                ->first();
+            if ($user) {
+                $submittedBy = [
+                    'user_id' => $user->id,
+                    'name'    => $user->name,
+                    'email'   => $user->email,
+                    'phone'   => $user->phone,
+                    'status'  => $user->status,
+                ];
+            }
+        }
+
+        return response()->json([
+            'success'      => true,
+            'complaint'    => $complaint,
+            'submitted_by' => $submittedBy,
+        ]);
     }
 
     // POST /api/complaints/submit
@@ -61,6 +83,23 @@ class ComplaintController extends Controller
 
         if (!$userId) {
             return response()->json(['success' => false, 'message' => 'Please login first.'], 401);
+        }
+
+        // Probation বা Suspended user নতুন complaint করতে পারবে না
+        $user = User::find($userId);
+        if ($user && $user->status === 'Probation') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is currently on probation. You cannot submit new complaints until your pending evidence review is resolved.',
+                'status'  => 'Probation',
+            ], 403);
+        }
+        if ($user && in_array($user->status, ['Suspended', 'Banned'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is suspended. You cannot submit new complaints.',
+                'status'  => $user->status,
+            ], 403);
         }
 
         $request->validate([
