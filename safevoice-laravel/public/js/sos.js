@@ -126,10 +126,12 @@ function cancelHold() {
 
 // ── ACTIVATE SOS ─────────────────────────────────────────────────
 async function activateSOS() {
-    // Login ছাড়া থাকলে phone number modal দেখাবো
-    const svUserRaw = localStorage.getItem('sv_user');
-    const svUser    = svUserRaw ? JSON.parse(svUserRaw) : {};
-    const userId    = svUser.id || 0;
+    // Server-side session check (সবচেয়ে reliable — stale localStorage এর সমস্যা নেই)
+    // window.SV_SERVER_USER → sos.blade.php এ PHP session থেকে inject হয়
+    const serverUser = window.SV_SERVER_USER || null;
+    const svUserRaw  = localStorage.getItem('sv_user');
+    const svUser     = serverUser || (svUserRaw ? JSON.parse(svUserRaw) : {});
+    const userId     = svUser.id || 0;
 
     if (!userId) {
         // Login ছাড়া — phone number দিতে বলব
@@ -394,9 +396,10 @@ function pollForIncomingAlerts() {
 
 async function checkIncomingAlerts() {
     try {
-        // user_id ও pass করব যাতে session ছাড়াও কাজ করে
-        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
-        const uid    = svUser.id || 0;
+        // Server-side session check (reliable) + localStorage fallback
+        const serverUser = window.SV_SERVER_USER || null;
+        const svUser     = serverUser || JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const uid        = svUser.id || 0;
         const params = uid ? '?user_id=' + uid : '';
         const res    = await fetch('/api/sos/my-notifications' + params, { credentials: 'include' });
         const data   = await res.json();

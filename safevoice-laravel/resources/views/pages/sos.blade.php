@@ -349,11 +349,38 @@ function showModalMsg(msg, type) {
 
 @section('scripts')
 {{-- SOS page এ theme toggle নেই, সবসময় dark mode --}}
+
+{{-- Server-side session থেকে auth state inject করা হচ্ছে --}}
+{{-- এটা localStorage এর চেয়ে reliable কারণ fresh session এও কাজ করে --}}
+<meta name="sv-user-id"    content="{{ session('user_id', '') }}">
+<meta name="sv-user-name"  content="{{ session('user_name', '') }}">
+<meta name="sv-user-email" content="{{ session('user_email', '') }}">
+<script>
+    (function() {
+        var uid   = document.querySelector('meta[name="sv-user-id"]').getAttribute('content');
+        var uname = document.querySelector('meta[name="sv-user-name"]').getAttribute('content');
+        var email = document.querySelector('meta[name="sv-user-email"]').getAttribute('content');
+        window.SV_SERVER_USER = uid ? { id: parseInt(uid, 10), name: uname, email: email } : null;
+    })();
+</script>
+
 <script src="{{ asset('js/fcm.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const svUser = localStorage.getItem('sv_user');
-        if (svUser) setTimeout(() => initFCM(), 2000);
+        // Server-side auth check — localStorage এর fallback হিসেবেও কাজ করে
+        const serverUser = window.SV_SERVER_USER;
+        const localUser  = localStorage.getItem('sv_user');
+
+        if (serverUser && serverUser.id) {
+            // Server session আছে — localStorage sync করে রাখি
+            localStorage.setItem('sv_user', JSON.stringify(serverUser));
+            setTimeout(() => initFCM(), 2000);
+        } else if (!serverUser) {
+            // Server session নেই — localStorage ও clear করি যাতে stale data না থাকে
+            localStorage.removeItem('sv_user');
+        } else if (localUser) {
+            setTimeout(() => initFCM(), 2000);
+        }
     });
 </script>
 @endsection
