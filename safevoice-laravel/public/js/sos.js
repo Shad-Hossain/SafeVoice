@@ -77,13 +77,30 @@ function detectSOSLocation() {
 
 // ── RESPONDER SCAN UI ─────────────────────────────────────────────
 function startResponderScan() {
-    let count = 0;
     const nearbyCount = document.getElementById('nearbyCount');
-    const interval = setInterval(() => {
-        count++;
-        if (nearbyCount) nearbyCount.textContent = count;
-        if (count >= 5) clearInterval(interval);
-    }, 600);
+
+    function fetchRealCount() {
+        if (!currentLat || !currentLng) {
+            setTimeout(fetchRealCount, 1000);
+            return;
+        }
+        const serverUser = window.SV_SERVER_USER || null;
+        const svUser     = serverUser || JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const uid        = svUser.id || 0;
+        const params     = new URLSearchParams({ lat: currentLat, lng: currentLng });
+        if (uid) params.append('user_id', uid);
+
+        fetch('/api/sos/nearby-count?' + params.toString(), { credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+                if (nearbyCount) nearbyCount.textContent = data.count || 0;
+            })
+            .catch(() => {
+                if (nearbyCount) nearbyCount.textContent = '0';
+            });
+    }
+
+    fetchRealCount();
 }
 
 
@@ -128,7 +145,7 @@ function cancelHold() {
 async function activateSOS() {
     // Server-side session check (সবচেয়ে reliable — stale localStorage এর সমস্যা নেই)
     // window.SV_SERVER_USER → sos.blade.php এ PHP session থেকে inject হয়
-    const serverUser = window.SV_SERVER_USER || null;
+   const serverUser = window.SV_SERVER_USER || null;
     const svUserRaw  = localStorage.getItem('sv_user');
     const svUser     = serverUser || (svUserRaw ? JSON.parse(svUserRaw) : {});
     const userId     = svUser.id || 0;
@@ -221,7 +238,7 @@ async function _doActivateSOS(userId, contactPhone, contactName) {
             btn.querySelector('small').textContent = 'Help is coming';
         }
         updateStatusBar('Alert sent to ' + notifiedCount + ' people nearby!', false);
-        showFakeResponders(notifiedCount);
+       showRealResponders(notifiedCount, notifData);
         setTimeout(() => { openEvidenceModal(); }, 1500);
 
     } catch (err) {
@@ -242,47 +259,66 @@ function updateStatusBar(message, isActive) {
 
 
 // ── FAKE RESPONDERS ───────────────────────────────────────────────
-const fakeResponders = [
-    { name: 'Rakib Hassan', dist: '120m away', status: 'helping'  },
-    { name: 'Nadia Islam',  dist: '180m away', status: 'notified' },
-    { name: 'Arif Hossain', dist: '95m away',  status: 'helping'  },
-    { name: 'Tania Begum',  dist: '210m away', status: 'notified' },
-    { name: 'Jahid Khan',   dist: '155m away', status: 'helping'  },
-];
-
-function showFakeResponders(notifiedCount) {
+// ── REAL RESPONDERS (SOS send এর পরে) ───────────────────────────
+function showRealResponders(notifiedCount, notifData) {
     const responderList   = document.getElementById('responderList');
     const scanPlaceholder = document.getElementById('scanPlaceholder');
     const alertLog        = document.getElementById('alertLog');
     const logList         = document.getElementById('logList');
     const alertedCount    = document.getElementById('alertedCount');
+
     if (scanPlaceholder) scanPlaceholder.style.display = 'none';
     if (alertLog)        alertLog.style.display = 'block';
-    fakeResponders.forEach((r, i) => {
+    if (alertedCount)    alertedCount.textContent = notifiedCount;
+
+    if (notifiedCount === 0) {
+        if (responderList) {
+            const card = document.createElement('div');
+            card.className = 'responder-card-item';
+            card.innerHTML = `<div class="resp-avatar"><i class="fas fa-search"></i></div>
+                <div class="resp-info"><h5>Scanning area...</h5><p>No responders found nearby yet</p></div>
+                <span class="resp-status notified">Waiting</span>`;
+            responderList.appendChild(card);
+        }
+        if (logList) {
+            const log = document.createElement('div');
+            log.className = 'log-item';
+            log.innerHTML = `<i class="fas fa-info-circle"></i><div>Alert broadcast sent. Waiting for responders.</div>`;
+            logList.appendChild(log);
+        }
+        setTimeout(() => {
+            const overlay = document.getElementById('activatedOverlay');
+            if (overlay) overlay.classList.add('active');
+        }, 500);
+        return;
+    }
+
+    const toShow = Math.min(notifiedCount, 5);
+    for (let i = 0; i < toShow; i++) {
         setTimeout(() => {
             if (responderList) {
                 const card = document.createElement('div');
                 card.className = 'responder-card-item';
-                card.innerHTML = `<div class="resp-avatar"><i class="fas fa-user"></i></div>
-                    <div class="resp-info"><h5>${r.name}</h5><p>${r.dist}</p></div>
-                    <span class="resp-status ${r.status}">${r.status === 'helping' ? 'Responding' : 'Notified'}</span>`;
+                card.innerHTML = `<div class="resp-avatar"><i class="fas fa-user-shield"></i></div>
+                    <div class="resp-info"><h5>Nearby Responder</h5><p>Notified — awaiting response</p></div>
+                    <span class="resp-status notified">Notified</span>`;
                 responderList.appendChild(card);
             }
             if (logList) {
                 const log = document.createElement('div');
                 log.className = 'log-item';
-                log.innerHTML = `<i class="fas fa-check-circle"></i><div>${r.name} notified</div>`;
+                log.innerHTML = `<i class="fas fa-check-circle"></i><div>Responder #${i + 1} notified</div>`;
                 logList.appendChild(log);
             }
-            if (alertedCount) alertedCount.textContent = Math.max(notifiedCount, i + 1);
-        }, i * 500);
-    });
+            if (alertedCount) alertedCount.textContent = i + 1;
+        }, i * 400);
+    }
+
     setTimeout(() => {
         const overlay = document.getElementById('activatedOverlay');
         if (overlay) overlay.classList.add('active');
     }, 1000);
 }
-
 
 // ── VICTIM: EVIDENCE MODAL (SOS create এর পর) ────────────────────
 function openEvidenceModal() {
@@ -397,7 +433,7 @@ function pollForIncomingAlerts() {
 async function checkIncomingAlerts() {
     try {
         // Server-side session check (reliable) + localStorage fallback
-        const serverUser = window.SV_SERVER_USER || null;
+       const serverUser = window.SV_SERVER_USER || null;
         const svUser     = serverUser || JSON.parse(localStorage.getItem('sv_user') || '{}');
         const uid        = svUser.id || 0;
         const params = uid ? '?user_id=' + uid : '';

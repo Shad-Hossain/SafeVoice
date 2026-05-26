@@ -61,6 +61,7 @@ Route::post('/super-admin/update-status', [SuperAdminController::class, 'updateU
 Route::post('/user/update-location', [SosController::class, 'updateLocation']);
 
 // ── SOS ──────────────────────────────────────────────────────
+Route::get('/sos/nearby-count', [SosController::class, 'nearbyCount']);
 Route::post('/sos/notify',          [SosController::class, 'notify']);
 Route::post('/sos/create',          [SosController::class, 'create']);
 Route::post('/create_sos',          [SosController::class, 'create']); // legacy
