@@ -297,6 +297,11 @@ class SosController extends Controller
 
         $notifications = SosNotification::where('notified_user_id', $userId)
             ->with(['sosAlert.user'])
+            // নিজের তৈরি SOS alert এর notification বাদ দিতে হবে (self-notification bug fix)
+            ->whereHas('sosAlert', function ($q) use ($userId) {
+                $q->where('user_id', '!=', $userId)
+                  ->orWhereNull('user_id'); // anonymous SOS always show
+            })
             ->orderByDesc('created_at')
             ->get();
 
