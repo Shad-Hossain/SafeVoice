@@ -45,6 +45,40 @@ class SosController extends Controller
     // Smart radius — 1km → 2km → 3km → 7km
     // শুধু nearby active users কে notify করবে
     // ─────────────────────────────────────────────────────────
+
+    // GET /api/sos/nearby-count
+public function nearbyCount(Request $request)
+{
+    $lat = (float) $request->query('lat', 0);
+    $lng = (float) $request->query('lng', 0);
+
+    $userId = $request->session()->get('user_id')
+            ?? (int) $request->query('user_id', 0);
+
+    if (!$lat || !$lng) {
+        return response()->json(['success' => true, 'count' => 0, 'users' => []]);
+    }
+
+    $radii       = [1, 2, 3, 7];
+    $nearbyUsers = collect();
+    foreach ($radii as $km) {
+        $nearbyUsers = $this->getUsersWithinRadius($lat, $lng, $km, (int) $userId);
+        if ($nearbyUsers->isNotEmpty()) break;
+    }
+
+    $users = $nearbyUsers->map(function ($u) {
+        return [
+            'name'        => $u->name,
+            'distance_km' => $u->distance_km,
+        ];
+    })->values();
+
+    return response()->json([
+        'success' => true,
+        'count'   => $users->count(),
+        'users'   => $users,
+    ]);
+}
     public function notify(Request $request)
     {
         $sosId = $request->sos_id;
@@ -297,6 +331,10 @@ class SosController extends Controller
 
         $notifications = SosNotification::where('notified_user_id', $userId)
             ->with(['sosAlert.user'])
+            ->whereHas('sosAlert', function ($q) use ($userId) {
+    $q->where('user_id', '!=', $userId)
+      ->orWhereNull('user_id');
+})
             // নিজের তৈরি SOS alert এর notification বাদ দিতে হবে (self-notification bug fix)
             ->whereHas('sosAlert', function ($q) use ($userId) {
                 $q->where('user_id', '!=', $userId)
