@@ -36,16 +36,16 @@
             </div>
 
             <!-- MY RANK BAR (logged in user) -->
-            <div class="my-rank-bar">
+            <div class="my-rank-bar" style="display:none;">
                 <div class="my-rank-left">
                     <div class="my-avatar"><i class="fas fa-user"></i></div>
                     <div>
-                        <p class="my-rank-name">Shad Hossain <span class="you-tag">You</span></p>
-                        <p class="my-rank-sub">12 responses this month</p>
+                        <p class="my-rank-name">— <span class="you-tag">You</span></p>
+                        <p class="my-rank-sub">— responses this month</p>
                     </div>
                 </div>
                 <div class="my-rank-right">
-                    <span class="my-rank-num">#7</span>
+                    <span class="my-rank-num">#—</span>
                     <span class="my-rank-label">Your Rank</span>
                 </div>
             </div>
@@ -58,8 +58,8 @@
                     <div class="podium-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <h3>Shefa Akter</h3>
-                    <p>38 responses</p>
+                    <h3>—</h3>
+                    <p>— responses</p>
                     <span class="podium-badge">🥈 Runner Up</span>
                     <div class="podium-bar" style="height: 80px; background: #C0C0C030; border-color: #C0C0C0;"></div>
                 </div>
@@ -71,8 +71,8 @@
                     <div class="podium-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <h3>Rakib Hassan</h3>
-                    <p>42 responses</p>
+                    <h3>—</h3>
+                    <p>— responses</p>
                     <span class="podium-badge">🏆 Champion</span>
                     <div class="podium-bar" style="height: 110px; background: #FFD70030; border-color: #FFD700;"></div>
                 </div>
@@ -83,8 +83,8 @@
                     <div class="podium-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <h3>Nadia Islam</h3>
-                    <p>31 responses</p>
+                    <h3>—</h3>
+                    <p>— responses</p>
                     <span class="podium-badge">🥉 Third Place</span>
                     <div class="podium-bar" style="height: 60px; background: #CD7F3230; border-color: #CD7F32;"></div>
                 </div>
