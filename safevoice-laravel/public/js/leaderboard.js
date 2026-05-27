@@ -107,6 +107,12 @@ async function loadLeaderboard() {
         allData = data.leaderboard || [];
         myRank  = data.my_rank    || null;
 
+        // Reset date dynamically দেখাও
+        const resetBadge = document.querySelector('.lb-reset-badge');
+        if (resetBadge && data.next_reset) {
+            resetBadge.innerHTML = `<i class="fas fa-sync-alt"></i> Resets on ${data.next_reset}`;
+        }
+
         renderTable(allData);
         renderPodium(allData);
         renderMyRankBar(myRank);
