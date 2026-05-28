@@ -522,7 +522,11 @@ async function loadComplaints() {
         const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
         const userId = svUser.id || svUser.user_id || '';
         const url    = userId ? `/api/my-complaints?user_id=${userId}` : '/api/my-complaints';
-        const res    = await fetch(url, { credentials: 'include' });
+        const token  = localStorage.getItem('sv_token') || '';
+        const res    = await fetch(url, {
+            credentials: 'include',
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
         const data   = await res.json();
         if (data.redirect) { doLogout(); return; }
         if (!data.success) throw new Error(data.message || 'Failed');
@@ -963,7 +967,11 @@ async function loadAllComplaints() {
         const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
         const userId = svUser.id || svUser.user_id || '';
         const url    = userId ? `/api/my-complaints?user_id=${userId}` : '/api/my-complaints';
-        const res    = await fetch(url, { credentials: 'include' });
+        const token  = localStorage.getItem('sv_token') || '';
+        const res    = await fetch(url, {
+            credentials: 'include',
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
         const data = await res.json();
         if (data.redirect) { doLogout(); return; }
         if (!data.success) throw new Error();
@@ -1136,7 +1144,11 @@ async function checkPINotifications() {
         const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
         const userId = svUser.id || svUser.user_id || '';
         const url    = userId ? `/api/my-complaints?user_id=${userId}` : '/api/my-complaints';
-        const res    = await fetch(url, { credentials: 'include' });
+        const token  = localStorage.getItem('sv_token') || '';
+        const res    = await fetch(url, {
+            credentials: 'include',
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
         const data   = await res.json();
         const complaints = data.complaints || [];
 
