@@ -9,6 +9,10 @@ use App\Models\PiNotification;
 use App\Models\PiPayment;
 use App\Models\User;
 use App\Models\ComplaintEvidence;
+use App\Models\UserNotification;
+use App\Models\ComplaintPrincipal;
+use App\Models\SuperAdminNotification;
+use App\Models\PiCaseAssignment;
 
 class PrivateInvestigatorController extends Controller
 {
@@ -254,29 +258,51 @@ return response()->json([
     }
 
     public function rejectPayment(Request $request)
-{
-    $request->validate(['complaint_id' => 'required|string']);
+    {
+        $request->validate(['complaint_id' => 'required|string']);
 
-    $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
-    if (!$complaint) return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
+        $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
+        if (!$complaint) return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
 
-    $deadlinePassed = $complaint->payment_deadline && now()->isAfter($complaint->payment_deadline);
+        $deadlinePassed = $complaint->payment_deadline && now()->isAfter($complaint->payment_deadline);
 
-    PiNotification::where('complaint_id', $request->complaint_id)
-        ->update(['status' => 'dismissed', 'responded_at' => now()]);
+        // ✅ Deadline পেরিয়ে গেলে automatic Rejected, না হলে PI Payment Pending রাখো
+        $newStatus = $deadlinePassed ? 'Rejected' : 'PI Payment Pending';
+        $complaint->update(['status' => $newStatus]);
 
-    $newStatus = $deadlinePassed ? 'Rejected' : 'PI Payment Pending';
-    $complaint->update(['status' => $newStatus]);   // ← এই line টা আছে কিনা check করুন
+        // ✅ User কে automatic notification পাঠাও
+        $notifyUserId = $complaint->user_id
+            ?? \App\Models\ComplaintPrincipal::getUserId($complaint->complaint_id);
 
-    return response()->json([
-        'success'  => true,
-        'message'  => $deadlinePassed
-            ? 'Payment deadline passed. Complaint rejected.'
-            : 'Noted. You can still pay before the deadline.',
-        'status'   => $newStatus,
-        'deadline' => $complaint->payment_deadline,
-    ]);
-}
+        if ($notifyUserId) {
+            if ($deadlinePassed) {
+                UserNotification::notify(
+                    $notifyUserId,
+                    'payment_deadline_rejected',
+                    '❌ Complaint Rejected — Payment Deadline Passed',
+                    "তোমার complaint {$complaint->complaint_id} এর PI payment deadline পেরিয়ে যাওয়ায় complaint টি automatically reject হয়েছে।",
+                    ['complaint_id' => $complaint->complaint_id, 'action_url' => '/track?id=' . $complaint->complaint_id, 'icon' => '❌']
+                );
+            } else {
+                UserNotification::notify(
+                    $notifyUserId,
+                    'payment_cancelled',
+                    '⚠️ PI Payment Cancelled',
+                    "তোমার complaint {$complaint->complaint_id} এর PI payment cancel হয়েছে। Deadline এর আগে আবার payment করতে পারবে।",
+                    ['complaint_id' => $complaint->complaint_id, 'action_url' => '/track?id=' . $complaint->complaint_id, 'icon' => '⚠️']
+                );
+            }
+        }
+
+        return response()->json([
+            'success'  => true,
+            'message'  => $deadlinePassed
+                ? 'Payment deadline passed. Complaint automatically rejected.'
+                : 'Payment cancelled. You can still pay before the deadline.',
+            'status'   => $newStatus,
+            'deadline' => $complaint->payment_deadline,
+        ]);
+    }
 
     // PHPMailer helper
     private function sendPiAssignmentEmail(PrivateInvestigator $pi, Complaint $complaint): array

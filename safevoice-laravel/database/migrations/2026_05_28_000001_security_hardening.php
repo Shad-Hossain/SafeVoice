@@ -33,7 +33,7 @@ return new class extends Migration
 
         // ── 2. complaint_principals table: anonymous complaint এর encrypted user_id ──
         // Admin কখনো এই table দেখবে না। শুধু notification পাঠাতে ব্যবহার হবে।
-        if (!Schema::hasTableListing() || !Schema::hasTable('complaint_principals')) {
+        if (!Schema::hasTable('complaint_principals')) {
             Schema::create('complaint_principals', function (Blueprint $table) {
                 $table->id();
                 $table->string('complaint_id', 20)->unique()->index();

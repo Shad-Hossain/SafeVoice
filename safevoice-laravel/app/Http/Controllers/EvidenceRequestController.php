@@ -270,29 +270,101 @@ class EvidenceRequestController extends Controller
 
     // ─────────────────────────────────────────────────────────
     // POST /api/evidence-request/check-expired
-    // Cron / manual check → mark expired requests, notify admin
+    // Cron / page load এ চলে → expired case গুলো auto-process করে
+    //
+    // কী করে:
+    //  1. Evidence deadline পেরিয়ে গেছে → status = 'expired'
+    //  2. সেই complaint এর status → 'PI Notification Sent' (PI কে notify করো)
+    //  3. Admin dashboard এ notification
+    //  4. ✅ Automatic: PI কে mail পাঠাও (triggerPIFromExpired এর কাজ automatic)
     // ─────────────────────────────────────────────────────────
     public function checkExpired()
     {
-        $now     = Carbon::now();
+        $now = Carbon::now();
+
+        // Step 1: যেসব evidence request এর deadline পেরিয়ে গেছে
         $expired = EvidenceRequest::whereIn('status', ['pending', 'skipped'])
             ->where('deadline', '<=', $now)
             ->get();
 
+        $autoProcessed = [];
+        $alreadyDone   = [];
+
         foreach ($expired as $r) {
+            // Expired mark করো
             $r->update(['status' => 'expired']);
+
+            $complaint = Complaint::where('complaint_id', $r->complaint_id)->first();
+            if (!$complaint) continue;
+
+            // ✅ Automatic PI notification:
+            // Complaint status → 'PI Notification Sent' মানে system PI কে mail করবে
+            // শুধু তখনই করো যখন status এখনো পুরনো stage এ আছে
+            $eligibleStatuses = ['Under Review', 'Submitted', 'PI Payment Pending'];
+
+            if (in_array($complaint->status, $eligibleStatuses)) {
+                // ── Complaint status আপডেট ──────────────────────────
+                $complaint->update(['status' => 'PI Notification Sent']);
+
+                // ── PI কে automatic mail করো ─────────────────────────
+                $assignmentController = new \App\Http\Controllers\PiCaseAssignmentController();
+                $result = $assignmentController->sendToNextPi($complaint->complaint_id);
+
+                // ── User কে notification দাও (anonymous হলেও) ────────
+                $notifyUserId = $complaint->user_id
+                    ?? \App\Models\ComplaintPrincipal::getUserId($complaint->complaint_id);
+
+                if ($notifyUserId) {
+                    \App\Models\UserNotification::notify(
+                        $notifyUserId,
+                        'evidence_expired_pi_notified',
+                        '⚠️ Evidence Deadline Passed',
+                        "তোমার complaint {$complaint->complaint_id} এর evidence deadline পেরিয়ে গেছে। "
+                            . "আমরা তোমার পক্ষে একজন Private Investigator কে notify করেছি।",
+                        [
+                            'complaint_id' => $complaint->complaint_id,
+                            'action_url'   => '/track?id=' . $complaint->complaint_id,
+                            'icon'         => '⚠️',
+                        ]
+                    );
+                }
+
+                $autoProcessed[] = [
+                    'complaint_id' => $complaint->complaint_id,
+                    'pi_notified'  => $result['success'] ?? false,
+                    'pi_message'   => $result['message'] ?? '',
+                ];
+            } else {
+                $alreadyDone[] = $complaint->complaint_id;
+            }
         }
 
-        // FCM Push to all admins — notify about expired cases
-        if ($expired->count() > 0) {
-            $cases = $expired->pluck('complaint_id')->implode(', ');
+        // ── Admin dashboard notification ──────────────────────────────
+        if (count($autoProcessed) > 0) {
+            $cases = implode(', ', array_column($autoProcessed, 'complaint_id'));
+
+            // Super admin notification
+            try {
+                \App\Models\SuperAdminNotification::create([
+                    'type'    => 'evidence_expired_auto',
+                    'title'   => '⚠️ Evidence Deadline Auto-Processed',
+                    'message' => count($autoProcessed) . " complaint(s) had evidence deadline pass. "
+                        . "PI automatically notified for: {$cases}",
+                    'data'    => json_encode(['complaint_ids' => array_column($autoProcessed, 'complaint_id')]),
+                    'is_read' => false,
+                ]);
+            } catch (\Exception $e) {
+                // SuperAdminNotification নাও থাকতে পারে — silent fail
+            }
+
+            // FCM push to admin
             $adminUsers = \App\Models\User::where('role', 'admin')->get();
             foreach ($adminUsers as $admin) {
                 FcmController::sendToUser(
                     $admin->id,
-                    '⚠️ Evidence Deadline Missed',
-                    "{$expired->count()} case(s) failed to submit evidence on time: {$cases}",
-                    ['type' => 'evidence_expired', 'url' => '/admin/complaints']
+                    '⚠️ Evidence Deadline — PI Auto-Notified',
+                    count($autoProcessed) . " case(s) auto-processed: {$cases}",
+                    ['type' => 'evidence_expired_auto', 'url' => '/admin/dashboard#']
                 );
             }
         }
@@ -300,6 +372,8 @@ class EvidenceRequestController extends Controller
         return response()->json([
             'success'         => true,
             'expired_count'   => $expired->count(),
+            'auto_processed'  => $autoProcessed,
+            'already_done'    => $alreadyDone,
             'expired_cases'   => $expired->pluck('complaint_id'),
         ]);
     }

@@ -17,12 +17,27 @@ class ComplaintController extends Controller
      */
     private function getAuthUserId(Request $request): ?int
     {
-        // Sanctum token (Bearer header)
-        if ($user = $request->user()) {
-            return $user->id;
+        // Sanctum token (Bearer header) — wrapped in try-catch
+        // in case personal_access_tokens table doesn't exist yet
+        try {
+            if ($user = $request->user()) {
+                return $user->id;
+            }
+        } catch (\Exception $e) {
+            // Sanctum table not ready — fall through to session
         }
-        // Legacy session fallback
-        return $request->session()->get('user_id') ?: null;
+
+        // Session fallback (cookie-based login)
+        if ($id = $request->session()->get('user_id')) {
+            return (int) $id;
+        }
+
+        // Query param fallback (frontend sends ?user_id=X)
+        if ($id = $request->query('user_id')) {
+            return (int) $id;
+        }
+
+        return null;
     }
 
     // GET /api/complaints (Admin only — sensitive data)

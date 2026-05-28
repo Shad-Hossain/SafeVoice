@@ -220,7 +220,7 @@
             <!-- Expired Evidence Alert Banner -->
             <div class="expired-evidence-banner" id="expiredEvidenceBanner">
                 <h4><i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>Evidence Submission Failed — Action Required</h4>
-                <p style="color:#a0b4cc;font-size:12px;margin:0 0 12px 0;">The following users did not submit evidence within 7 days. You can notify them via PI.</p>
+                <p style="color:#a0b4cc;font-size:12px;margin:0 0 12px 0;">The following cases had evidence deadlines pass. The system has automatically notified a PI.</p>
                 <div id="expiredEvidenceList"></div>
             </div>
             <div class="welcome-bar">
@@ -1063,9 +1063,9 @@ async function loadExpiredEvidenceAlerts() {
                     <div class="ev-cid"><i class="fas fa-folder-open" style="margin-right:6px;"></i>${r.complaint_id}</div>
                     <div class="ev-meta">Deadline was: ${deadline} · Evidence not submitted</div>
                 </div>
-                <button class="btn-send-pi-notif" onclick="triggerPIFromExpired('${r.complaint_id}')">
-                    <i class="fas fa-user-secret"></i> Notify PI
-                </button>
+                <span style="background:#0f4020;border:1px solid #2ecc71;color:#2ecc71;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;">
+                    <i class="fas fa-check-circle"></i> PI Auto-Notified
+                </span>
             </div>`;
         }).join('');
         banner.style.display = 'block';
