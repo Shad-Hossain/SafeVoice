@@ -60,8 +60,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sos/notify',                    [SosController::class, 'notify']);
     Route::post('/sos/create',                    [SosController::class, 'create']);
     Route::post('/create_sos',                    [SosController::class, 'create']); // legacy
-    Route::get('/sos/alerts',                     [SosController::class, 'alerts']);
-    Route::get('/get_sos_alert',                  [SosController::class, 'alerts']); // legacy
     Route::get('/sos/my-notifications',           [SosController::class, 'myNotifications']);
     Route::get('/get_my_sos_notifications',       [SosController::class, 'myNotifications']); // legacy
     Route::post('/sos/respond',                   [SosController::class, 'respond']);
@@ -69,7 +67,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/respond_to_sos',                [SosController::class, 'respond']); // legacy
     Route::post('/sos/upload-evidence',           [SosController::class, 'uploadEvidence']);
     Route::get('/sos/my-responds',                [SosController::class, 'myResponds']);
-    Route::get('/sos/victim-evidence',            [SosController::class, 'victimEvidence']);
     Route::post('/sos/submit-responder-evidence', [SosController::class, 'submitResponderEvidence']);
 
     // ── PI user-side ──────────────────────────────────────────────
@@ -89,6 +86,9 @@ Route::middleware('auth:sanctum')->group(function () {
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC SOS (login ছাড়া leaderboard দেখা যায়)
 // ─────────────────────────────────────────────────────────────────────────────
+Route::get('/sos/alerts',         [SosController::class, 'alerts']);
+Route::get('/get_sos_alert',      [SosController::class, 'alerts']); // legacy
+Route::get('/sos/victim-evidence',[SosController::class, 'victimEvidence']);
 Route::get('/leaderboard',        [SosController::class, 'leaderboard']);
 Route::get('/leaderboard/search', [SosController::class, 'leaderboardSearch']);
 Route::get('/sos/all-requests',   [SosController::class, 'allSosRequests']);
@@ -109,7 +109,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/update_status',                 [ComplaintController::class, 'updateStatus']); // legacy
 
     Route::get('/users',                          [AdminController::class, 'users']);
-    Route::get('/manage_user',                    [AdminController::class, 'users']); // legacy
+    Route::get('/sos-evidence-pending',           [SosController::class, 'adminPendingEvidence']);
     Route::get('/user/{id}',                      [AdminController::class, 'getUserById']);
     Route::post('/users/update-status',           [AdminController::class, 'updateUserStatus']);
 
@@ -117,13 +117,13 @@ Route::prefix('admin')->group(function () {
     Route::post('/approve-account',               [AdminController::class, 'approveAccount']);
     Route::post('/reject-account',                [AdminController::class, 'rejectAccount']);
 
-    Route::get('/sos-evidence-pending',           [SosController::class, 'adminPendingEvidence']);
     Route::post('/sos-evidence-verify',           [SosController::class, 'adminVerifyEvidence']);
 
     Route::get('/payments',                       [PrivateInvestigatorController::class, 'pendingPayments']);
 });
 
 // legacy admin routes (backward compat)
+Route::get('/manage_user',     [AdminController::class, 'users']); // legacy
 Route::post('/admin_login',    [AdminController::class, 'login']);
 Route::get('/complaints',      [ComplaintController::class, 'index']);
 Route::get('/complaints/{id}', [ComplaintController::class, 'show']);
