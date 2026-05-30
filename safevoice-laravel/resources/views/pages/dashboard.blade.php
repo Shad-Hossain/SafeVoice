@@ -423,42 +423,137 @@
 
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settingsModal" style="display:none;">
-    <div class="modal-box" style="max-width:480px;">
-        <div class="modal-header">
-            <h3><i class="fas fa-cog"></i> Settings</h3>
-            <i class="fas fa-times modal-close" onclick="closeSettings()"></i>
-        </div>
-        <div class="modal-body">
-            <div style="margin-bottom:20px;">
-                <h4 style="color:#4f9eff;margin-bottom:12px;">Profile</h4>
-                <div class="form-group" style="margin-bottom:14px;">
-                    <label style="color:var(--text-secondary);font-size:13px;display:block;margin-bottom:6px;">Full Name</label>
-                    <input type="text" id="settingName" style="width:100%;background:var(--input-bg,#0a0f1e);border:1px solid var(--border-color,#1e2d4a);border-radius:8px;padding:10px 14px;color:var(--text-primary,#fff);font-size:14px;outline:none;">
-                </div>
-                <div class="form-group" style="margin-bottom:14px;">
-                    <label style="color:var(--text-secondary);font-size:13px;display:block;margin-bottom:6px;">Email</label>
-                    <input type="email" id="settingEmail" style="width:100%;background:var(--input-bg,#0a0f1e);border:1px solid var(--border-color,#1e2d4a);border-radius:8px;padding:10px 14px;color:var(--text-primary,#fff);font-size:14px;outline:none;">
-                </div>
-                <div class="form-group">
-                    <label style="color:var(--text-secondary);font-size:13px;display:block;margin-bottom:6px;">Phone</label>
-                    <input type="tel" id="settingPhone" style="width:100%;background:var(--input-bg,#0a0f1e);border:1px solid var(--border-color,#1e2d4a);border-radius:8px;padding:10px 14px;color:var(--text-primary,#fff);font-size:14px;outline:none;">
-                </div>
-            </div>
-            <div>
-                <h4 style="color:#4f9eff;margin-bottom:12px;">Notifications</h4>
-                <label style="display:flex;align-items:center;gap:10px;color:var(--text-secondary);font-size:14px;margin-bottom:10px;cursor:pointer;">
-                    <input type="checkbox" id="notifEmail" checked style="accent-color:#4f9eff;width:16px;height:16px;"> Email notifications
-                </label>
-                <label style="display:flex;align-items:center;gap:10px;color:var(--text-secondary);font-size:14px;cursor:pointer;">
-                    <input type="checkbox" id="notifSos" checked style="accent-color:#4f9eff;width:16px;height:16px;"> SOS alerts
-                </label>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-decline" onclick="closeSettings()">Cancel</button>
-            <button class="btn-accept" onclick="saveSettings()"><i class="fas fa-save"></i> Save Changes</button>
-        </div>
+  <div style="background:#0d1526;border:1px solid #2a3f6f;border-radius:16px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:0;">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1a3a6e,#0d1f42);padding:18px 24px;border-bottom:1px solid #2a3f6f;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-cog" style="color:#4f9eff;font-size:16px;"></i>
+        <span style="color:#fff;font-weight:600;font-size:15px;">Settings</span>
+      </div>
+      <i class="fas fa-times" onclick="closeSettings()" style="color:#a0b4cc;cursor:pointer;font-size:16px;padding:4px;"></i>
     </div>
+
+    <div style="padding:20px 24px;">
+
+      <!-- ── Tab navigation ── -->
+      <div style="display:flex;gap:6px;margin-bottom:20px;background:#0a1628;border-radius:10px;padding:4px;">
+        <button id="stab-profile" onclick="switchSettingsTab('profile')"
+          style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;background:#1e3a5a;color:#fff;transition:all .15s;">
+          <i class="fas fa-user" style="margin-right:5px;"></i>Profile
+        </button>
+        <button id="stab-password" onclick="switchSettingsTab('password')"
+          style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:#a0b4cc;transition:all .15s;">
+          <i class="fas fa-lock" style="margin-right:5px;"></i>Password
+        </button>
+      </div>
+
+      <!-- ── PROFILE TAB ── -->
+      <div id="stab-content-profile">
+
+        <!-- Read-only: Name -->
+        <div style="margin-bottom:14px;">
+          <label style="color:#a0b4cc;font-size:12px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">Full Name <span style="color:#4a5568;font-size:11px;font-weight:400;text-transform:none;">(পরিবর্তন করা যাবে না)</span></label>
+          <div style="width:100%;background:#060c18;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px;color:#4a5568;font-size:14px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-lock" style="font-size:11px;color:#2a3f6f;"></i>
+            <span id="settingNameDisplay"></span>
+          </div>
+        </div>
+
+        <!-- Read-only: NID -->
+        <div style="margin-bottom:18px;">
+          <label style="color:#a0b4cc;font-size:12px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">NID / Birth Certificate <span style="color:#4a5568;font-size:11px;font-weight:400;text-transform:none;">(পরিবর্তন করা যাবে না)</span></label>
+          <div style="width:100%;background:#060c18;border:1px solid #1e2d4a;border-radius:8px;padding:10px 14px;color:#4a5568;font-size:14px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-lock" style="font-size:11px;color:#2a3f6f;"></i>
+            <span id="settingNidDisplay"></span>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#1e2d4a;margin-bottom:18px;"></div>
+
+        <!-- Editable: Phone -->
+        <div style="margin-bottom:14px;">
+          <label style="color:#a0b4cc;font-size:12px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">Phone Number</label>
+          <input type="tel" id="settingPhone" placeholder="01XXXXXXXXX"
+            style="width:100%;background:#0a1628;border:1px solid #2a3f6f;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;transition:border .15s;"
+            onfocus="this.style.borderColor='#4f9eff'" onblur="this.style.borderColor='#2a3f6f'">
+        </div>
+
+        <!-- Editable: Email -->
+        <div style="margin-bottom:6px;">
+          <label style="color:#a0b4cc;font-size:12px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">Email Address</label>
+          <input type="email" id="settingEmail" placeholder="you@example.com"
+            style="width:100%;background:#0a1628;border:1px solid #2a3f6f;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;transition:border .15s;"
+            onfocus="this.style.borderColor='#4f9eff'" onblur="this.style.borderColor='#2a3f6f'">
+          <p style="color:#a0b4cc;font-size:11px;margin-top:5px;"><i class="fas fa-info-circle" style="margin-right:3px;"></i>Email পরিবর্তন হলে তোমার নতুন address এ confirmation mail যাবে।</p>
+        </div>
+
+        <!-- Error/success msg -->
+        <div id="profileMsg" style="display:none;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:10px;margin-bottom:4px;"></div>
+
+        <!-- Save button -->
+        <button onclick="saveProfileSettings()"
+          style="width:100%;margin-top:14px;padding:11px;background:linear-gradient(135deg,#185FA5,#378ADD);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"
+          id="profileSaveBtn">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+      </div>
+
+      <!-- ── PASSWORD TAB ── -->
+      <div id="stab-content-password" style="display:none;">
+
+        <div style="background:#0a1628;border:1px solid #1e3a5a;border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+          <p style="color:#a0b4cc;font-size:13px;line-height:1.6;">
+            <i class="fas fa-shield-alt" style="color:#4f9eff;margin-right:6px;"></i>
+            Password পরিবর্তন করতে তোমার email এ একটি OTP পাঠানো হবে। OTP দিয়ে verify করার পর নতুন password set করতে পারবে।
+          </p>
+        </div>
+
+        <!-- Step 1: Request OTP -->
+        <div id="pwStep1">
+          <p style="color:#a0b4cc;font-size:13px;margin-bottom:14px;">OTP পাঠানো হবে: <strong id="pwEmailDisplay" style="color:#4f9eff;"></strong></p>
+          <button onclick="requestPasswordOTP()"
+            style="width:100%;padding:11px;background:linear-gradient(135deg,#854F0B,#d97706);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;"
+            id="pwSendOtpBtn">
+            <i class="fas fa-paper-plane" style="margin-right:6px;"></i> OTP পাঠাও
+          </button>
+        </div>
+
+        <!-- Step 2: Verify OTP + new password -->
+        <div id="pwStep2" style="display:none;">
+          <div style="margin-bottom:14px;">
+            <label style="color:#a0b4cc;font-size:12px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">OTP Code</label>
+            <input type="text" id="pwOtp" maxlength="6" placeholder="6-digit OTP"
+              style="width:100%;background:#0a1628;border:1px solid #2a3f6f;border-radius:8px;padding:10px 14px;color:#fff;font-size:16px;letter-spacing:6px;outline:none;text-align:center;"
+              onfocus="this.style.borderColor='#f39c12'" onblur="this.style.borderColor='#2a3f6f'">
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="color:#a0b4cc;font-size:12px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">নতুন Password</label>
+            <input type="password" id="pwNew" placeholder="কমপক্ষে ৮ character"
+              style="width:100%;background:#0a1628;border:1px solid #2a3f6f;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;"
+              onfocus="this.style.borderColor='#4f9eff'" onblur="this.style.borderColor='#2a3f6f'">
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="color:#a0b4cc;font-size:12px;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;">নতুন Password আবার লেখো</label>
+            <input type="password" id="pwConfirm" placeholder="Confirm password"
+              style="width:100%;background:#0a1628;border:1px solid #2a3f6f;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;outline:none;"
+              onfocus="this.style.borderColor='#4f9eff'" onblur="this.style.borderColor='#2a3f6f'">
+          </div>
+          <button onclick="confirmPasswordChange()"
+            style="width:100%;padding:11px;background:linear-gradient(135deg,#166534,#16a34a);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">
+            <i class="fas fa-check" style="margin-right:6px;"></i> Password পরিবর্তন করো
+          </button>
+          <div style="text-align:center;margin-top:10px;">
+            <button onclick="document.getElementById('pwStep1').style.display='block';document.getElementById('pwStep2').style.display='none';"
+              style="background:none;border:none;color:#4a5568;font-size:12px;cursor:pointer;">← আবার OTP নাও</button>
+          </div>
+        </div>
+
+        <div id="pwMsg" style="display:none;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px;"></div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <script src="{{ asset('js/main.js') }}"></script>
@@ -495,9 +590,17 @@ function loadProfile() {
 
     const welN = document.getElementById('welcomeName'); if (welN) welN.textContent = name;
     const navU = document.getElementById('navUsername'); if (navU) navU.textContent = name;
-    document.getElementById('settingName').value  = name;
-    document.getElementById('settingEmail').value = email;
-    document.getElementById('settingPhone').value = phone;
+    // Read-only displays
+    const nameEl = document.getElementById('settingNameDisplay');
+    if (nameEl) nameEl.textContent = name;
+    // NID from sv_user_full (loaded from server on settings open)
+    const nidEl = document.getElementById('settingNidDisplay');
+    if (nidEl) nidEl.textContent = '••••••••••'; // loaded on openSettings()
+    // Editable fields
+    const emailEl = document.getElementById('settingEmail');
+    if (emailEl) emailEl.value = email;
+    const phoneEl = document.getElementById('settingPhone');
+    if (phoneEl) phoneEl.value = phone;
 }
 
 // ── Section navigation ─────────────────────────
@@ -1044,29 +1147,176 @@ async function loadAllComplaints() {
 }
 
 // ── Settings ───────────────────────────────────
-function openSettings() {
-    loadProfile();
-    document.getElementById('settingsModal').style.display = 'flex';
+function switchSettingsTab(tab) {
+    ['profile','password'].forEach(t => {
+        document.getElementById('stab-content-' + t).style.display = t === tab ? 'block' : 'none';
+        const btn = document.getElementById('stab-' + t);
+        btn.style.background = t === tab ? '#1e3a5a' : 'transparent';
+        btn.style.color = t === tab ? '#fff' : '#a0b4cc';
+    });
 }
+
+async function openSettings() {
+    loadProfile();
+    switchSettingsTab('profile');
+    document.getElementById('settingsModal').style.display = 'flex';
+
+    // Password tab: show email
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+    const pwEmailEl = document.getElementById('pwEmailDisplay');
+    if (pwEmailEl) pwEmailEl.textContent = svUser.email || '(unknown)';
+    document.getElementById('pwStep1').style.display = 'block';
+    document.getElementById('pwStep2').style.display = 'none';
+    const pwMsg = document.getElementById('pwMsg');
+    if (pwMsg) pwMsg.style.display = 'none';
+
+    // Load full profile from server for NID
+    try {
+        const uid = svUser.id || svUser.user_id || '';
+        const res  = await fetch('/api/profile?user_id=' + uid, { credentials: 'include' });
+        const data = await res.json();
+        if (data.success && data.user) {
+            const nidEl = document.getElementById('settingNidDisplay');
+            if (nidEl) nidEl.textContent = data.user.id_number
+                ? data.user.id_number.toString().replace(/\d(?=\d{4})/g, '•')
+                : '—';
+        }
+    } catch(e) {}
+}
+
 function closeSettings() {
     document.getElementById('settingsModal').style.display = 'none';
 }
-function saveSettings() {
-    const profile = {
-        name:  document.getElementById('settingName').value.trim()  || 'User',
-        email: document.getElementById('settingEmail').value.trim(),
-        phone: document.getElementById('settingPhone').value.trim()
-    };
-    localStorage.setItem('sv-profile', JSON.stringify(profile));
-    // Also update sv_user so the name persists across sessions
+
+// ── Save phone + email ──────────────────────────────────────────
+async function saveProfileSettings() {
+    const email = document.getElementById('settingEmail').value.trim();
+    const phone = document.getElementById('settingPhone').value.trim();
+    const msg   = document.getElementById('profileMsg');
+    const btn   = document.getElementById('profileSaveBtn');
+
+    if (!phone && !email) {
+        msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:10px;';
+        msg.textContent = 'Phone বা Email দিতে হবে।';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    msg.style.display = 'none';
+
+    try {
+        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const res  = await fetch('/api/profile/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                user_id: svUser.id || '',
+                email,
+                phone
+            })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            // Update localStorage
+            svUser.email = data.email || email;
+            svUser.phone = data.phone || phone;
+            localStorage.setItem('sv_user', JSON.stringify(svUser));
+
+            msg.style.cssText = 'display:block;background:#0a2010;border:1px solid #16a34a;color:#4ade80;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:10px;';
+            msg.innerHTML = '<i class="fas fa-check-circle" style="margin-right:5px;"></i>' + (data.message || 'Saved!');
+            loadProfile();
+        } else {
+            msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:10px;';
+            msg.textContent = data.message || 'Error saving.';
+        }
+    } catch(e) {
+        msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:10px;';
+        msg.textContent = 'Could not connect. Try again.';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+}
+
+// ── Password change ──────────────────────────────────────────────
+async function requestPasswordOTP() {
+    const btn = document.getElementById('pwSendOtpBtn');
+    const msg = document.getElementById('pwMsg');
     const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
-    svUser.name  = profile.name;
-    svUser.email = profile.email;
-    svUser.phone = profile.phone;
-    localStorage.setItem('sv_user', JSON.stringify(svUser));
-    closeSettings();
-    loadProfile();
-    showToast('<i class="fas fa-check-circle"></i> Settings saved!');
+    const email = svUser.email || '';
+    if (!email) {
+        msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;';
+        msg.textContent = 'Email পাওয়া যায়নি। Settings থেকে email update করো।';
+        return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    msg.style.display = 'none';
+    try {
+        const res  = await fetch('/api/forget_password', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+            body: JSON.stringify({ action: 'send_otp', email })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('pwStep1').style.display = 'none';
+            document.getElementById('pwStep2').style.display = 'block';
+            msg.style.cssText = 'display:block;background:#0a2010;border:1px solid #16a34a;color:#4ade80;border-radius:8px;padding:10px 14px;font-size:13px;';
+            msg.innerHTML = '<i class="fas fa-check-circle" style="margin-right:5px;"></i>OTP পাঠানো হয়েছে ' + email + ' এ।';
+        } else {
+            msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;';
+            msg.textContent = data.message || 'Failed to send OTP.';
+        }
+    } catch(e) {
+        msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;';
+        msg.textContent = 'Could not connect.';
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:6px;"></i> OTP পাঠাও';
+}
+
+async function confirmPasswordChange() {
+    const otp  = document.getElementById('pwOtp').value.trim();
+    const np   = document.getElementById('pwNew').value;
+    const cp   = document.getElementById('pwConfirm').value;
+    const msg  = document.getElementById('pwMsg');
+    const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+
+    if (!otp || otp.length !== 6) {
+        msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;';
+        msg.textContent = '৬-digit OTP দাও।'; return;
+    }
+    if (np.length < 8) {
+        msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;';
+        msg.textContent = 'Password কমপক্ষে ৮ character হতে হবে।'; return;
+    }
+    if (np !== cp) {
+        msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;';
+        msg.textContent = 'Password দুটো মিলছে না।'; return;
+    }
+    msg.style.display = 'none';
+    try {
+        const res  = await fetch('/api/forget_password', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+            body: JSON.stringify({ action: 'reset', email: svUser.email, otp, new_password: np })
+        });
+        const data = await res.json();
+        if (data.success) {
+            msg.style.cssText = 'display:block;background:#0a2010;border:1px solid #16a34a;color:#4ade80;border-radius:8px;padding:10px 14px;font-size:13px;';
+            msg.innerHTML = '<i class="fas fa-check-circle" style="margin-right:5px;"></i>Password পরিবর্তন হয়েছে! পরের বার নতুন password দিয়ে login করো।';
+            document.getElementById('pwStep2').style.display = 'none';
+            document.getElementById('pwStep1').style.display = 'block';
+        } else {
+            msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;';
+            msg.textContent = data.message || 'Failed.';
+        }
+    } catch(e) {
+        msg.style.cssText = 'display:block;background:#1a0a0a;border:1px solid #ef4444;color:#f87171;border-radius:8px;padding:10px 14px;font-size:13px;';
+        msg.textContent = 'Could not connect.';
+    }
 }
 
 function showToast(msg) {

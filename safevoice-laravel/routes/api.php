@@ -80,6 +80,8 @@ Route::post('/pi/payment',           [PrivateInvestigatorController::class, 'pay
 Route::post('/pi/reject-payment',    [PrivateInvestigatorController::class, 'rejectPayment']);
 Route::get('/pi/anonymous-contact',  [ComplaintController::class, 'anonymousPIContact']);
 Route::post('/pi/acknowledge-contact',[ComplaintController::class, 'acknowledgePIContact']);
+Route::get('/profile',               [AuthController::class, 'getProfile']);
+Route::post('/profile/update',       [AuthController::class, 'updateProfile']);
 Route::post('/complaints/submit',  [ComplaintController::class, 'submit']);
 Route::post('/submit_complaint',   [ComplaintController::class, 'submit']); // legacy
 Route::get('/my-complaints',       [ComplaintController::class, 'myComplaints']);
