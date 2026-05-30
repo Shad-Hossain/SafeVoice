@@ -1132,6 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (userId) {
         // Slight delay so other modals load first
         setTimeout(() => checkEvidenceRequests(userId), 2000);
+        setTimeout(() => checkAnonymousPIContact(userId), 3500); // evidence modal এর পরে
     }
 });
 
@@ -1503,6 +1504,75 @@ margin-left:10px;
 </div>
 
 <!-- EVIDENCE MODAL -->
+
+<!-- ── Anonymous PI Contact Modal ─────────────────────────────────── -->
+<!-- Anonymous complaint এ PI assign হলে এই modal বারবার আসবে যতক্ষণ না user OK করে -->
+<div id="piContactModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#0d1526;border:1px solid #2a3f6f;border-radius:16px;max-width:480px;width:100%;padding:0;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1a3a6e,#0d1f42);padding:20px 24px;border-bottom:1px solid #2a3f6f;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;background:#16a34a22;border:1px solid #16a34a;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">🕵️</div>
+        <div>
+          <div style="color:#fff;font-weight:600;font-size:15px;">Private Investigator Assigned</div>
+          <div style="color:#a0b4cc;font-size:12px;margin-top:2px;">Complaint <span id="piContactComplaintId" style="color:#4f9eff;font-weight:600;"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:20px 24px;">
+      <div style="background:#0a1628;border:1px solid #1e3a5a;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+        <div style="color:#a0b4cc;font-size:12px;margin-bottom:10px;font-weight:500;text-transform:uppercase;letter-spacing:.4px;">PI Contact Information</div>
+
+        <!-- Photo + Name -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <img id="piContactPhoto" src="" onerror="this.style.display='none'" style="width:48px;height:48px;border-radius:50%;border:2px solid #2a3f6f;object-fit:cover;">
+          <div>
+            <div id="piContactName" style="color:#fff;font-weight:600;font-size:14px;"></div>
+            <div id="piContactCode" style="color:#4f9eff;font-size:12px;"></div>
+          </div>
+        </div>
+
+        <!-- Phone -->
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #1e3a5a;">
+          <span style="font-size:14px;">📞</span>
+          <div>
+            <div style="color:#a0b4cc;font-size:11px;">Phone</div>
+            <div id="piContactPhone" style="color:#4ade80;font-size:14px;font-weight:600;cursor:pointer;" onclick="window.location='tel:'+this.textContent.trim()"></div>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #1e3a5a;">
+          <span style="font-size:14px;">✉️</span>
+          <div>
+            <div style="color:#a0b4cc;font-size:11px;">Email</div>
+            <div id="piContactEmail" style="color:#60a5fa;font-size:13px;word-break:break-all;cursor:pointer;" onclick="window.location='mailto:'+this.textContent.trim()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy note -->
+      <div style="background:#0a2010;border:1px solid #166534;border-radius:8px;padding:10px 14px;margin-bottom:16px;">
+        <div style="color:#4ade80;font-size:12px;line-height:1.6;">
+          🔒 <strong>তোমার পরিচয় সম্পূর্ণ গোপন।</strong> PI তোমার নাম, ফোন বা email জানে না। তুমি নিজে contact না করলে সে কখনো জানবে না তুমি কে।
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <button onclick="acknowledgePIContact()" style="width:100%;padding:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">
+        ✅ ঠিক আছে, আমি PI-কে contact করব
+      </button>
+      <div style="text-align:center;margin-top:10px;">
+        <button onclick="dismissPIContactModal()" style="background:none;border:none;color:#4a5568;font-size:12px;cursor:pointer;">পরে দেখব (আবার reminder আসবে)</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ── End Anonymous PI Contact Modal ──────────────────────────────── -->
+
 <div id="evidenceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:20px;">
     <div style="background:#0d1526;border:1px solid #1e2d4a;border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;">
         <div style="padding:20px 24px;border-bottom:1px solid #1e2d4a;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0d1526;z-index:1;">
@@ -1684,6 +1754,71 @@ function escDash(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&
 let erCurrentRequestId   = null;
 let erPendingQueue       = [];
 let erQueueIndex         = 0;
+
+// ── Anonymous PI Contact Modal ─────────────────────────────
+let piContactQueue = [];
+let piContactIndex = 0;
+let currentPIContactComplaintId = null;
+
+async function checkAnonymousPIContact(userId) {
+    try {
+        const res  = await fetch(`/api/pi/anonymous-contact?user_id=${userId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success || !data.pending || data.pending.length === 0) return;
+
+        piContactQueue = data.pending;
+        piContactIndex = 0;
+        showNextPIContact();
+    } catch(e) { /* silent */ }
+}
+
+function showNextPIContact() {
+    if (piContactIndex >= piContactQueue.length) return;
+    const item = piContactQueue[piContactIndex];
+    currentPIContactComplaintId = item.complaint_id;
+
+    document.getElementById('piContactComplaintId').textContent = item.complaint_id;
+    document.getElementById('piContactName').textContent  = item.pi.name;
+    document.getElementById('piContactCode').textContent  = 'Code: ' + item.pi.pi_code;
+    document.getElementById('piContactPhone').textContent = item.pi.phone;
+    document.getElementById('piContactEmail').textContent = item.pi.email;
+
+    const photoEl = document.getElementById('piContactPhoto');
+    if (item.pi.photo_url) {
+        photoEl.src = item.pi.photo_url;
+        photoEl.style.display = 'block';
+    } else {
+        photoEl.style.display = 'none';
+    }
+
+    document.getElementById('piContactModal').style.display = 'flex';
+}
+
+async function acknowledgePIContact() {
+    const cid = currentPIContactComplaintId;
+    document.getElementById('piContactModal').style.display = 'none';
+
+    try {
+        await fetch('/api/pi/acknowledge-contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ complaint_id: cid, user_id: (JSON.parse(localStorage.getItem('sv_user')||'{}').id || '') })
+        });
+    } catch(e) {}
+
+    // পরেরটা দেখাও যদি থাকে
+    piContactIndex++;
+    setTimeout(showNextPIContact, 500);
+}
+
+function dismissPIContactModal() {
+    // DB তে acknowledge করে না — শুধু এখনকার জন্য বন্ধ করো
+    // পরের login এ আবার আসবে
+    document.getElementById('piContactModal').style.display = 'none';
+    piContactIndex++;
+    setTimeout(showNextPIContact, 500);
+}
 
 // Called after user is confirmed logged in — check for pending evidence requests
 async function checkEvidenceRequests(userId) {
