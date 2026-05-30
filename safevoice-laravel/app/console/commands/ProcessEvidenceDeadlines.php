@@ -68,7 +68,10 @@ class ProcessEvidenceDeadlines extends Command
                 'status'           => 'Banned',
                 'suspension_count' => $suspensionCount,
             ]);
-            $this->sendSuspensionEmail($user, $suspensionCount, null, true);
+            // Anonymous user হলে email পাঠাবো না — identity expose হবে
+            if ($req->complaint && $req->complaint->user_id) {
+                $this->sendSuspensionEmail($user, $suspensionCount, null, true);
+            }
             $this->info("User #{$userId} auto-banned after 3 suspensions.");
         } else {
             $user->update([
@@ -77,7 +80,10 @@ class ProcessEvidenceDeadlines extends Command
                 'suspended_until'  => Carbon::now()->addMonths(2),
             ]);
 
-            $this->sendSuspensionEmail($user, $suspensionCount, $activationDate, false, $remainingStrikes);
+            // Anonymous user হলে email পাঠাবো না — login screen-এ message দেখাবে
+            if ($req->complaint && $req->complaint->user_id) {
+                $this->sendSuspensionEmail($user, $suspensionCount, $activationDate, false, $remainingStrikes);
+            }
 
             UserNotification::notify(
                 (int) $userId,
@@ -233,7 +239,8 @@ class ProcessEvidenceDeadlines extends Command
     private function handle7DayExpiry(EvidenceRequest $req): void
     {
         $userId = $req->user_id
-            ?? optional($req->complaint)->user_id;
+            ?? optional($req->complaint)->user_id
+            ?? optional($req->complaint)->anonymous_user_id;
 
         if (!$userId) return;
 
