@@ -395,4 +395,77 @@ class ComplaintController extends Controller
             ],
         ]);
     }
+    // GET /api/pi/anonymous-contact
+    // Anonymous complaint এ PI assign হলে victim এর জন্য PI contact info দাও
+    // শুধু তখনই দেবে যখন: is_anonymous=true, assigned_pi_id not null, pi_contact_acknowledged=false
+    public function anonymousPIContact(Request $request)
+    {
+        $userId = $this->getAuthUserId($request);
+        if (!$userId) {
+            return response()->json(['success' => true, 'pending' => []]);
+        }
+
+        $myHash = hash_hmac('sha256', (string) $userId, config('app.key'));
+
+        // Anonymous complaint গুলো যেখানে PI assign হয়েছে কিন্তু victim এখনো acknowledge করেনি
+        $complaints = Complaint::where('is_anonymous', true)
+            ->where('anonymous_user_id', $myHash)
+            ->whereNotNull('assigned_pi_id')
+            ->where('pi_contact_acknowledged', false)
+            ->whereIn('status', [
+                // শুধু এই একটি status এ modal আসবে
+                // এর মানে: payment হয়েছে + PI accept করেছে — এখন victim কে contact করতে বলো
+                'Private Investigator Assigned',
+            ])
+            ->whereExists(function ($q) {
+                // Double check: payment সত্যিই হয়েছে কিনা
+                $q->from('pi_payments')
+                  ->whereColumn('pi_payments.complaint_id', 'complaints.complaint_id')
+                  ->where('pi_payments.status', 'confirmed');
+            })
+            ->with('assignedPi:id,full_name,phone,email,pi_code,photo_url')
+            ->get(['id', 'complaint_id', 'type', 'status', 'assigned_pi_id', 'pi_contact_acknowledged']);
+
+        $pending = $complaints->map(function ($c) {
+            if (!$c->assignedPi) return null;
+            return [
+                'complaint_id' => $c->complaint_id,
+                'type'         => $c->type,
+                'status'       => $c->status,
+                'pi' => [
+                    'name'      => $c->assignedPi->full_name,
+                    'phone'     => $c->assignedPi->phone,
+                    'email'     => $c->assignedPi->email,
+                    'pi_code'   => $c->assignedPi->pi_code,
+                    'photo_url' => $c->assignedPi->photo_url,
+                ],
+            ];
+        })->filter()->values();
+
+        return response()->json(['success' => true, 'pending' => $pending]);
+    }
+
+    // POST /api/pi/acknowledge-contact
+    // Victim "OK, I'll contact PI" click করল → আর modal দেখাব না
+    public function acknowledgePIContact(Request $request)
+    {
+        $request->validate(['complaint_id' => 'required|string']);
+
+        $userId = $this->getAuthUserId($request);
+        if (!$userId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $myHash = hash_hmac('sha256', (string) $userId, config('app.key'));
+
+        // Verify এটা সত্যিই এই user এর complaint
+        $updated = Complaint::where('complaint_id', $request->complaint_id)
+            ->where('anonymous_user_id', $myHash)
+            ->where('is_anonymous', true)
+            ->update(['pi_contact_acknowledged' => true]);
+
+        return response()->json(['success' => true, 'updated' => $updated]);
+    }
+
+
 }

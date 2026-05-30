@@ -22,4 +22,6 @@ class Complaint extends Model
     public function officer()            { return $this->belongsTo(Officer::class,'assigned_officer_code','officer_code'); }
     public function evidence()           { return $this->hasMany(ComplaintEvidence::class,'complaint_id','complaint_id'); }
     public function privateInvestigator(){ return $this->belongsTo(PrivateInvestigator::class,'assigned_pi_id'); }
+    // alias for with('assignedPi') eager loading
+    public function assignedPi()          { return $this->belongsTo(PrivateInvestigator::class,'assigned_pi_id'); }
 }

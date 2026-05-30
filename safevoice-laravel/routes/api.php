@@ -61,10 +61,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sos/my-responds',                [SosController::class, 'myResponds']);
     Route::post('/sos/submit-responder-evidence', [SosController::class, 'submitResponderEvidence']);
 
-    // ── PI user-side ──────────────────────────────────────────────
-    Route::get('/pi/user-notifications', [PrivateInvestigatorController::class, 'notifications']);
-    Route::post('/pi/payment',           [PrivateInvestigatorController::class, 'payment']);
-    Route::post('/pi/reject-payment',    [PrivateInvestigatorController::class, 'rejectPayment']);
 
     // ── FCM ───────────────────────────────────────────────────────
     Route::post('/fcm/register-token',   [\App\Http\Controllers\FcmController::class, 'registerToken']);
@@ -79,6 +75,11 @@ Route::middleware('auth:sanctum')->group(function () {
 // SESSION-BASED ROUTES — controller নিজে session/token check করে
 // auth:sanctum বাদ দেওয়া হয়েছে কারণ frontend session cookie পাঠায়, Bearer নয়
 // ─────────────────────────────────────────────────────────────────────────────
+Route::get('/pi/user-notifications', [PrivateInvestigatorController::class, 'notifications']);
+Route::post('/pi/payment',           [PrivateInvestigatorController::class, 'payment']);
+Route::post('/pi/reject-payment',    [PrivateInvestigatorController::class, 'rejectPayment']);
+Route::get('/pi/anonymous-contact',  [ComplaintController::class, 'anonymousPIContact']);
+Route::post('/pi/acknowledge-contact',[ComplaintController::class, 'acknowledgePIContact']);
 Route::post('/complaints/submit',  [ComplaintController::class, 'submit']);
 Route::post('/submit_complaint',   [ComplaintController::class, 'submit']); // legacy
 Route::get('/my-complaints',       [ComplaintController::class, 'myComplaints']);
