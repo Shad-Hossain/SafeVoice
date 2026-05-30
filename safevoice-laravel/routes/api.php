@@ -38,16 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // ── Complaints ───────────────────────────────────────────────
-    Route::post('/complaints/submit',  [ComplaintController::class, 'submit']);
-    Route::post('/submit_complaint',   [ComplaintController::class, 'submit']); // legacy
-    Route::get('/my-complaints',       [ComplaintController::class, 'myComplaints']);
-    Route::get('/get_user_complaints', [ComplaintController::class, 'myComplaints']); // legacy
 
     // ── Notifications ─────────────────────────────────────────────
-    Route::get('/notifications',              [UserNotificationController::class, 'index']);
-    Route::get('/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
-    Route::post('/notifications/mark-read',   [UserNotificationController::class, 'markRead']);
-    Route::delete('/notifications/{id}',      [UserNotificationController::class, 'destroy']);
 
     // ── Evidence ─────────────────────────────────────────────────
     Route::post('/upload_complaint_evidence', [EvidenceController::class, 'uploadComplaint']);
@@ -82,6 +74,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ai/enhance-description', [\App\Http\Controllers\AiController::class, 'enhanceDescription']);
     Route::post('/ai/analyze-complaint',   [\App\Http\Controllers\AiController::class, 'analyzeComplaint']);
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SESSION-BASED ROUTES — controller নিজে session/token check করে
+// auth:sanctum বাদ দেওয়া হয়েছে কারণ frontend session cookie পাঠায়, Bearer নয়
+// ─────────────────────────────────────────────────────────────────────────────
+Route::post('/complaints/submit',  [ComplaintController::class, 'submit']);
+Route::post('/submit_complaint',   [ComplaintController::class, 'submit']); // legacy
+Route::get('/my-complaints',       [ComplaintController::class, 'myComplaints']);
+Route::get('/get_user_complaints', [ComplaintController::class, 'myComplaints']); // legacy
+Route::get('/notifications',              [UserNotificationController::class, 'index']);
+Route::get('/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
+Route::post('/notifications/mark-read',   [UserNotificationController::class, 'markRead']);
+Route::delete('/notifications/{id}',      [UserNotificationController::class, 'destroy']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC SOS (login ছাড়া leaderboard দেখা যায়)
