@@ -393,4 +393,121 @@ HTML;
 
         return response()->json(['success' => false, 'loggedIn' => false], 401);
     }
+    // GET /api/profile — settings এ NID দেখানোর জন্য
+    public function getProfile(Request $request)
+    {
+        $userId = $request->query('user_id');
+        if (!$userId) {
+            try { $userId = $request->user()?->id; } catch (\Exception $e) {}
+        }
+        if (!$userId) $userId = $request->session()->get('user_id');
+        if (!$userId) return response()->json(['success' => false], 401);
+
+        $user = \App\Models\User::find($userId);
+        if (!$user) return response()->json(['success' => false], 404);
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'name'      => $user->name,
+                'email'     => $user->email,
+                'phone'     => $user->phone,
+                'id_number' => $user->id_number,
+                'id_type'   => $user->id_type,
+            ],
+        ]);
+    }
+
+    // POST /api/profile/update — phone ও email update
+    public function updateProfile(Request $request)
+    {
+        // user_id server থেকে
+        $userId = null;
+        try { $userId = $request->user()?->id; } catch (\Exception $e) {}
+        if (!$userId) $userId = $request->session()->get('user_id');
+        if (!$userId) $userId = $request->input('user_id');
+        if (!$userId) return response()->json(['success' => false, 'message' => 'Please login first.'], 401);
+
+        $user = \App\Models\User::find($userId);
+        if (!$user) return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+
+        $updates = [];
+        $message = [];
+
+        // Phone update
+        if ($request->filled('phone')) {
+            $phone = preg_replace('/\D/', '', $request->phone);
+            if (strlen($phone) === 13) $phone = substr($phone, 2);
+            if (strlen($phone) < 10 || strlen($phone) > 11) {
+                return response()->json(['success' => false, 'message' => 'Invalid phone number.'], 422);
+            }
+            // Duplicate check
+            if (\App\Models\User::where('phone', $phone)->where('id', '!=', $userId)->exists()) {
+                return response()->json(['success' => false, 'message' => 'This phone number is already registered.'], 422);
+            }
+            $updates['phone'] = $phone;
+            $message[] = 'Phone updated.';
+        }
+
+        // Email update
+        if ($request->filled('email')) {
+            $email = strtolower(trim($request->email));
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return response()->json(['success' => false, 'message' => 'Invalid email address.'], 422);
+            }
+            // Duplicate check
+            $emailHash = hash('sha256', $email);
+            if (\App\Models\User::where('email_hash', $emailHash)->where('id', '!=', $userId)->exists()) {
+                return response()->json(['success' => false, 'message' => 'This email is already registered.'], 422);
+            }
+            $updates['email']      = $email;
+            $updates['email_hash'] = $emailHash;
+            $message[] = 'Email updated.';
+
+            // ✅ Confirmation email পাঠাও
+            $this->sendProfileUpdateEmail($email, $user->name);
+        }
+
+        if (empty($updates)) {
+            return response()->json(['success' => false, 'message' => 'Nothing to update.'], 422);
+        }
+
+        $user->update($updates);
+
+        return response()->json([
+            'success' => true,
+            'message' => implode(' ', $message) . (isset($updates['email']) ? ' একটি confirmation email পাঠানো হয়েছে।' : ''),
+            'email'   => $updates['email']   ?? $user->email,
+            'phone'   => $updates['phone']   ?? $user->phone,
+        ]);
+    }
+
+    private function sendProfileUpdateEmail(string $email, string $name): void
+    {
+        try {
+            $mailerPath = base_path('PHPMailer-master/src');
+            require_once $mailerPath . '/Exception.php';
+            require_once $mailerPath . '/PHPMailer.php';
+            require_once $mailerPath . '/SMTP.php';
+
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = env('MAIL_HOST', 'smtp.gmail.com');
+            $mail->SMTPAuth   = true;
+            $mail->Username   = env('MAIL_USERNAME', '');
+            $mail->Password   = env('MAIL_PASSWORD', '');
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = env('MAIL_PORT', 587);
+            $mail->setFrom(env('MAIL_FROM_ADDRESS', ''), env('MAIL_FROM_NAME', 'SafeVoice'));
+            $mail->addAddress($email, $name);
+            $mail->isHTML(true);
+            $mail->Subject = 'SafeVoice — Email Address Updated';
+            $mail->Body    = "<p>Hi <strong>{$name}</strong>,</p><p>Your email address on SafeVoice has been updated to <strong>{$email}</strong>.</p><p>If you did not make this change, please contact us immediately at support@safevoice.com.</p><p>— SafeVoice Team</p>";
+            $mail->AltBody = "Hi {$name},\n\nYour SafeVoice email has been updated to {$email}.\n\nIf you did not do this, contact support@safevoice.com immediately.\n\n— SafeVoice";
+            $mail->send();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Profile update email failed: ' . $e->getMessage());
+        }
+    }
+
 }
