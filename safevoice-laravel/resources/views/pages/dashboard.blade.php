@@ -586,7 +586,11 @@ async function loadSosResponds() {
             return;
         }
 
-        const res  = await fetch('/api/sos/my-responds?user_id=' + userId, { credentials: 'include' });
+        const tkn  = localStorage.getItem('sv_token') || '';
+        const res  = await fetch('/api/sos/my-responds?user_id=' + userId, {
+            credentials: 'include',
+            headers: tkn ? { 'Authorization': 'Bearer ' + tkn } : {}
+        });
         const data = await res.json();
 
         if (!data.success || !data.responds || data.responds.length === 0) {
@@ -641,14 +645,32 @@ async function loadAllSosRequests() {
     container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
 
     try {
-        const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
-        const userId = svUser.id || svUser.user_id;
+        // localStorage এ না থাকলে session থেকে নাও
+        let svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        let userId = svUser.id || svUser.user_id;
+        const token = localStorage.getItem('sv_token') || '';
+
         if (!userId) {
-            container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:40px;">Please log in.</p>';
+            // Session check করো
+            try {
+                const sessRes  = await fetch('/api/check-session', { credentials: 'include' });
+                const sessData = await sessRes.json();
+                if (sessData.loggedIn && sessData.user) {
+                    userId = sessData.user.id;
+                    localStorage.setItem('sv_user', JSON.stringify(sessData.user));
+                }
+            } catch(e) {}
+        }
+
+        if (!userId) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:40px;">Please log in to see SOS requests.</p>';
             return;
         }
 
-        const res  = await fetch('/api/sos/all-requests?user_id=' + userId, { credentials: 'include' });
+        const res  = await fetch('/api/sos/all-requests?user_id=' + userId, {
+            credentials: 'include',
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
         const data = await res.json();
 
         if (!data.success || !data.alerts || data.alerts.length === 0) {

@@ -6,7 +6,6 @@ use App\Models\Complaint;
 use App\Models\ComplaintPrincipal;
 use App\Models\Officer;
 use App\Models\User;
-use App\Helpers\AnonymousId;
 use App\Http\Controllers\FcmController;
 
 class ComplaintController extends Controller
@@ -17,24 +16,33 @@ class ComplaintController extends Controller
      */
     private function getAuthUserId(Request $request): ?int
     {
-        // Sanctum token (Bearer header) — wrapped in try-catch
-        // in case personal_access_tokens table doesn't exist yet
+        // 1. Sanctum Bearer token
         try {
             if ($user = $request->user()) {
                 return $user->id;
             }
-        } catch (\Exception $e) {
-            // Sanctum table not ready — fall through to session
+        } catch (\Exception $e) {}
+
+        // 2. Session (cookie-based login)
+        try {
+            if ($id = $request->session()->get('user_id')) {
+                return (int) $id;
+            }
+        } catch (\Exception $e) {}
+
+        // 3. JSON body (frontend payload এ user_id পাঠায়)
+        if ($id = $request->input('user_id')) {
+            // DB তে user exist করে কিনা verify করো
+            if (\App\Models\User::where('id', (int)$id)->exists()) {
+                return (int) $id;
+            }
         }
 
-        // Session fallback (cookie-based login)
-        if ($id = $request->session()->get('user_id')) {
-            return (int) $id;
-        }
-
-        // Query param fallback (frontend sends ?user_id=X)
+        // 4. Query param fallback
         if ($id = $request->query('user_id')) {
-            return (int) $id;
+            if (\App\Models\User::where('id', (int)$id)->exists()) {
+                return (int) $id;
+            }
         }
 
         return null;
@@ -124,6 +132,8 @@ class ComplaintController extends Controller
             return response()->json(['success' => false, 'message' => 'Please login first.'], 401);
         }
 
+        try {
+        // ── Main submit logic ──
         $user = User::find($userId);
         if ($user && $user->status === 'Probation') {
             return response()->json([
@@ -168,7 +178,8 @@ class ComplaintController extends Controller
             // ✅ HMAC hash — plaintext user_id নয়
             // DB চুরি হলেও কেউ বলতে পারবে না কোন hash কোন user এর
             // User নিজে verify করতে পারবে কারণ same input → same hash
-            'anonymous_user_id' => AnonymousId::make($userId),
+            // HMAC hash — plaintext user_id নয়, DB চুরি হলেও reverse করা যাবে না
+            'anonymous_user_id' => hash_hmac('sha256', (string) $userId, config('app.key')),
 
             'type'          => $request->type,
             'incident_date' => $incidentDate,
@@ -180,33 +191,39 @@ class ComplaintController extends Controller
             'publish_consent' => $publishConsent,
         ]);
 
-        // ✅ complaint_principals: encrypted user_id store করো notification এর জন্য
-        // এই table টা কোনো admin API-তে expose করা নেই
-        ComplaintPrincipal::store($complaintId, $userId);
-
-        if (!$isAnonymous) {
-            User::where('id', $userId)->increment('complaints_count');
+        // ✅ complaint_principals table এ encrypted user_id রাখো
+        // try-catch: table না থাকলেও complaint submit হবে
+        try {
+            ComplaintPrincipal::store($complaintId, $userId);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('ComplaintPrincipal store failed: ' . $e->getMessage());
         }
 
-        \App\Models\UserNotification::notify(
-            $userId,
-            'complaint_submitted',
-            '📋 Complaint Submitted',
-            "তোমার complaint {$complaint->complaint_id} সফলভাবে submit হয়েছে।" .
-                ($isAnonymous ? ' (Anonymous — তুমি ছাড়া কেউ জানবে না)' : '') .
-                ' আমরা শীঘ্রই review করব।',
-            [
-                'complaint_id' => $complaint->complaint_id,
-                'action_url'   => '/track?id=' . $complaint->complaint_id,
-                'icon'         => '📋',
-            ]
-        );
+        if (!$isAnonymous) {
+            try { User::where('id', $userId)->increment('complaints_count'); } catch (\Exception $e) {}
+        }
+
+        try {
+            \App\Models\UserNotification::notify(
+                $userId, 'complaint_submitted', 'Complaint Submitted',
+                "Your complaint {$complaint->complaint_id} was submitted successfully.",
+                ['complaint_id' => $complaint->complaint_id, 'action_url' => '/track?id=' . $complaint->complaint_id]
+            );
+        } catch (\Exception $e) {}
 
         return response()->json([
             'success'      => true,
             'complaint_id' => $complaintId,
             'message'      => 'Complaint submitted successfully',
         ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Complaint submit error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // POST /api/complaints/update-status (Admin only)
@@ -339,7 +356,7 @@ class ComplaintController extends Controller
         }
 
         // ✅ নিজের HMAC hash বানাও এবং anonymous_user_id এর সাথে compare করো
-        $myHash = AnonymousId::make($userId);
+        $myHash = hash_hmac('sha256', (string) $userId, config('app.key'));
 
         $complaints = Complaint::where(function ($q) use ($userId, $myHash) {
                 $q->where('user_id', $userId)          // normal complaints

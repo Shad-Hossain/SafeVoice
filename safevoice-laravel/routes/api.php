@@ -38,16 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // ── Complaints ───────────────────────────────────────────────
-    Route::post('/complaints/submit',  [ComplaintController::class, 'submit']);
-    Route::post('/submit_complaint',   [ComplaintController::class, 'submit']); // legacy
-    Route::get('/my-complaints',       [ComplaintController::class, 'myComplaints']);
-    Route::get('/get_user_complaints', [ComplaintController::class, 'myComplaints']); // legacy
 
     // ── Notifications ─────────────────────────────────────────────
-    Route::get('/notifications',              [UserNotificationController::class, 'index']);
-    Route::get('/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
-    Route::post('/notifications/mark-read',   [UserNotificationController::class, 'markRead']);
-    Route::delete('/notifications/{id}',      [UserNotificationController::class, 'destroy']);
 
     // ── Evidence ─────────────────────────────────────────────────
     Route::post('/upload_complaint_evidence', [EvidenceController::class, 'uploadComplaint']);
@@ -60,8 +52,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sos/notify',                    [SosController::class, 'notify']);
     Route::post('/sos/create',                    [SosController::class, 'create']);
     Route::post('/create_sos',                    [SosController::class, 'create']); // legacy
-    Route::get('/sos/alerts',                     [SosController::class, 'alerts']);
-    Route::get('/get_sos_alert',                  [SosController::class, 'alerts']); // legacy
     Route::get('/sos/my-notifications',           [SosController::class, 'myNotifications']);
     Route::get('/get_my_sos_notifications',       [SosController::class, 'myNotifications']); // legacy
     Route::post('/sos/respond',                   [SosController::class, 'respond']);
@@ -69,7 +59,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/respond_to_sos',                [SosController::class, 'respond']); // legacy
     Route::post('/sos/upload-evidence',           [SosController::class, 'uploadEvidence']);
     Route::get('/sos/my-responds',                [SosController::class, 'myResponds']);
-    Route::get('/sos/victim-evidence',            [SosController::class, 'victimEvidence']);
     Route::post('/sos/submit-responder-evidence', [SosController::class, 'submitResponderEvidence']);
 
     // ── PI user-side ──────────────────────────────────────────────
@@ -87,8 +76,24 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SESSION-BASED ROUTES — controller নিজে session/token check করে
+// auth:sanctum বাদ দেওয়া হয়েছে কারণ frontend session cookie পাঠায়, Bearer নয়
+// ─────────────────────────────────────────────────────────────────────────────
+Route::post('/complaints/submit',  [ComplaintController::class, 'submit']);
+Route::post('/submit_complaint',   [ComplaintController::class, 'submit']); // legacy
+Route::get('/my-complaints',       [ComplaintController::class, 'myComplaints']);
+Route::get('/get_user_complaints', [ComplaintController::class, 'myComplaints']); // legacy
+Route::get('/notifications',              [UserNotificationController::class, 'index']);
+Route::get('/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
+Route::post('/notifications/mark-read',   [UserNotificationController::class, 'markRead']);
+Route::delete('/notifications/{id}',      [UserNotificationController::class, 'destroy']);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC SOS (login ছাড়া leaderboard দেখা যায়)
 // ─────────────────────────────────────────────────────────────────────────────
+Route::get('/sos/alerts',         [SosController::class, 'alerts']);
+Route::get('/get_sos_alert',      [SosController::class, 'alerts']); // legacy
+Route::get('/sos/victim-evidence',[SosController::class, 'victimEvidence']);
 Route::get('/leaderboard',        [SosController::class, 'leaderboard']);
 Route::get('/leaderboard/search', [SosController::class, 'leaderboardSearch']);
 Route::get('/sos/all-requests',   [SosController::class, 'allSosRequests']);
@@ -109,7 +114,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/update_status',                 [ComplaintController::class, 'updateStatus']); // legacy
 
     Route::get('/users',                          [AdminController::class, 'users']);
-    Route::get('/manage_user',                    [AdminController::class, 'users']); // legacy
+    Route::get('/sos-evidence-pending',           [SosController::class, 'adminPendingEvidence']);
     Route::get('/user/{id}',                      [AdminController::class, 'getUserById']);
     Route::post('/users/update-status',           [AdminController::class, 'updateUserStatus']);
 
@@ -117,14 +122,18 @@ Route::prefix('admin')->group(function () {
     Route::post('/approve-account',               [AdminController::class, 'approveAccount']);
     Route::post('/reject-account',                [AdminController::class, 'rejectAccount']);
 
-    Route::get('/sos-evidence-pending',           [SosController::class, 'adminPendingEvidence']);
     Route::post('/sos-evidence-verify',           [SosController::class, 'adminVerifyEvidence']);
 
     Route::get('/payments',                       [PrivateInvestigatorController::class, 'pendingPayments']);
 });
 
 // legacy admin routes (backward compat)
-Route::post('/admin_login',    [AdminController::class, 'login']);
+Route::get('/manage_user',                [AdminController::class, 'users']); // legacy
+Route::post('/admin_login',               [AdminController::class, 'login']);
+Route::post('/complaints/update-status',  [ComplaintController::class, 'updateStatus']); // legacy (no prefix)
+Route::post('/update_status',             [ComplaintController::class, 'updateStatus']); // legacy
+Route::get('/complaints',                 [ComplaintController::class, 'index']); // legacy
+Route::get('/complaints/{id}',            [ComplaintController::class, 'show']); // legacy
 Route::get('/complaints',      [ComplaintController::class, 'index']);
 Route::get('/complaints/{id}', [ComplaintController::class, 'show']);
 

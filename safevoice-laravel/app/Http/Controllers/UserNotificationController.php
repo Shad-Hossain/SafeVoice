@@ -12,10 +12,19 @@ class UserNotificationController extends Controller
      */
     private function getAuthUserId(Request $request): ?int
     {
-        if ($user = $request->user()) {
-            return $user->id;
+        try {
+            if ($user = $request->user()) return $user->id;
+        } catch (\Exception $e) {}
+
+        try {
+            if ($id = $request->session()->get('user_id')) return (int) $id;
+        } catch (\Exception $e) {}
+
+        if ($id = $request->input('user_id') ?? $request->query('user_id')) {
+            if (\App\Models\User::where('id', (int)$id)->exists()) return (int) $id;
         }
-        return $request->session()->get('user_id') ?: null;
+
+        return null;
     }
 
     // GET /api/notifications

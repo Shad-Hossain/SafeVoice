@@ -121,14 +121,19 @@ class PrivateInvestigatorController extends Controller
             return response()->json(['success' => false, 'message' => 'Transaction ID already used.'], 422);
         }
 
-       $userId = $request->session()->get('user_id')
-    ?? $request->input('user_id')
-    ?? $complaint->user_id;
+        // ✅ user_id শুধু server থেকে — client input trust করা হয় না
+        $userId = $request->session()->get('user_id')
+            ?? \App\Models\ComplaintPrincipal::getUserId($request->complaint_id)
+            ?? $complaint->user_id;
+
+        // ✅ pi_payments এ user_id store করা হয় না anonymous complaint এ
+        // Admin payments table দেখলেও anonymous complainant এর identity জানতে পারবে না
+        $storeUserId = $complaint->is_anonymous ? null : $userId;
 
         // Save as confirmed immediately — no admin step needed
         PiPayment::create([
             'complaint_id'   => $request->complaint_id,
-            'user_id'        => $userId,
+            'user_id'        => $storeUserId,
             'payment_method' => $request->payment_method,
             'sender_number'  => $request->sender_number,
             'txn_id'         => $request->txn_id,
@@ -497,9 +502,29 @@ HTML;
     }
 
     // Send confirmation email to user after PI assigned
+    // Anonymous complaint e email pathano hoy na - in-app notification jay
+    // Karon: mail server log e email address thake -> admin identity jante pare
     private function sendUserConfirmationEmail(Complaint $complaint, PrivateInvestigator $pi, $userId): void
     {
         if (!$userId) return;
+
+        // Anonymous hole in-app notification dao, email noy
+        if ($complaint->is_anonymous) {
+            \App\Models\UserNotification::notify(
+                $userId,
+                'pi_assigned',
+                '✅ Private Investigator Assigned',
+                "Your complaint {$complaint->complaint_id} has been assigned to a PI. "
+                . "They will contact you soon. Your identity remains protected.",
+                [
+                    'complaint_id' => $complaint->complaint_id,
+                    'action_url'   => '/track?id=' . $complaint->complaint_id,
+                    'icon'         => '✅',
+                ]
+            );
+            return;
+        }
+
         $user = User::find($userId);
         if (!$user || !$user->email) return;
 
