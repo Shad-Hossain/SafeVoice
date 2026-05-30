@@ -128,8 +128,12 @@ Route::prefix('admin')->group(function () {
 });
 
 // legacy admin routes (backward compat)
-Route::get('/manage_user',     [AdminController::class, 'users']); // legacy
-Route::post('/admin_login',    [AdminController::class, 'login']);
+Route::get('/manage_user',                [AdminController::class, 'users']); // legacy
+Route::post('/admin_login',               [AdminController::class, 'login']);
+Route::post('/complaints/update-status',  [ComplaintController::class, 'updateStatus']); // legacy (no prefix)
+Route::post('/update_status',             [ComplaintController::class, 'updateStatus']); // legacy
+Route::get('/complaints',                 [ComplaintController::class, 'index']); // legacy
+Route::get('/complaints/{id}',            [ComplaintController::class, 'show']); // legacy
 Route::get('/complaints',      [ComplaintController::class, 'index']);
 Route::get('/complaints/{id}', [ComplaintController::class, 'show']);
 
