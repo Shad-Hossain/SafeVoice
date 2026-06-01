@@ -60,24 +60,10 @@
 
 <section class="responders">
     <h2>Top Responders This Month</h2>
-    <div class="responders-container">
-        <div class="responder-card">
-            <div class="rank gold">1</div>
-            <div class="avatar"><i class="fas fa-user"></i></div>
-            <h3>Rakib Hassan</h3><p>42 responses</p>
-            <span class="badge">🏆 Champion</span>
-        </div>
-        <div class="responder-card">
-            <div class="rank silver">2</div>
-            <div class="avatar"><i class="fas fa-user"></i></div>
-            <h3>Shefa Rahman</h3><p>38 responses</p>
-            <span class="badge">🥈 Runner Up</span>
-        </div>
-        <div class="responder-card">
-            <div class="rank bronze">3</div>
-            <div class="avatar"><i class="fas fa-user"></i></div>
-            <h3>Nadia Islam</h3><p>31 responses</p>
-            <span class="badge">🥉 Third Place</span>
+    <div class="responders-container" id="homeTopResponders">
+        {{-- Real data /api/leaderboard থেকে JS দিয়ে load হবে --}}
+        <div style="color:#888; text-align:center; padding:20px; width:100%;">
+            <i class="fas fa-spinner fa-spin"></i> Loading...
         </div>
     </div>
 </section>
@@ -94,6 +80,39 @@
         document.getElementById('stat-home-pending').textContent  = fmt(data.pending  || 0);
         document.getElementById('stat-home-sos').textContent      = fmt(data.sos      || 0);
     } catch(e) {}
+})();
+
+// ── Homepage Top 3 Responders — Real data from /api/leaderboard ──
+(async function loadHomeLeaderboard() {
+    const container = document.getElementById('homeTopResponders');
+    if (!container) return;
+
+    try {
+        const res  = await fetch('/api/leaderboard');
+        const data = await res.json();
+
+        if (!data.success || !data.leaderboard || data.leaderboard.length === 0) {
+            container.innerHTML = '<p style="color:#888; text-align:center; width:100%; padding:20px;">No SOS responders yet. Be the first hero!</p>';
+            return;
+        }
+
+        const top3      = data.leaderboard.slice(0, 3);
+        const rankClass = ['gold', 'silver', 'bronze'];
+        const badges    = ['🏆 Champion', '🥈 Runner Up', '🥉 Third Place'];
+
+        container.innerHTML = top3.map((p, i) => `
+            <div class="responder-card">
+                <div class="rank ${rankClass[i]}">${p.rank}</div>
+                <div class="avatar"><i class="fas fa-user"></i></div>
+                <h3>${p.name}</h3>
+                <p>${p.responses} responses</p>
+                <span class="badge">${badges[i]}</span>
+            </div>
+        `).join('');
+
+    } catch(e) {
+        container.innerHTML = '<p style="color:#888; text-align:center; width:100%; padding:20px;">Could not load leaderboard.</p>';
+    }
 })();
 </script>
 @endsection

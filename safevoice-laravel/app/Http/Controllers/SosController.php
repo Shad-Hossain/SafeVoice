@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use App\Models\SosAlert;
 use App\Models\SosNotification;
 use App\Models\SosResponder;
+
 use App\Models\User;
 use App\Http\Controllers\FcmController;
 
@@ -41,44 +42,48 @@ class SosController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────
+    // GET /api/sos/nearby-count
+    // Page load এ real nearby responder count দেখাবে
+    // ─────────────────────────────────────────────────────────
+    public function nearbyCount(Request $request)
+    {
+        $lat = (float) $request->query('lat', 0);
+        $lng = (float) $request->query('lng', 0);
+
+        $userId = $request->session()->get('user_id')
+                ?? (int) $request->query('user_id', 0);
+
+        if (!$lat || !$lng) {
+            return response()->json(['success' => true, 'count' => 0, 'users' => []]);
+        }
+
+        // Smart radius — 1 → 2 → 3 → 7 km
+        $radii       = [1, 2, 3, 7];
+        $nearbyUsers = collect();
+        foreach ($radii as $km) {
+            $nearbyUsers = $this->getUsersWithinRadius($lat, $lng, $km, (int) $userId);
+            if ($nearbyUsers->isNotEmpty()) break;
+        }
+
+        $users = $nearbyUsers->map(function ($u) {
+            return [
+                'name'        => $u->name,
+                'distance_km' => $u->distance_km,
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'count'   => $users->count(),
+            'users'   => $users,
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
     // POST /api/sos/notify
     // Smart radius — 1km → 2km → 3km → 7km
     // শুধু nearby active users কে notify করবে
     // ─────────────────────────────────────────────────────────
-
-    // GET /api/sos/nearby-count
-public function nearbyCount(Request $request)
-{
-    $lat = (float) $request->query('lat', 0);
-    $lng = (float) $request->query('lng', 0);
-
-    $userId = $request->session()->get('user_id')
-            ?? (int) $request->query('user_id', 0);
-
-    if (!$lat || !$lng) {
-        return response()->json(['success' => true, 'count' => 0, 'users' => []]);
-    }
-
-    $radii       = [1, 2, 3, 7];
-    $nearbyUsers = collect();
-    foreach ($radii as $km) {
-        $nearbyUsers = $this->getUsersWithinRadius($lat, $lng, $km, (int) $userId);
-        if ($nearbyUsers->isNotEmpty()) break;
-    }
-
-    $users = $nearbyUsers->map(function ($u) {
-        return [
-            'name'        => $u->name,
-            'distance_km' => $u->distance_km,
-        ];
-    })->values();
-
-    return response()->json([
-        'success' => true,
-        'count'   => $users->count(),
-        'users'   => $users,
-    ]);
-}
     public function notify(Request $request)
     {
         $sosId = $request->sos_id;
@@ -331,10 +336,6 @@ public function nearbyCount(Request $request)
 
         $notifications = SosNotification::where('notified_user_id', $userId)
             ->with(['sosAlert.user'])
-            ->whereHas('sosAlert', function ($q) use ($userId) {
-    $q->where('user_id', '!=', $userId)
-      ->orWhereNull('user_id');
-})
             // নিজের তৈরি SOS alert এর notification বাদ দিতে হবে (self-notification bug fix)
             ->whereHas('sosAlert', function ($q) use ($userId) {
                 $q->where('user_id', '!=', $userId)
@@ -618,33 +619,73 @@ public function nearbyCount(Request $request)
     {
         $loggedInUserId = $request->session()->get('user_id');
 
-        $users = User::where('sos_helped_verified_count', '>', 0)
-            ->orderByDesc('sos_helped_verified_count')
-            ->orderByDesc('sos_helped_count')
-            ->limit(50)
-            ->get(['id', 'name', 'sos_helped_verified_count', 'sos_helped_count']);
+        // প্রতি মাসে reset — current month এর verified responses count করব
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth   = now()->endOfMonth();
+        $nextReset    = now()->addMonthNoOverflow()->startOfMonth()->format('F j, Y');
 
+        // এই মাসে কতবার SOS verify করে help করেছে সেটা count করব
+        $monthlyStats = DB::table('sos_responders')
+    ->select('responder_id', DB::raw('COUNT(*) as monthly_count'))
+    ->where('evidence_status', 'verified')
+    ->whereBetween('verified_at', [$startOfMonth, $endOfMonth])
+    ->groupBy('responder_id')
+    ->orderByDesc('monthly_count')
+    ->limit(10)
+    ->get();
+
+        // User info যোগ করি
         $leaderboard = [];
-        foreach ($users as $index => $user) {
+        foreach ($monthlyStats as $index => $stat) {
+            $user = User::find($stat->responder_id);
+            if (!$user) continue;
             $rank = $index + 1;
             $leaderboard[] = [
                 'rank'      => $rank,
                 'name'      => $user->name,
-                'responses' => $user->sos_helped_verified_count,
+                'responses' => $stat->monthly_count,
                 'badge'     => $this->getBadge($rank),
                 'is_you'    => ($loggedInUserId && $user->id == $loggedInUserId),
             ];
+        }
+
+        // monthly data না থাকলে overall verified count দিয়ে fallback
+        if (empty($leaderboard)) {
+            $users = User::where('sos_helped_verified_count', '>', 0)
+                ->orderByDesc('sos_helped_verified_count')
+                ->limit(10)
+                ->get(['id', 'name', 'sos_helped_verified_count']);
+
+            foreach ($users as $index => $user) {
+                $rank = $index + 1;
+                $leaderboard[] = [
+                    'rank'      => $rank,
+                    'name'      => $user->name,
+                    'responses' => $user->sos_helped_verified_count,
+                    'badge'     => $this->getBadge($rank),
+                    'is_you'    => ($loggedInUserId && $user->id == $loggedInUserId),
+                ];
+            }
         }
 
         $myRank = null;
         if ($loggedInUserId) {
             $me = User::find($loggedInUserId);
             if ($me) {
-                $position = User::where('sos_helped_verified_count', '>', $me->sos_helped_verified_count)->count() + 1;
+                $myMonthly = DB::table('sos_responders')
+                    ->where('responder_id', $loggedInUserId)
+                   ->where('evidence_status', 'verified')
+->whereBetween('verified_at', [$startOfMonth, $endOfMonth])
+                    ->count();
+
+                $myResponses = $myMonthly ?: $me->sos_helped_verified_count;
+                $position    = collect($leaderboard)->search(fn($r) => $r['is_you']);
+                $position    = $position !== false ? $position + 1 : (User::where('sos_helped_verified_count', '>', $me->sos_helped_verified_count)->count() + 1);
+
                 $myRank = [
                     'rank'      => $position,
                     'name'      => $me->name,
-                    'responses' => $me->sos_helped_verified_count,
+                    'responses' => $myResponses,
                 ];
             }
         }
@@ -653,7 +694,8 @@ public function nearbyCount(Request $request)
             'success'     => true,
             'leaderboard' => $leaderboard,
             'my_rank'     => $myRank,
-            'total_users' => User::where('sos_helped_verified_count', '>', 0)->count(),
+            'next_reset'  => $nextReset,
+            'total_users' => count($leaderboard),
         ]);
     }
 

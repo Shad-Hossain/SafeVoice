@@ -592,10 +592,14 @@ async function doActualSubmit() {
     let anonymous_token = '';
 
     try {
+        const _tk  = localStorage.getItem('sv_token') || '';
         const res  = await fetch('/api/submit_complaint', {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: Object.assign(
+                { 'Content-Type': 'application/json' },
+                _tk ? { 'Authorization': 'Bearer ' + _tk } : {}
+            ),
             body: JSON.stringify(payload)
         });
         const data = await res.json();

@@ -9,6 +9,10 @@ use App\Models\PiNotification;
 use App\Models\PiPayment;
 use App\Models\User;
 use App\Models\ComplaintEvidence;
+use App\Models\UserNotification;
+use App\Models\ComplaintPrincipal;
+use App\Models\SuperAdminNotification;
+use App\Models\PiCaseAssignment;
 
 class PrivateInvestigatorController extends Controller
 {
@@ -117,14 +121,19 @@ class PrivateInvestigatorController extends Controller
             return response()->json(['success' => false, 'message' => 'Transaction ID already used.'], 422);
         }
 
-       $userId = $request->session()->get('user_id')
-    ?? $request->input('user_id')
-    ?? $complaint->user_id;
+        // ✅ user_id শুধু server থেকে — client input trust করা হয় না
+        $userId = $request->session()->get('user_id')
+            ?? \App\Models\ComplaintPrincipal::getUserId($request->complaint_id)
+            ?? $complaint->user_id;
+
+        // ✅ pi_payments এ user_id store করা হয় না anonymous complaint এ
+        // Admin payments table দেখলেও anonymous complainant এর identity জানতে পারবে না
+        $storeUserId = $complaint->is_anonymous ? null : $userId;
 
         // Save as confirmed immediately — no admin step needed
         PiPayment::create([
             'complaint_id'   => $request->complaint_id,
-            'user_id'        => $userId,
+            'user_id'        => $storeUserId,
             'payment_method' => $request->payment_method,
             'sender_number'  => $request->sender_number,
             'txn_id'         => $request->txn_id,
@@ -254,29 +263,51 @@ return response()->json([
     }
 
     public function rejectPayment(Request $request)
-{
-    $request->validate(['complaint_id' => 'required|string']);
+    {
+        $request->validate(['complaint_id' => 'required|string']);
 
-    $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
-    if (!$complaint) return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
+        $complaint = Complaint::where('complaint_id', $request->complaint_id)->first();
+        if (!$complaint) return response()->json(['success' => false, 'message' => 'Complaint not found'], 404);
 
-    $deadlinePassed = $complaint->payment_deadline && now()->isAfter($complaint->payment_deadline);
+        $deadlinePassed = $complaint->payment_deadline && now()->isAfter($complaint->payment_deadline);
 
-    PiNotification::where('complaint_id', $request->complaint_id)
-        ->update(['status' => 'dismissed', 'responded_at' => now()]);
+        // ✅ Deadline পেরিয়ে গেলে automatic Rejected, না হলে PI Payment Pending রাখো
+        $newStatus = $deadlinePassed ? 'Rejected' : 'PI Payment Pending';
+        $complaint->update(['status' => $newStatus]);
 
-    $newStatus = $deadlinePassed ? 'Rejected' : 'PI Payment Pending';
-    $complaint->update(['status' => $newStatus]);   // ← এই line টা আছে কিনা check করুন
+        // ✅ User কে automatic notification পাঠাও
+        $notifyUserId = $complaint->user_id
+            ?? \App\Models\ComplaintPrincipal::getUserId($complaint->complaint_id);
 
-    return response()->json([
-        'success'  => true,
-        'message'  => $deadlinePassed
-            ? 'Payment deadline passed. Complaint rejected.'
-            : 'Noted. You can still pay before the deadline.',
-        'status'   => $newStatus,
-        'deadline' => $complaint->payment_deadline,
-    ]);
-}
+        if ($notifyUserId) {
+            if ($deadlinePassed) {
+                UserNotification::notify(
+                    $notifyUserId,
+                    'payment_deadline_rejected',
+                    '❌ Complaint Rejected — Payment Deadline Passed',
+                    "তোমার complaint {$complaint->complaint_id} এর PI payment deadline পেরিয়ে যাওয়ায় complaint টি automatically reject হয়েছে।",
+                    ['complaint_id' => $complaint->complaint_id, 'action_url' => '/track?id=' . $complaint->complaint_id, 'icon' => '❌']
+                );
+            } else {
+                UserNotification::notify(
+                    $notifyUserId,
+                    'payment_cancelled',
+                    '⚠️ PI Payment Cancelled',
+                    "তোমার complaint {$complaint->complaint_id} এর PI payment cancel হয়েছে। Deadline এর আগে আবার payment করতে পারবে।",
+                    ['complaint_id' => $complaint->complaint_id, 'action_url' => '/track?id=' . $complaint->complaint_id, 'icon' => '⚠️']
+                );
+            }
+        }
+
+        return response()->json([
+            'success'  => true,
+            'message'  => $deadlinePassed
+                ? 'Payment deadline passed. Complaint automatically rejected.'
+                : 'Payment cancelled. You can still pay before the deadline.',
+            'status'   => $newStatus,
+            'deadline' => $complaint->payment_deadline,
+        ]);
+    }
 
     // PHPMailer helper
     private function sendPiAssignmentEmail(PrivateInvestigator $pi, Complaint $complaint): array
@@ -471,9 +502,29 @@ HTML;
     }
 
     // Send confirmation email to user after PI assigned
+    // Anonymous complaint e email pathano hoy na - in-app notification jay
+    // Karon: mail server log e email address thake -> admin identity jante pare
     private function sendUserConfirmationEmail(Complaint $complaint, PrivateInvestigator $pi, $userId): void
     {
         if (!$userId) return;
+
+        // Anonymous hole in-app notification dao, email noy
+        if ($complaint->is_anonymous) {
+            \App\Models\UserNotification::notify(
+                $userId,
+                'pi_assigned',
+                '✅ Private Investigator Assigned',
+                "Your complaint {$complaint->complaint_id} has been assigned to a PI. "
+                . "They will contact you soon. Your identity remains protected.",
+                [
+                    'complaint_id' => $complaint->complaint_id,
+                    'action_url'   => '/track?id=' . $complaint->complaint_id,
+                    'icon'         => '✅',
+                ]
+            );
+            return;
+        }
+
         $user = User::find($userId);
         if (!$user || !$user->email) return;
 

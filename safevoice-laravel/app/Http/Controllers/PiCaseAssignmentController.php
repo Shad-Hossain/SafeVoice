@@ -508,6 +508,19 @@ HTML;
 
     private function sendUserAcceptedEmail(Complaint $complaint, PrivateInvestigator $pi): void
     {
+        // Anonymous complaint e email pathano hoy na - identity protect korte
+        if ($complaint->is_anonymous) {
+            // In-app notification ComplaintPrincipal theke user_id ber kore pathay
+            $notifyId = \App\Models\ComplaintPrincipal::getUserId($complaint->complaint_id);
+            if ($notifyId) {
+                \App\Models\UserNotification::notify(
+                    $notifyId, 'pi_accepted', '✅ PI Accepted Your Case',
+                    "Your complaint {$complaint->complaint_id} accepted by PI. They will contact you soon.",
+                    ['complaint_id' => $complaint->complaint_id, 'action_url' => '/track?id=' . $complaint->complaint_id, 'icon' => '✅']
+                );
+            }
+            return;
+        }
         if (!$complaint->user_id) return;
         $user = User::find($complaint->user_id);
         if (!$user || !$user->email) return;

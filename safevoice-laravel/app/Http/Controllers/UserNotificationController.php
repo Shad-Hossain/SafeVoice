@@ -1,35 +1,36 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\UserNotification;
 
-/**
- * User Notification Controller
- *
- * Routes:
- *   GET  /api/notifications          → সব notifications (পাগিনেশন সহ)
- *   GET  /api/notifications/unread-count → শুধু count
- *   POST /api/notifications/mark-read   → একটা বা সব mark as read
- *   DELETE /api/notifications/{id}      → একটা delete
- */
 class UserNotificationController extends Controller
 {
-    // ─── Helper: session থেকে user_id নাও ───────────────────────
-    private function userId(Request $request): ?int
+    /**
+     * ✅ user_id শুধু token/session থেকে নাও
+     * NEVER query param বা input থেকে নেওয়া হবে না
+     */
+    private function getAuthUserId(Request $request): ?int
     {
-        return $request->session()->get('user_id')
-            ?? $request->query('user_id')
-            ?? $request->input('user_id')
-            ?: null;
+        try {
+            if ($user = $request->user()) return $user->id;
+        } catch (\Exception $e) {}
+
+        try {
+            if ($id = $request->session()->get('user_id')) return (int) $id;
+        } catch (\Exception $e) {}
+
+        if ($id = $request->input('user_id') ?? $request->query('user_id')) {
+            if (\App\Models\User::where('id', (int)$id)->exists()) return (int) $id;
+        }
+
+        return null;
     }
 
-    // ─── GET /api/notifications ──────────────────────────────────
-    // সব notifications, newest first, 20 per page
+    // GET /api/notifications
     public function index(Request $request)
     {
-        $userId = $this->userId($request);
+        $userId = $this->getAuthUserId($request);
         if (!$userId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -46,10 +47,10 @@ class UserNotificationController extends Controller
         ]);
     }
 
-    // ─── GET /api/notifications/unread-count ─────────────────────
+    // GET /api/notifications/unread-count
     public function unreadCount(Request $request)
     {
-        $userId = $this->userId($request);
+        $userId = $this->getAuthUserId($request);
         if (!$userId) {
             return response()->json(['count' => 0]);
         }
@@ -61,22 +62,18 @@ class UserNotificationController extends Controller
         return response()->json(['success' => true, 'count' => $count]);
     }
 
-    // ─── POST /api/notifications/mark-read ───────────────────────
-    // Body: { id: 5 }  → একটা mark read
-    // Body: { all: true } → সব mark read
+    // POST /api/notifications/mark-read
     public function markRead(Request $request)
     {
-        $userId = $this->userId($request);
+        $userId = $this->getAuthUserId($request);
         if (!$userId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
         if ($request->boolean('all')) {
-            // সব unread mark as read
             UserNotification::where('user_id', $userId)
                 ->where('is_read', false)
                 ->update(['is_read' => true]);
-
             return response()->json(['success' => true, 'message' => 'All notifications marked as read']);
         }
 
@@ -85,21 +82,23 @@ class UserNotificationController extends Controller
             return response()->json(['success' => false, 'message' => 'Notification ID required'], 422);
         }
 
+        // ✅ user_id check করে — নিজেরটাই mark করতে পারবে
         UserNotification::where('id', $id)
-            ->where('user_id', $userId) // security: নিজেরটাই mark করতে পারবে
+            ->where('user_id', $userId)
             ->update(['is_read' => true]);
 
         return response()->json(['success' => true, 'message' => 'Marked as read']);
     }
 
-    // ─── DELETE /api/notifications/{id} ─────────────────────────
+    // DELETE /api/notifications/{id}
     public function destroy(Request $request, int $id)
     {
-        $userId = $this->userId($request);
+        $userId = $this->getAuthUserId($request);
         if (!$userId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
+        // ✅ নিজেরটাই delete করতে পারবে
         UserNotification::where('id', $id)
             ->where('user_id', $userId)
             ->delete();

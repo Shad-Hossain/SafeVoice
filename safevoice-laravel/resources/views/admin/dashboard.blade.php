@@ -174,8 +174,6 @@
         .er-modal-btns .btn-cancel-req:hover { border-color:#d97706;color:#d97706; }
 
         /* Expired Evidence Alert Banner */
-        .expired-evidence-banner { background:linear-gradient(135deg,#7f1d1d20,#991b1b20);border:1px solid #ef444440;border-radius:14px;padding:16px 20px;margin-bottom:20px;display:none; }
-        .expired-evidence-banner h4 { color:#f87171;font-size:14px;font-weight:700;margin:0 0 10px 0; }
         .expired-ev-item { background:#0a0f1e;border:1px solid #ef444430;border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px; }
         .expired-ev-item .ev-cid { color:#f87171;font-weight:700;font-size:13px; }
         .expired-ev-item .ev-meta { color:#a0b4cc;font-size:12px;margin-top:2px; }
@@ -217,12 +215,7 @@
     <main class="main-content" id="mainContent">
 
         <div id="view-dashboard">
-            <!-- Expired Evidence Alert Banner -->
-            <div class="expired-evidence-banner" id="expiredEvidenceBanner">
-                <h4><i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>Evidence Submission Failed — Action Required</h4>
-                <p style="color:#a0b4cc;font-size:12px;margin:0 0 12px 0;">The following users did not submit evidence within 7 days. You can notify them via PI.</p>
-                <div id="expiredEvidenceList"></div>
-            </div>
+
             <div class="welcome-bar">
                 <h1>Welcome Admin 👋</h1>
                 <p>Real-time SafeVoice complaint management</p>
@@ -1046,36 +1039,6 @@ async function sendEvidenceRequest() {
     }
 }
 
-// ── Expired Evidence Notifications ───────────────────────────
-async function loadExpiredEvidenceAlerts() {
-    try {
-        await fetch('/api/evidence-request/check-expired', { method: 'POST', credentials: 'include' });
-        const res  = await fetch('/api/evidence-request/expired-list', { credentials: 'include' });
-        const data = await res.json();
-        if (!data.success || !data.expired || data.expired.length === 0) return;
-        const banner = document.getElementById('expiredEvidenceBanner');
-        const list   = document.getElementById('expiredEvidenceList');
-        if (!banner || !list) return;
-        list.innerHTML = data.expired.map(r => {
-            const deadline = r.deadline ? new Date(r.deadline).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—';
-            return `<div class="expired-ev-item">
-                <div>
-                    <div class="ev-cid"><i class="fas fa-folder-open" style="margin-right:6px;"></i>${r.complaint_id}</div>
-                    <div class="ev-meta">Deadline was: ${deadline} · Evidence not submitted</div>
-                </div>
-                <button class="btn-send-pi-notif" onclick="triggerPIFromExpired('${r.complaint_id}')">
-                    <i class="fas fa-user-secret"></i> Notify PI
-                </button>
-            </div>`;
-        }).join('');
-        banner.style.display = 'block';
-    } catch(e) { /* silent */ }
-}
-
-function triggerPIFromExpired(complaintId) {
-    piPendingComplaintId = complaintId;
-    document.getElementById('piNotifyModal').classList.add('active');
-}
 
 // ── Complaint Detail Modal ────────────────────────────────────
 function viewComplaint(c) {
@@ -1761,7 +1724,6 @@ function getCsrfToken() {
 document.addEventListener('DOMContentLoaded', function() {
     showSection('dashboard');
     document.getElementById('nav-dashboard').classList.add('active');
-    loadExpiredEvidenceAlerts();
     loadSosEvidenceBadge();
     checkPendingBadgeOnLoad();
     document.getElementById('erRequestModal').addEventListener('click', function(e) {
