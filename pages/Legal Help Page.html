@@ -1,0 +1,259 @@
+Legal Help Page
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Help — SafeVoice</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .hero { padding: 80px 0 40px; text-align: center; }
+        .hero h1 { font-size: 42px; font-weight: 800; }
+        .hero h1 span { color: #6366f1; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; }
+        .form-control, .form-select {
+            background: #0f172a; border: 1px solid #334155;
+            color: #e2e8f0; border-radius: 8px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #0f172a; border-color: #6366f1;
+            color: #e2e8f0; box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+        }
+        .btn-primary { background: #6366f1; border: none; border-radius: 8px; padding: 10px 24px; }
+        .btn-primary:hover { background: #4f46e5; }
+        .feature-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; text-align: center; }
+        .feature-icon { font-size: 36px; margin-bottom: 12px; }
+
+        /* Floating Consent Modal */
+        .consent-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .consent-box {
+            background: #1e293b;
+            border: 1px solid #6366f1;
+            border-radius: 20px;
+            padding: 36px;
+            max-width: 520px;
+            width: 90%;
+            box-shadow: 0 0 60px rgba(99,102,241,0.3);
+        }
+        .consent-box h4 { color: #6366f1; font-weight: 700; }
+        .consent-item { display: flex; gap: 12px; margin-bottom: 14px; font-size: 14px; }
+        .consent-item .icon { font-size: 20px; flex-shrink: 0; }
+        .checkbox-custom {
+            display: flex; align-items: flex-start; gap: 10px;
+            background: #0f172a; border: 1px solid #334155;
+            border-radius: 10px; padding: 12px; cursor: pointer;
+            margin-top: 16px;
+        }
+        .checkbox-custom input { width: 18px; height: 18px; margin-top: 2px; accent-color: #6366f1; }
+    </style>
+</head>
+<body>
+
+<!-- Consent Modal (সবসময় প্রথমে দেখাবে) -->
+<div class="consent-overlay" id="consent-overlay">
+    <div class="consent-box">
+        <h4 class="mb-1">⚖️ Legal Help Service</h4>
+        <p class="text-secondary mb-4" style="font-size:13px">শুরু করার আগে নিচের শর্তগুলো পড়ুন</p>
+
+        <div class="consent-item">
+            <span class="icon">💰</span>
+            <div>Lawyer book করতে <strong>৩০% advance payment</strong> করতে হবে।</div>
+        </div>
+        <div class="consent-item">
+            <span class="icon">⏰</span>
+            <div>Case সম্পন্ন হওয়ার <strong>১০ দিনের মধ্যে</strong> বাকি ৭০% payment করতে হবে।</div>
+        </div>
+        <div class="consent-item">
+            <span class="icon">⚠️</span>
+            <div>১০ দিনের মধ্যে payment না করলে আপনার বিরুদ্ধে <strong>legal action</strong> নেওয়া হতে পারে।</div>
+        </div>
+        <div class="consent-item">
+            <span class="icon">🚨</span>
+            <div>Lawyer সমস্যা করলে <strong>admin এর কাছে complaint</strong> করতে পারবেন। Admin ৪৮ ঘন্টার মধ্যে reply দেবেন।</div>
+        </div>
+        <div class="consent-item">
+            <span class="icon">🔍</span>
+            <div>৪৮ ঘন্টার মধ্যে কোনো lawyer না পাওয়া গেলে case <strong>expire</strong> হবে। আবার submit করতে পারবেন।</div>
+        </div>
+
+        <label class="checkbox-custom" for="consent-check">
+            <input type="checkbox" id="consent-check" onchange="toggleConsentBtn()">
+            <span style="font-size:13px">আমি উপরের সকল শর্ত পড়েছি এবং <strong>সম্মত আছি</strong>।</span>
+        </label>
+
+        <div class="mt-4 d-flex gap-3">
+            <button class="btn btn-outline-secondary flex-grow-1" onclick="window.history.back()">← ফিরে যাই</button>
+            <button class="btn btn-primary flex-grow-1" id="consent-btn" disabled onclick="acceptConsent()">
+                সম্মত, এগিয়ে যাই →
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Page -->
+<div id="main-content" style="display:none">
+    <div class="container">
+        <div class="hero">
+            <h1>⚖️ <span>Legal Help</span></h1>
+            <p class="text-secondary mt-3" style="max-width:500px;margin:0 auto">
+                অভিজ্ঞ lawyer দের সাথে সংযুক্ত হন। আপনার case submit করুন, offer পান, lawyer বুক করুন।
+            </p>
+            <div class="mt-4 d-flex gap-3 justify-content-center">
+                <a href="/legal-cases" class="btn btn-outline-secondary">📋 আমার Cases</a>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h6 class="fw-semibold">Case Submit করুন</h6>
+                    <p class="text-secondary" style="font-size:13px">আপনার সমস্যা বর্ণনা করুন, budget দিন</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h6 class="fw-semibold">Offer পান</h6>
+                    <p class="text-secondary" style="font-size:13px">Lawyers offer করবেন, আপনি accept/reject করবেন</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <h6 class="fw-semibold">Case Resolve করুন</h6>
+                    <p class="text-secondary" style="font-size:13px">৩০% দিয়ে book করুন, সম্পন্নে ৭০% দিন</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Form -->
+        <div class="row justify-content-center mb-5">
+            <div class="col-lg-7">
+                <div class="card p-4">
+                    <h5 class="fw-semibold mb-4">📝 Legal Case Submit করুন</h5>
+                    <div id="form-alert" class="alert d-none"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Issue Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="issue_type">
+                            <option value="">Select করুন</option>
+                            <option>Criminal Case</option>
+                            <option>Family Dispute</option>
+                            <option>Property Issue</option>
+                            <option>Labor Law</option>
+                            <option>Human Rights Violation</option>
+                            <option>Cyber Crime</option>
+                            <option>Domestic Violence</option>
+                            <option>Financial Fraud</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">বিস্তারিত বিবরণ <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" rows="5" placeholder="আপনার সমস্যা বিস্তারিত লিখুন..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Budget (৳) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="user_budget" placeholder="5000">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Contact Phone</label>
+                            <input type="tel" class="form-control" id="contact_phone" placeholder="01XXXXXXXXX">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Preferred Time</label>
+                        <input type="datetime-local" class="form-control" id="preferred_time">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Evidence Files (optional)</label>
+                        <input type="file" class="form-control" id="evidence_files" multiple accept=".pdf,.jpg,.jpeg,.png,.mp4">
+                        <small class="text-secondary">PDF, Image, Video — max 10MB each</small>
+                    </div>
+
+                    <button class="btn btn-primary w-100 py-2" id="submit-btn" onclick="submitCase()">
+                        📤 Case Submit করুন
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleConsentBtn() {
+        document.getElementById('consent-btn').disabled = !document.getElementById('consent-check').checked;
+    }
+
+    function acceptConsent() {
+        sessionStorage.setItem('legal_consent', '1');
+        document.getElementById('consent-overlay').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+    }
+
+    // আগেই consent দিয়ে থাকলে সরাসরি দেখাও
+    if (sessionStorage.getItem('legal_consent') === '1') {
+        document.getElementById('consent-overlay').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+    }
+
+    async function submitCase() {
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Submit হচ্ছে...';
+
+        const formData = new FormData();
+        formData.append('issue_type',    document.getElementById('issue_type').value);
+        formData.append('description',   document.getElementById('description').value);
+        formData.append('user_budget',   document.getElementById('user_budget').value);
+        formData.append('contact_phone', document.getElementById('contact_phone').value);
+        formData.append('preferred_time',document.getElementById('preferred_time').value);
+        formData.append('user_consent',  'on');
+
+        const files = document.getElementById('evidence_files').files;
+        for (let f of files) formData.append('evidence_files[]', f);
+
+        try {
+            const res = await fetch('/api/legal/cases/submit', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+            const data = await res.json();
+
+            const alert = document.getElementById('form-alert');
+            alert.classList.remove('d-none', 'alert-danger', 'alert-success');
+
+            if (data.success) {
+                alert.className = 'alert alert-success';
+                alert.innerHTML = `✅ Case submit হয়েছে! Case ID: <strong>${data.case_id}</strong><br>
+                    <a href="/legal-cases" style="color:#6366f1">আমার Cases দেখুন →</a>`;
+                document.getElementById('submit-btn').textContent = 'Submitted!';
+            } else {
+                alert.className = 'alert alert-danger';
+                alert.textContent = data.message || 'কিছু একটা সমস্যা হয়েছে।';
+                btn.disabled = false;
+                btn.textContent = 'Case Submit করুন';
+            }
+        } catch (err) {
+            const alert = document.getElementById('form-alert');
+            alert.className = 'alert alert-danger';
+            alert.textContent = 'Server error। আবার চেষ্টা করুন।';
+            btn.disabled = false;
+            btn.textContent = 'Case Submit করুন';
+        }
+    }
+</script>
+</body>
+</html>
