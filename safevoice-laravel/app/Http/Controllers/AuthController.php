@@ -182,6 +182,11 @@ class AuthController extends Controller
         // ✅ নতুন Sanctum token বানাও
         $token = $user->createToken('mobile_app')->plainTextToken;
 
+        // ✅ PHP session set করো — SOS blade এ SV_SERVER_USER inject করার জন্য দরকার
+        $request->session()->put('user_id',    $user->id);
+        $request->session()->put('user_name',  $user->name);
+        $request->session()->put('user_email', $user->email);
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful!',

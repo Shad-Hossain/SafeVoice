@@ -54,9 +54,18 @@ function detectSOSLocation() {
         if (locText) locText.textContent = 'Location unavailable';
         return;
     }
+
+    // Bug fix: timeout দেওয়া হলো — browser permission না দিলে বা slow হলে stuck হতো
+    const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 };
+
     navigator.geolocation.getCurrentPosition(pos => {
         currentLat = pos.coords.latitude;
         currentLng = pos.coords.longitude;
+        // Coordinates পাওয়া গেছে — আপাতত coords দেখাও, reverse geocode চলছে
+        if (locText)      locText.textContent      = `${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+        if (activatedLoc) activatedLoc.textContent = `${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+        currentLocation = `${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+
         fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${currentLat}&lon=${currentLng}`)
             .then(r => r.json())
             .then(data => {
@@ -65,13 +74,16 @@ function detectSOSLocation() {
                 if (activatedLoc) activatedLoc.textContent = currentLocation;
             })
             .catch(() => {
-                currentLocation = `${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
-                if (locText)      locText.textContent      = currentLocation;
-                if (activatedLoc) activatedLoc.textContent = currentLocation;
+                // Reverse geocode fail হলে coords ই থাকবে — already set above
             });
-    }, () => {
-        if (locText) locText.textContent = 'Location access denied';
-    });
+    }, (err) => {
+        // Bug fix: error code অনুযায়ী message দেখাও
+        let msg = 'Location access denied';
+        if (err.code === err.TIMEOUT)          msg = 'Location timeout — try again';
+        if (err.code === err.POSITION_UNAVAILABLE) msg = 'Location unavailable';
+        if (locText) locText.textContent = msg;
+        if (activatedLoc) activatedLoc.textContent = msg;
+    }, options);
 }
 
 
@@ -90,7 +102,9 @@ function startResponderScan() {
         const params     = new URLSearchParams({ lat: currentLat, lng: currentLng });
         if (uid) params.append('user_id', uid);
 
-        fetch('/api/sos/nearby-count?' + params.toString(), { credentials: 'include' })
+        const ncToken = localStorage.getItem('sv_token') || '';
+        const ncHeaders = ncToken ? { 'Authorization': 'Bearer ' + ncToken } : {};
+        fetch('/api/sos/nearby-count?' + params.toString(), { credentials: 'include', headers: ncHeaders })
             .then(r => r.json())
             .then(data => {
                 if (nearbyCount) nearbyCount.textContent = data.count || 0;
@@ -189,8 +203,14 @@ async function proceedAnonymousSos() {
 
 async function _doActivateSOS(userId, contactPhone, contactName) {
     sosActive = true;
-    const btn  = document.getElementById('sosBtn');
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const btn   = document.getElementById('sosBtn');
+    const csrf  = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const token = localStorage.getItem('sv_token') || '';
+    const authHeaders = {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrf,
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+    };
     if (btn) {
         btn.classList.remove('holding');
         btn.classList.add('sending');
@@ -203,7 +223,7 @@ async function _doActivateSOS(userId, contactPhone, contactName) {
         // STEP 1: Create SOS
         const createRes  = await fetch('/api/sos/create', {
             method: 'POST', credentials: 'include',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            headers: authHeaders,
             body: JSON.stringify({
                 latitude:      currentLat,
                 longitude:     currentLng,
@@ -224,7 +244,7 @@ async function _doActivateSOS(userId, contactPhone, contactName) {
         // STEP 2: Notify nearby users
         const notifRes  = await fetch('/api/sos/notify', {
             method: 'POST', credentials: 'include',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            headers: authHeaders,
             body: JSON.stringify({ sos_id: currentSOSId, latitude: currentLat, longitude: currentLng, location: currentLocation, user_id: userId }),
         });
         const notifData     = await notifRes.json();
@@ -396,10 +416,12 @@ async function submitEvidence() {
 
     if (fileInput && fileInput.files[0]) formData.append('evidence[0]', fileInput.files[0]);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const token = localStorage.getItem('sv_token') || '';
     if (csrf) formData.append('_token', csrf);
     if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...'; }
     try {
-        const res  = await fetch('/api/upload_sos_evidence', { method: 'POST', credentials: 'include', body: formData });
+        const evHeaders = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const res  = await fetch('/api/upload_sos_evidence', { method: 'POST', credentials: 'include', headers: evHeaders, body: formData });
         const data = await res.json();
         if (data.success) {
             showModalMsg('Evidence submitted! Responders can now see your full details.', 'success');
@@ -437,7 +459,9 @@ async function checkIncomingAlerts() {
         const svUser     = serverUser || JSON.parse(localStorage.getItem('sv_user') || '{}');
         const uid        = svUser.id || 0;
         const params = uid ? '?user_id=' + uid : '';
-        const res    = await fetch('/api/sos/my-notifications' + params, { credentials: 'include' });
+        const notifToken = localStorage.getItem('sv_token') || '';
+        const notifHeaders = notifToken ? { 'Authorization': 'Bearer ' + notifToken } : {};
+        const res    = await fetch('/api/sos/my-notifications' + params, { credentials: 'include', headers: notifHeaders });
         const data   = await res.json();
         if (data.success && data.notifications && data.notifications.length > 0) {
             const newest = data.notifications[0];
@@ -476,9 +500,14 @@ function viewSOSDetails() {
 
     // 1. Record respond in DB
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const respondToken = localStorage.getItem('sv_token') || '';
     fetch('/api/sos/respond', {
         method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrf,
+            ...(respondToken ? { 'Authorization': 'Bearer ' + respondToken } : {}),
+        },
         body:    JSON.stringify({ sos_id: parseInt(sosId) }),
     });
 
@@ -632,14 +661,17 @@ async function submitResponderEvidence(sosId) {
     formData.append('evidence', fileInput.files[0]);
 
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const respToken = localStorage.getItem('sv_token') || '';
     if (csrf) formData.append('_token', csrf);
 
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...'; }
 
     try {
+        const respEvidHeaders = respToken ? { 'Authorization': 'Bearer ' + respToken } : {};
         const res  = await fetch('/api/sos/upload-evidence', {
             method: 'POST',
             credentials: 'include',
+            headers: respEvidHeaders,
             body: formData,
         });
         const data = await res.json();
@@ -720,10 +752,15 @@ function cancelSOS() {
     if (currentSOSId) {
         const csrf   = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
         const svUser = JSON.parse(localStorage.getItem('sv_user') || '{}');
+        const cancelToken = localStorage.getItem('sv_token') || '';
         fetch('/api/sos/cancel', {
             method:      'POST',
             credentials: 'include',
-            headers:     { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            headers:     {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+                ...(cancelToken ? { 'Authorization': 'Bearer ' + cancelToken } : {}),
+            },
             body:        JSON.stringify({ sos_id: currentSOSId, user_id: svUser.id || svUser.user_id }),
         }).catch(() => {});
     }
