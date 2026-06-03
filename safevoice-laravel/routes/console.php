@@ -13,3 +13,8 @@ Schedule::command('safevoice:expire-pi-assignments')->hourly();
 // → 7-day expired: send PI notification to user
 // → 2-month suspended: auto-reactivate account
 Schedule::command('safevoice:process-evidence-deadlines')->dailyAt('00:00');
+
+
+use App\Console\Commands\ExpireLegalCaseOffers;
+
+Schedule::command('legal:expire-offers')->hourly();
