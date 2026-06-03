@@ -444,3 +444,247 @@
         font-size: 13px !important;
     }
 }
+
+
+
+
+
+
+
+
+/* ================================================================
+   MOBILE COMPREHENSIVE — Missing fixes
+================================================================ */
+
+/* ── LEGAL PAGE MOBILE ─────────────────────────────────────── */
+@media (max-width: 768px) {
+    .legal-info-cards {
+        grid-template-columns: 1fr !important;
+        gap: 10px;
+    }
+
+    .legal-form-card {
+        padding: 20px 16px;
+        border-radius: 14px;
+    }
+
+    .budget-options {
+        grid-template-columns: 1fr !important;
+        gap: 8px;
+    }
+
+    .budget-btn {
+        padding: 13px 16px;
+        font-size: 14px;
+    }
+
+    .btn-submit-legal {
+        padding: 14px;
+        font-size: 15px;
+    }
+
+    .success-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .btn-go-dash,
+    .btn-close-modal {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .success-body {
+        padding: 28px 20px;
+    }
+
+    .success-body h2 { font-size: 20px; }
+    .success-icon i  { font-size: 52px; }
+    .request-id-box h3 { font-size: 22px; }
+}
+
+/* ── TRACK PAGE MOBILE ─────────────────────────────────────── */
+@media (max-width: 768px) {
+    .result-info-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px;
+    }
+
+    .progress-tracker {
+        padding: 20px 16px;
+    }
+
+    .tracker-step {
+        padding-left: 44px;
+    }
+}
+
+/* ── LEADERBOARD MOBILE ────────────────────────────────────── */
+@media (max-width: 768px) {
+    .lb-podium {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .podium-card {
+        width: 100% !important;
+        max-width: 260px;
+    }
+
+    .rewards-section {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ── ADMIN COMPLAINTS MOBILE ───────────────────────────────── */
+@media (max-width: 768px) {
+    .ac-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .ac-header h1 { font-size: 20px; }
+
+    .view-modal {
+        margin: 10px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 14px;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ── NAVBAR THEME TOGGLE MOBILE ────────────────────────────── */
+@media (max-width: 768px) {
+    .theme-toggle {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .theme-toggle span {
+        display: none; /* শুধু icon দেখাবে */
+    }
+
+    .nav-container {
+        gap: 10px;
+    }
+}
+
+/* ── DASHBOARD MOBILE EXTRA ────────────────────────────────── */
+@media (max-width: 480px) {
+    .welcome-bar h1 { font-size: 18px !important; }
+
+    .summary-card {
+        padding: 12px 10px;
+    }
+
+    .card-info h3 { font-size: 20px; }
+    .card-info p  { font-size: 11px; }
+
+    .section-title { font-size: 15px; }
+
+    .complaints-table th,
+    .complaints-table td {
+        padding: 9px 10px !important;
+        font-size: 12px !important;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .track-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+}
+
+/* ── AUTH PAGE MOBILE ──────────────────────────────────────── */
+@media (max-width: 480px) {
+    .auth-card { padding: 20px 14px; }
+    .auth-header h2 { font-size: 18px; }
+    .auth-header p  { font-size: 13px; }
+
+    .auth-card .form-input,
+    .auth-card select,
+    .auth-card input {
+        font-size: 16px; /* iOS zoom prevent */
+        padding: 12px 14px;
+    }
+}
+
+/* ── SOS PAGE MOBILE EXTRA ─────────────────────────────────── */
+@media (max-width: 480px) {
+    .sos-panel { padding: 20px 14px; }
+    .responders-panel { padding: 18px 14px; }
+
+    .sos-heading h1 { font-size: 22px; }
+    .sos-heading p  { font-size: 13px; }
+
+    .responder-card {
+        padding: 14px 12px;
+        border-radius: 10px;
+    }
+}
+
+/* ── COMPLAINT FORM MOBILE EXTRA ───────────────────────────── */
+@media (max-width: 480px) {
+    .complaint-header h1 { font-size: 17px; }
+    .complaint-header p  { font-size: 13px; }
+
+    .step-label { display: none; } /* step label লুকাবে, শুধু circle থাকবে */
+
+    .anonymous-toggle {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .review-box { padding: 16px; }
+    .review-item { padding: 10px 0; }
+}
+
+/* ── GENERAL MOBILE TOUCH IMPROVEMENTS ─────────────────────── */
+@media (max-width: 768px) {
+    /* সব button touch friendly */
+    button, .btn-primary, .btn-sos,
+    .btn-login, .btn-register,
+    .btn-submit, .btn-back,
+    .btn-submit-legal, .tab-btn {
+        min-height: 44px;
+    }
+
+    /* Input font size — iOS zoom prevent */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+
+    /* Scroll smooth */
+    * { -webkit-overflow-scrolling: touch; }
+
+    /* Modal full screen on mobile */
+    .modal-overlay { padding: 12px; align-items: flex-end; }
+    .modal-box {
+        border-radius: 18px 18px 0 0;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+}
+
+/* ── 360px EXTRA ───────────────────────────────────────────── */
+@media (max-width: 360px) {
+    .legal-form-card { padding: 16px 12px; }
+    .legal-header h1 { font-size: 22px; }
+    .info-card { padding: 14px; }
+
+    .auth-card { padding: 16px 12px; }
+
+    .btn-submit-legal { font-size: 14px; padding: 13px; }
+}
