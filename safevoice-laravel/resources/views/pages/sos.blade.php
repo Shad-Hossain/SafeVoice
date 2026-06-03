@@ -375,12 +375,13 @@ function showModalMsg(msg, type) {
             // Server session আছে — localStorage sync করে রাখি
             localStorage.setItem('sv_user', JSON.stringify(serverUser));
             setTimeout(() => initFCM(), 2000);
-        } else if (!serverUser) {
-            // Server session নেই — localStorage ও clear করি যাতে stale data না থাকে
-            localStorage.removeItem('sv_user');
         } else if (localUser) {
+            // Server session নেই কিন্তু localStorage এ token আছে — সেটাই use করব
+            // Sanctum token-based login এ PHP session সবসময় থাকে না
             setTimeout(() => initFCM(), 2000);
         }
+        // Bug fix: আগে !serverUser হলে localStorage.removeItem('sv_user') ছিল।
+        // এটা login এর পরে SOS page এ এলে sv_user মুছে দিত, userId=0 হত।
     });
 </script>
 @endsection
