@@ -196,3 +196,49 @@ Route::post('/evidence-request/check-expired',  [EvidenceRequestController::clas
 Route::get('/evidence-request/expired-list',    [EvidenceRequestController::class, 'expiredList']);
 Route::post('/evidence-request/reject',         [EvidenceRequestController::class, 'reject']);
 Route::get('/evidence-request/expired',         [EvidenceRequestController::class, 'getExpired']);
+
+
+
+// ═══════════════════════════════════════════════
+// LEGAL HELP MODULE
+// ═══════════════════════════════════════════════
+
+use App\Http\Controllers\LawyerAuthController;
+use App\Http\Controllers\LegalCaseController;
+use App\Http\Controllers\LawyerCaseController;
+
+// ─── Lawyer Auth ────────────────────────────────
+Route::prefix('lawyer')->group(function () {
+    Route::post('/register',  [LawyerAuthController::class, 'register']);
+    Route::post('/login',     [LawyerAuthController::class, 'login']);
+    Route::post('/logout',    [LawyerAuthController::class, 'logout']);
+    Route::get('/profile',    [LawyerAuthController::class, 'profile']);
+
+    // Lawyer Dashboard
+    Route::get('/cases/available',          [LawyerCaseController::class, 'availableCases']);
+    Route::get('/cases/my',                 [LawyerCaseController::class, 'myCases']);
+    Route::post('/cases/{caseId}/offer',    [LawyerCaseController::class, 'makeOffer']);
+    Route::post('/cases/{caseId}/complete', [LawyerCaseController::class, 'markComplete']);
+    Route::post('/cases/{caseId}/message',  [LawyerCaseController::class, 'sendMessage']);
+    Route::get('/notifications',            [LawyerCaseController::class, 'myNotifications']);
+});
+
+// ─── User — Legal Cases ──────────────────────────
+Route::prefix('legal')->group(function () {
+    Route::post('/cases/submit',                    [LegalCaseController::class, 'submit']);
+    Route::get('/cases/my',                         [LegalCaseController::class, 'myCases']);
+    Route::post('/cases/offers/{offerId}/respond',  [LegalCaseController::class, 'respondToOffer']);
+    Route::post('/cases/{caseId}/pay-30',           [LegalCaseController::class, 'pay30Percent']);
+    Route::post('/cases/{caseId}/pay-70',           [LegalCaseController::class, 'pay70Percent']);
+    Route::post('/cases/{caseId}/dispute',          [LegalCaseController::class, 'disputeCase']);
+    Route::post('/cases/{caseId}/message',          [LegalCaseController::class, 'sendMessage']);
+    Route::get('/cases/{caseId}/messages',          [LegalCaseController::class, 'getMessages']);
+    Route::get('/notifications',                    [LegalCaseController::class, 'myNotifications']);
+});
+
+// ─── Admin — Legal Section ───────────────────────
+Route::prefix('admin/legal')->group(function () {
+    Route::get('/cases',                        [LegalCaseController::class, 'adminAllCases']??null);
+    Route::get('/lawyers/pending',              [LawyerAuthController::class, 'pendingLawyers']);
+    Route::post('/lawyers/{lawyerId}/verify',   [LawyerAuthController::class, 'verifyLawyer']);
+});
