@@ -339,3 +339,79 @@ body.light-mode .leaderboard-item * {
         color 0.2s ease,
         border-color 0.2s ease;
 }
+
+
+
+/* ── LIGHT MODE FONT FIX ── */
+body.light-mode {
+    color: #0f172a !important;
+}
+
+body.light-mode p,
+body.light-mode span,
+body.light-mode label,
+body.light-mode h1,
+body.light-mode h2,
+body.light-mode h3,
+body.light-mode h4,
+body.light-mode h5,
+body.light-mode h6,
+body.light-mode li,
+body.light-mode a,
+body.light-mode div {
+    color: var(--text-primary) !important;
+}
+
+body.light-mode .form-select,
+body.light-mode .form-input,
+body.light-mode .form-textarea,
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea {
+    color: #0f172a !important;
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.light-mode input::placeholder,
+body.light-mode textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+body.light-mode .optional-label {
+    color: #64748b !important;
+}
+
+body.light-mode .info-card p,
+body.light-mode .legal-header p,
+body.light-mode .upload-box span {
+    color: #475569 !important;
+}
+
+body.light-mode .budget-btn {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+body.light-mode .budget-btn.selected {
+    background: #eff6ff !important;
+    border-color: #2563eb !important;
+    color: #1d4ed8 !important;
+}
+
+/* ── DATE PICKER CALENDAR ICON FIX ── */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2);
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+body.light-mode input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+body.light-mode input[type="date"]::-webkit-calendar-picker-indicator,
+body.light-mode input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0) brightness(0.3);
+    opacity: 0.6;
+}
