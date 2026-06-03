@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lawyer Dashboard — SafeVoice</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { background: #1e293b; min-height: 100vh; padding: 24px 16px; border-right: 1px solid #334155; }
+        .sidebar .brand { color: #6366f1; font-size: 22px; font-weight: 700; margin-bottom: 32px; }
+        .nav-item { padding: 10px 14px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; transition: background 0.2s; }
+        .nav-item:hover, .nav-item.active { background: #334155; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+        .badge-status { padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+        .status-pending  { background: #1e3a2f; color: #6ee7b7; }
+        .status-booked   { background: #1e3050; color: #93c5fd; }
+        .status-progress { background: #3b1f00; color: #fcd34d; }
+        .status-waiting  { background: #3b1500; color: #fb923c; }
+        .status-resolved { background: #14532d; color: #86efac; }
+        .case-card { border-left: 3px solid #6366f1; transition: transform 0.2s; }
+        .case-card:hover { transform: translateY(-2px); }
+        .notif-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block; }
+        .btn-accept  { background: #059669; border: none; border-radius: 6px; color: white; }
+        .btn-reject  { background: #dc2626; border: none; border-radius: 6px; color: white; }
+        .btn-counter { background: #d97706; border: none; border-radius: 6px; color: white; }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+
+    <!-- Sidebar -->
+    <div class="sidebar" style="width: 240px; flex-shrink:0">
+        <div class="brand">⚖️ SafeVoice</div>
+        <div class="text-secondary mb-1" style="font-size:12px">LAWYER PORTAL</div>
+        <div id="lawyer-name" class="fw-semibold mb-4" style="color:#e2e8f0"></div>
+
+        <div class="nav-item active" onclick="showTab('available')">📋 Available Cases</div>
+        <div class="nav-item" onclick="showTab('my-cases')">💼 My Cases</div>
+        <div class="nav-item" onclick="showTab('notifications')">
+            🔔 Notifications <span id="notif-count" class="notif-dot ms-1" style="display:none"></span>
+        </div>
+        <div class="nav-item mt-5 text-danger" onclick="doLogout()">🚪 Logout</div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-grow-1 p-4">
+
+        <!-- Available Cases -->
+        <div id="tab-available">
+            <h5 class="fw-bold mb-4">📋 Available Cases</h5>
+            <div id="available-list">
+                <div class="text-secondary">Loading...</div>
+            </div>
+        </div>
+
+        <!-- My Cases -->
+        <div id="tab-my-cases" style="display:none">
+            <h5 class="fw-bold mb-4">💼 My Cases</h5>
+            <div id="my-cases-list">
+                <div class="text-secondary">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div id="tab-notifications" style="display:none">
+            <h5 class="fw-bold mb-4">🔔 Notifications</h5>
+            <div id="notif-list">
+                <div class="text-secondary">Loading...</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Offer Modal -->
+<div class="modal fade" id="offerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background:#1e293b; border:1px solid #334155; color:#e2e8f0">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">Offer পাঠান</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="offer-case-id">
+                <div class="mb-3">
+                    <label class="form-label">আপনার decision</label>
+                    <select class="form-select" id="offer-type"
+                        style="background:#0f172a;border:1px solid #334155;color:#e2e8f0"
+                        onchange="toggleCounter()">
+                        <option value="accept">✅ Accept (User এর budget এ রাজি)</option>
+                        <option value="counter">💬 Counter Offer (আলাদা price দিন)</option>
+                        <option value="reject">❌ Reject</option>
+                    </select>
+                </div>
+                <div id="counter-input" class="mb-3" style="display:none">
+                    <label class="form-label">আপনার price (৳)</label>
+                    <input type="number" class="form-control" id="counter-price"
+                        style="background:#0f172a;border:1px solid #334155;color:#e2e8f0">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Message (optional)</label>
+                    <textarea class="form-control" id="offer-message" rows="2"
+                        style="background:#0f172a;border:1px solid #334155;color:#e2e8f0"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" onclick="submitOffer()">পাঠান</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const lawyer = JSON.parse(localStorage.getItem('lawyer') || '{}');
+    if (!lawyer.id) window.location.href = '/lawyer/login';
+    document.getElementById('lawyer-name').textContent = lawyer.name || '';
+
+    function showTab(tab) {
+        ['available','my-cases','notifications'].forEach(t => {
+            document.getElementById('tab-' + t).style.display = 'none';
+        });
+        document.getElementById('tab-' + tab).style.display = 'block';
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        event.target.classList.add('active');
+
+        if (tab === 'available')      loadAvailableCases();
+        if (tab === 'my-cases')       loadMyCases();
+        if (tab === 'notifications')  loadNotifications();
+    }
+
+    async function loadAvailableCases() {
+        const res = await fetch('/api/lawyer/cases/available', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        const el = document.getElementById('available-list');
+
+        if (!data.cases || data.cases.length === 0) {
+            el.innerHTML = '<div class="text-secondary">এখন কোনো case নেই।</div>';
+            return;
+        }
+
+        el.innerHTML = data.cases.map(c => `
+            <div class="card case-card p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="badge-status status-pending">${c.issue_type}</span>
+                        <span class="ms-2 text-secondary" style="font-size:12px">${c.case_id}</span>
+                    </div>
+                    <strong style="color:#6ee7b7">৳${c.user_budget}</strong>
+                </div>
+                <p class="mt-2 mb-2" style="font-size:14px;color:#94a3b8">${c.description}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-secondary">⏳ Expires: ${new Date(c.expires_at).toLocaleString('bn-BD')}</small>
+                    <button class="btn btn-accept btn-sm px-3" onclick="openOfferModal(${c.id})">Offer করুন</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function loadMyCases() {
+        const res = await fetch('/api/lawyer/cases/my', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        const el = document.getElementById('my-cases-list');
+
+        if (!data.cases || data.cases.length === 0) {
+            el.innerHTML = '<div class="text-secondary">কোনো case নেই।</div>';
+            return;
+        }
+
+        el.innerHTML = data.cases.map(c => `
+            <div class="card case-card p-3 mb-3">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>${c.case_id}</strong>
+                        <span class="ms-2 badge-status status-${c.status}">${c.status_label}</span>
+                    </div>
+                    <strong style="color:#6ee7b7">৳${c.agreed_price}</strong>
+                </div>
+                <div class="mt-2" style="font-size:13px;color:#94a3b8">
+                    <span>👤 ${c.user_name}</span>
+                    <span class="ms-3">📞 ${c.user_phone}</span>
+                </div>
+                ${c.status === 'in_progress' ? `
+                    <button class="btn btn-sm mt-2" style="background:#059669;color:white;border-radius:6px"
+                        onclick="markComplete(${c.id})">✅ Case Complete Mark করুন</button>` : ''}
+                ${c.payment_deadline ? `
+                    <div class="mt-1"><small class="text-warning">💰 Payment Deadline: ${new Date(c.payment_deadline).toLocaleDateString('bn-BD')}</small></div>` : ''}
+            </div>
+        `).join('');
+    }
+
+    async function loadNotifications() {
+        const res = await fetch('/api/lawyer/notifications', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        const el = document.getElementById('notif-list');
+
+        if (!data.notifications || data.notifications.length === 0) {
+            el.innerHTML = '<div class="text-secondary">কোনো notification নেই।</div>';
+            return;
+        }
+
+        el.innerHTML = data.notifications.map(n => `
+            <div class="card p-3 mb-2" style="border-left: 3px solid ${n.is_read ? '#334155' : '#6366f1'}">
+                <div class="fw-semibold" style="font-size:14px">${n.title}</div>
+                <div class="text-secondary" style="font-size:13px">${n.message}</div>
+                <small class="text-secondary">${new Date(n.created_at).toLocaleString('bn-BD')}</small>
+            </div>
+        `).join('');
+    }
+
+    function openOfferModal(caseId) {
+        document.getElementById('offer-case-id').value = caseId;
+        new bootstrap.Modal(document.getElementById('offerModal')).show();
+    }
+
+    function toggleCounter() {
+        const type = document.getElementById('offer-type').value;
+        document.getElementById('counter-input').style.display = type === 'counter' ? 'block' : 'none';
+    }
+
+    async function submitOffer() {
+        const caseId = document.getElementById('offer-case-id').value;
+        const type   = document.getElementById('offer-type').value;
+        const price  = document.getElementById('counter-price').value;
+        const msg    = document.getElementById('offer-message').value;
+
+        const res = await fetch(/api/lawyer/cases/${caseId}/offer, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ type, counter_price: price, message: msg })
+        });
+        const data = await res.json();
+        bootstrap.Modal.getInstance(document.getElementById('offerModal')).hide();
+        alert(data.message);
+        if (data.success) loadAvailableCases();
+    }
+
+    async function markComplete(caseId) {
+        if (!confirm('Case complete mark করবেন? User এর ১০ দিনের payment timer শুরু হবে।')) return;
+        const res = await fetch(/api/lawyer/cases/${caseId}/complete, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) loadMyCases();
+    }
+
+    async function doLogout() {
+        await fetch('/api/lawyer/logout', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        localStorage.removeItem('lawyer');
+        window.location.href = '/lawyer/login';
+    }
+
+    // Initial load
+    loadAvailableCases();
+</script>
+</body>
+</html>
