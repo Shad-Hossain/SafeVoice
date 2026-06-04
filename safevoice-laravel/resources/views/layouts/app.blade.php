@@ -13,21 +13,18 @@
 <body>
 
 <nav class="navbar">
-    <div class="hamburger" id="hamburger">
-        <span></span><span></span><span></span>
-    </div>
     <div class="nav-overlay" id="navOverlay"></div>
     <div class="nav-container">
-        <a href="{{ route('home') }}" class="logo">
+        <a href="{{ route('home') }}" class="logo" id="sv-logo-link">
             <i class="fas fa-shield-alt"></i>
             <span>SafeVoice</span>
         </a>
-        <ul class="nav-links">
+        <ul class="nav-links" id="sv-nav-links">
             <li><a href="{{ route('home') }}">Home</a></li>
             <li><a href="{{ route('leaderboard') }}">Leaderboard</a></li>
-            <li><a href="{{ route('login') }}" class="btn-login">Login</a></li>
-            <li><a href="{{ route('admin.login') }}" class="btn-login">Admin</a></li>
-            <li><a href="{{ route('register') }}" class="btn-register">Register</a></li>
+            <li class="sv-guest-only"><a href="{{ route('login') }}" class="btn-login">Login</a></li>
+            <li class="sv-guest-only"><a href="{{ route('admin.login') }}" class="btn-login">Admin</a></li>
+            <li class="sv-guest-only"><a href="{{ route('register') }}" class="btn-register">Register</a></li>
         </ul>
     </div>
 </nav>
@@ -61,6 +58,13 @@
 </footer>
 
 <script src="{{ asset('js/main.js') }}"></script>
+<script>
+// body তে current page class দাও (CSS targeting এর জন্য)
+(function(){
+    const path = window.location.pathname;
+    if (path.startsWith('/dashboard')) document.body.classList.add('page-dashboard');
+})();
+</script>
 @yield('scripts')
 </body>
 </html>

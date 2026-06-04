@@ -1,5 +1,3 @@
-
-
 :root {
     --bg-primary:     #0a0f1e;
     --bg-secondary:   #0d1526;
@@ -338,4 +336,326 @@ body.light-mode .leaderboard-item * {
         background-color 0.2s ease,
         color 0.2s ease,
         border-color 0.2s ease;
+}
+
+/* ================================================================
+   LIGHT MODE — Comprehensive Override
+   সব hardcoded dark colors কে light mode এ replace করে
+================================================================ */
+
+body.light-mode {
+    background-color: #f0f4f8 !important;
+    color: #0f172a !important;
+}
+
+/* ── Navbar ── */
+body.light-mode .navbar {
+    background: #ffffff !important;
+    border-bottom-color: #e2e8f0 !important;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.07) !important;
+}
+body.light-mode .logo { color: #2563eb !important; }
+body.light-mode .logo i { color: #2563eb !important; }
+body.light-mode .nav-links a { color: #475569 !important; }
+body.light-mode .nav-links a:hover { color: #0f172a !important; }
+body.light-mode .hamburger span { background: #2563eb !important; }
+body.light-mode .btn-login {
+    border-color: #2563eb !important;
+    color: #2563eb !important;
+}
+body.light-mode .btn-register {
+    background: #2563eb !important;
+    color: #fff !important;
+}
+
+/* ── Main content areas ── */
+body.light-mode .main-content { background: #f0f4f8 !important; }
+body.light-mode .dashboard-layout { background: #f0f4f8 !important; }
+
+/* ── Dashboard sidebar ── */
+body.light-mode .sidebar {
+    background: #ffffff !important;
+    border-right-color: #e2e8f0 !important;
+}
+body.light-mode .sidebar-menu a { color: #475569 !important; }
+body.light-mode .sidebar-menu li.active a,
+body.light-mode .sidebar-menu a:hover {
+    color: #2563eb !important;
+    background: #eff6ff !important;
+}
+
+/* ── Summary cards ── */
+body.light-mode .summary-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+body.light-mode .card-info h3 { color: #0f172a !important; }
+body.light-mode .card-info p  { color: #64748b !important; }
+
+/* ── Quick action cards ── */
+body.light-mode .action-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+body.light-mode .action-card:hover {
+    background: #eff6ff !important;
+    border-color: #2563eb !important;
+}
+body.light-mode .action-card i  { color: #2563eb !important; }
+body.light-mode .action-card span { color: #0f172a !important; }
+
+/* ── Welcome bar ── */
+body.light-mode .welcome-bar h1 { color: #0f172a !important; }
+body.light-mode .welcome-bar p  { color: #64748b !important; }
+
+/* ── Notification bell ── */
+body.light-mode .notif-bell-btn {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+body.light-mode .notif-bell-btn:hover {
+    background: #eff6ff !important;
+    border-color: #2563eb !important;
+    color: #2563eb !important;
+}
+body.light-mode .notif-bell-btn i { color: #475569 !important; }
+body.light-mode .notif-panel {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
+}
+body.light-mode .notif-panel-header {
+    background: #f8fafc !important;
+    border-bottom-color: #e2e8f0 !important;
+}
+body.light-mode .notif-panel-title { color: #0f172a !important; }
+body.light-mode .notif-mark-all-btn { color: #2563eb !important; }
+body.light-mode .notif-item {
+    border-bottom-color: #f1f5f9 !important;
+}
+body.light-mode .notif-item:hover { background: #f8fafc !important; }
+body.light-mode .notif-text { color: #0f172a !important; }
+body.light-mode .notif-time { color: #94a3b8 !important; }
+body.light-mode .notif-panel-body::-webkit-scrollbar-thumb { background: #cbd5e1 !important; }
+
+/* ── Complaints table ── */
+body.light-mode .complaints-table { background: #ffffff !important; border-color: #e2e8f0 !important; }
+body.light-mode .complaints-table th { background: #f8fafc !important; color: #64748b !important; border-color: #e2e8f0 !important; }
+body.light-mode .complaints-table td { color: #0f172a !important; border-color: #f1f5f9 !important; background: #ffffff !important; }
+body.light-mode .complaints-table tr:hover td { background: #f0f9ff !important; }
+body.light-mode .complaints-table a { color: #2563eb !important; }
+
+/* ── Sections heading ── */
+body.light-mode .section-title { color: #0f172a !important; }
+
+/* ── Hero (home page) ── */
+body.light-mode .hero {
+    background: linear-gradient(135deg, #eff6ff 0%, #f0f4f8 100%) !important;
+}
+body.light-mode .hero-content h1 { color: #0f172a !important; }
+body.light-mode .hero-content h1 span { color: #2563eb !important; }
+body.light-mode .hero-content p { color: #475569 !important; }
+body.light-mode .hero-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+}
+body.light-mode .hero-card i { color: #2563eb !important; }
+body.light-mode .hero-card p { color: #475569 !important; }
+
+/* ── Stats section ── */
+body.light-mode .stats { background: #ffffff !important; }
+body.light-mode .stat-card h2 { color: #2563eb !important; }
+body.light-mode .stat-card p  { color: #64748b !important; }
+
+/* ── How it works ── */
+body.light-mode .how-it-works { background: #f8fafc !important; }
+body.light-mode .step {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+body.light-mode .step-icon { background: #eff6ff !important; }
+body.light-mode .step-icon i { color: #2563eb !important; }
+body.light-mode .step h3 { color: #0f172a !important; }
+body.light-mode .step p  { color: #64748b !important; }
+body.light-mode .step-arrow i { color: #94a3b8 !important; }
+
+/* ── Responders ── */
+body.light-mode .responders { background: #f0f4f8 !important; }
+body.light-mode .responder-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+body.light-mode .responder-card h3 { color: #0f172a !important; }
+body.light-mode .responder-card p  { color: #64748b !important; }
+body.light-mode .avatar, body.light-mode .user-avatar {
+    background: #eff6ff !important;
+}
+body.light-mode .avatar i { color: #2563eb !important; }
+body.light-mode .badge { background: #eff6ff !important; color: #2563eb !important; }
+
+/* ── Auth pages ── */
+body.light-mode .auth-section { background: #f0f4f8 !important; }
+body.light-mode .auth-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
+}
+body.light-mode .auth-header h2 { color: #0f172a !important; }
+body.light-mode .auth-header p  { color: #64748b !important; }
+body.light-mode .auth-header i  { color: #2563eb !important; }
+body.light-mode .form-label { color: #475569 !important; }
+body.light-mode .form-divider span { color: #94a3b8 !important; background: #ffffff !important; }
+body.light-mode .form-divider::before { background: #e2e8f0 !important; }
+body.light-mode .auth-footer { color: #64748b !important; }
+body.light-mode .auth-footer a { color: #2563eb !important; }
+
+/* ── SOS page ── */
+body.light-mode .sos-layout { background: #f0f4f8 !important; }
+body.light-mode .sos-panel { background: #ffffff !important; border-color: #e2e8f0 !important; }
+body.light-mode .responders-panel { background: #f8fafc !important; border-color: #e2e8f0 !important; }
+body.light-mode .sos-heading h1 { color: #0f172a !important; }
+body.light-mode .sos-heading p  { color: #64748b !important; }
+body.light-mode .sos-status { color: #64748b !important; }
+body.light-mode .sos-location-bar {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+body.light-mode .responders-title { color: #0f172a !important; }
+body.light-mode .scan-status { color: #64748b !important; }
+body.light-mode .nearby-count { color: #2563eb !important; }
+body.light-mode .quick-action-btn {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+body.light-mode .quick-action-btn:hover {
+    background: #eff6ff !important;
+    border-color: #2563eb !important;
+}
+
+/* ── Legal help ── */
+body.light-mode .legal-layout  { background: #f0f4f8 !important; }
+body.light-mode .legal-header h1 { color: #0f172a !important; }
+body.light-mode .legal-header p  { color: #64748b !important; }
+body.light-mode .info-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+body.light-mode .info-card h4 { color: #0f172a !important; }
+body.light-mode .info-card p  { color: #64748b !important; }
+body.light-mode .info-card i  { color: #2563eb !important; }
+body.light-mode .legal-form-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
+}
+body.light-mode .budget-btn {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+body.light-mode .budget-btn:hover,
+body.light-mode .budget-btn.selected {
+    background: #eff6ff !important;
+    border-color: #2563eb !important;
+    color: #2563eb !important;
+}
+body.light-mode .upload-box {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+body.light-mode .upload-box p { color: #475569 !important; }
+body.light-mode .upload-box span { color: #94a3b8 !important; }
+
+/* ── Track page ── */
+body.light-mode .track-layout { background: #f0f4f8 !important; }
+body.light-mode .search-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
+}
+body.light-mode .search-card h1 { color: #0f172a !important; }
+body.light-mode .search-card p  { color: #64748b !important; }
+body.light-mode .tab-btn {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+body.light-mode .tab-btn.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+}
+
+/* ── Leaderboard ── */
+body.light-mode .lb-container { background: #f0f4f8 !important; }
+body.light-mode .my-rank-bar {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+body.light-mode .lb-table-section {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+body.light-mode .rewards-section {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+body.light-mode .reward-card {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* ── Footer ── */
+body.light-mode .footer {
+    background: #ffffff !important;
+    border-top-color: #e2e8f0 !important;
+}
+body.light-mode .footer-brand span { color: #2563eb !important; }
+body.light-mode .footer-brand p  { color: #64748b !important; }
+body.light-mode .footer-links h4, body.light-mode .footer-contact h4 { color: #0f172a !important; }
+body.light-mode .footer-links a, body.light-mode .footer-contact p { color: #64748b !important; }
+body.light-mode .footer-bottom p { color: #94a3b8 !important; }
+body.light-mode .footer-container { border-bottom-color: #e2e8f0 !important; }
+
+/* ── Modals ── */
+body.light-mode .modal-box {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
+}
+body.light-mode .modal-box h2 { color: #0f172a !important; }
+body.light-mode .modal-box p  { color: #475569 !important; }
+body.light-mode .request-id-box {
+    background: #f0f9ff !important;
+    border-color: #bfdbfe !important;
+}
+body.light-mode .request-id-box span { color: #64748b !important; }
+body.light-mode .request-id-box h3  { color: #2563eb !important; }
+
+/* ── Sidebar mobile toggle ── */
+body.light-mode .sidebar-toggle-btn {
+    background: #ffffff !important;
+    border-bottom-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+body.light-mode .sidebar-toggle-btn:hover { background: #f1f5f9 !important; }
+body.light-mode .sidebar-toggle-btn i { color: #2563eb !important; }
+
+/* ── Nav mobile overlay ── */
+body.light-mode .nav-links {
+    background: #ffffff !important;
+    border-left-color: #e2e8f0 !important;
+}
+body.light-mode .nav-links a {
+    color: #475569 !important;
+    border-bottom-color: #f1f5f9 !important;
 }
