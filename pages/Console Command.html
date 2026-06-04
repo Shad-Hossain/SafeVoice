@@ -1,0 +1,38 @@
+
+
+ <?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use App\Models\LegalCase;
+use App\Models\LegalNotification;
+
+class ExpireLegalCaseOffers extends Command
+{
+    protected $signature   = 'legal:expire-offers';
+    protected $description = '৪৮ ঘন্টায় কোনো lawyer accept না করলে case expire করো';
+
+    public function handle()
+    {
+        $expired = LegalCase::where('status', 'pending')
+                            ->where('offer_expires_at', '<', now())
+                            ->get();
+
+        foreach ($expired as $case) {
+            $case->update(['status' => 'expired']);
+
+            // User কে notification
+            LegalNotification::notify(
+                'user', $case->user_id, $case->id,
+                'Case Expired',
+                "দুঃখিত, ৪৮ ঘন্টায় কোনো lawyer পাওয়া যায়নি। Case ID: {$case->case_id}। আবার submit করুন।",
+                'case_expired'
+            );
+
+            $this->info("Expired: {$case->case_id}");
+        }
+
+        $this->info("মোট {$expired->count()}টা case expire হয়েছে।");
+    }
+}

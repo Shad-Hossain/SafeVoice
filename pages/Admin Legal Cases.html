@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Cases — Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+        .tab-btn { background: none; border: none; color: #94a3b8; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+        .tab-btn.active { background: #334155; color: #e2e8f0; }
+        table { color: #e2e8f0; }
+        th { color: #94a3b8; font-weight: 500; border-color: #334155 !important; }
+        td { border-color: #334155 !important; font-size: 13px; }
+        .badge-pending  { background: #1e3a2f; color: #6ee7b7; padding: 3px 8px; border-radius: 20px; font-size: 11px; }
+        .badge-disputed { background: #7f1d1d; color: #fca5a5; padding: 3px 8px; border-radius: 20px; font-size: 11px; }
+        .badge-resolved { background: #14532d; color: #86efac; padding: 3px 8px; border-radius: 20px; font-size: 11px; }
+    </style>
+</head>
+<body>
+<div class="container-fluid py-4 px-4">
+    <h4 class="fw-bold mb-4">⚖️ Legal Cases Management</h4>
+
+    <div class="mb-3 d-flex gap-2">
+        <button class="tab-btn active" onclick="switchTab('lawyers', this)">👨‍⚖️ Pending Lawyers</button>
+        <button class="tab-btn" onclick="switchTab('cases', this)">📋 All Cases</button>
+        <button class="tab-btn" onclick="switchTab('disputes', this)">🚨 Disputes</button>
+    </div>
+
+    <!-- Pending Lawyers -->
+    <div id="tab-lawyers">
+        <div class="card p-3">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr><th>Name</th><th>Email</th><th>Phone</th><th>Bar Council ID</th><th>ID Card</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="lawyers-tbody">
+                        <tr><td colspan="6" class="text-secondary">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Cases -->
+    <div id="tab-cases" style="display:none">
+        <div class="card p-3">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr><th>Case ID</th><th>User</th><th>Lawyer</th><th>Issue</th><th>Price</th><th>Status</th><th>Date</th></tr>
+                    </thead>
+                    <tbody id="cases-tbody">
+                        <tr><td colspan="7" class="text-secondary">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disputes -->
+    <div id="tab-disputes" style="display:none">
+        <div class="card p-3">
+            <div id="disputes-list"><div class="text-secondary p-3">Loading...</div></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function switchTab(tab, btn) {
+        ['lawyers','cases','disputes'].forEach(t => document.getElementById('tab-' + t).style.display = 'none');
+        document.getElementById('tab-' + tab).style.display = 'block';
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (tab === 'lawyers')  loadPendingLawyers();
+        if (tab === 'cases')    loadAllCases();
+        if (tab === 'disputes') loadDisputes();
+    }
+
+    async function loadPendingLawyers() {
+        const res = await fetch('/api/admin/legal/lawyers/pending', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        const tbody = document.getElementById('lawyers-tbody');
+
+        if (!data.lawyers || !data.lawyers.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-secondary">কোনো pending lawyer নেই।</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.lawyers.map(l => `
+            <tr>
+                <td>${l.name}</td>
+                <td>${l.email}</td>
+                <td>${l.phone}</td>
+                <td>${l.bar_council_id}</td>
+                <td>
+                    ${l.id_card_path
+                        ? <a href="/storage/${l.id_card_path}" target="_blank" class="btn btn-sm btn-outline-secondary">View ID</a>
+                        : '—'}
+                </td>
+                <td>
+                    <button class="btn btn-sm me-1" style="background:#059669;color:white;border-radius:6px" onclick="verifyLawyer(${l.id},'approve')">✅ Approve</button>
+                    <button class="btn btn-sm" style="background:#dc2626;color:white;border-radius:6px" onclick="verifyLawyer(${l.id},'reject')">❌ Reject</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function verifyLawyer(id, action) {
+        const confirm_msg = action === 'approve' ? 'Approve করবেন?' : 'Reject করবেন?';
+        if (!confirm(confirm_msg)) return;
+
+        const res = await fetch(/api/admin/legal/lawyers/${id}/verify, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ action })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) loadPendingLawyers();
+    }
+
+    async function loadAllCases() {
+        const res = await fetch('/api/admin/legal/cases', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        const tbody = document.getElementById('cases-tbody');
+
+        if (!data.cases || !data.cases.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-secondary">কোনো case নেই।</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.cases.map(c => `
+            <tr>
+                <td>${c.case_id}</td>
+                <td>${c.user_name || '—'}</td>
+                <td>${c.lawyer_name || '—'}</td>
+                <td>${c.issue_type}</td>
+                <td>${c.agreed_price ? '৳' + c.agreed_price : '৳' + c.user_budget}</td>
+                <td><span class="badge-${c.status === 'resolved' ? 'resolved' : c.status === 'disputed' ? 'disputed' : 'pending'}">${c.status}</span></td>
+                <td>${new Date(c.created_at).toLocaleDateString('bn-BD')}</td>
+            </tr>
+        `).join('');
+    }
+
+    async function loadDisputes() {
+        const res = await fetch('/api/admin/legal/cases', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+        const el = document.getElementById('disputes-list');
+
+        const disputes = data.cases?.filter(c => c.status === 'disputed') || [];
+
+        if (!disputes.length) {
+            el.innerHTML = '<div class="text-secondary p-3">কোনো dispute নেই।</div>';
+            return;
+        }
+
+        el.innerHTML = disputes.map(c => `
+            <div class="p-3 mb-3" style="border-left:3px solid #ef4444;background:#0f172a;border-radius:8px">
+                <div class="d-flex justify-content-between">
+                    <strong>${c.case_id}</strong>
+                    <span class="badge-disputed">Disputed</span>
+                </div>
+                <div class="mt-1 text-secondary">User: ${c.user_name} | Lawyer: ${c.lawyer_name || '—'} | Price: ৳${c.agreed_price}</div>
+                <small class="text-secondary">${new Date(c.created_at).toLocaleDateString('bn-BD')}</small>
+            </div>
+        `).join('');
+    }
+
+    // Initial load
+    loadPendingLawyers();
+</script>
+</body>
+</html>

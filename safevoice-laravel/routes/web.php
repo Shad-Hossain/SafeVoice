@@ -37,3 +37,19 @@ Route::get('/api/pi/case/{token}/accept', function (Illuminate\Http\Request $req
 Route::get('/api/pi/case/{token}/reject', function (Illuminate\Http\Request $request, $token) {
     return (new App\Http\Controllers\PiCaseAssignmentController())->handleEmailAction($request, $token, 'reject');
 });
+
+
+
+// ─── Lawyer Pages ────────────────────────────────
+Route::prefix('lawyer')->group(function () {
+    Route::get('/register', fn() => view('lawyer.register'));
+    Route::get('/login',    fn() => view('lawyer.login'));
+    Route::get('/dashboard',fn() => view('lawyer.dashboard'));
+    Route::get('/case/{id}',fn() => view('lawyer.case_detail'));
+});
+
+// ─── User Legal Dashboard ────────────────────────
+Route::get('/legal-cases', fn() => view('pages.legal_case_dashboard'));
+
+// ─── Admin Legal Section ─────────────────────────
+Route::get('/admin/legal', fn() => view('admin.legal_cases'));
