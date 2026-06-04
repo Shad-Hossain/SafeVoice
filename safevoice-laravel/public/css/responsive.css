@@ -322,8 +322,10 @@
     .btn-row { flex-direction: column; gap: 10px; }
     .btn-back, .btn-submit { width: 100%; justify-content: center; }
 
-    .location-input { flex-direction: column; gap: 8px; }
-    .btn-locate { width: 100%; padding: 12px; justify-content: center; }
+    .location-input { flex-direction: row; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .location-input input { flex: 1 1 100%; }
+    .btn-locate { flex: 1; padding: 12px; justify-content: center; min-width: 0; }
+    .btn-locate.btn-map-pick { margin-left: 0 !important; }
 
     /* ── MODAL ────────────────────────────────────────────── */
     .modal-box { max-height: 88vh; margin: 10px; }
@@ -508,9 +510,7 @@
     table th, table td { padding: 8px 10px !important; font-size: 11px !important; }
 }
 
-/* ================================================================
-   UTILITY — sidebar toggle button hidden on desktop
-================================================================ */
+
 .sidebar-toggle-btn {
     display: none;
 }

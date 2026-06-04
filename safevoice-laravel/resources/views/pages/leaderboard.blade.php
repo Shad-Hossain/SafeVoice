@@ -160,11 +160,6 @@
         </div>
     </div>
 
-    <script src="{{ asset('js/main.js') }}"></script>
-    <script src="{{ asset('js/leaderboard.js') }}"></script>
-<script src="{{ asset('js/theme.js') }}"></script>
-</body>
-</html>
 @endsection
 
 @section('scripts')
