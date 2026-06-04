@@ -396,10 +396,8 @@ document.getElementById('fpResetBtn').addEventListener('click', async function()
     btnReset(this,'<i class="fas fa-check-circle"></i> Reset Password');
 });
 </script>
-<script src="{{ asset('js/main.js') }}"></script>
-<script src="{{ asset('js/theme.js') }}"></script>
 @endsection
 
 @section('scripts')
 <script src="{{ asset('js/theme.js') }}"></script>
-@endsection 
+@endsection

@@ -742,8 +742,6 @@ document.getElementById('registerBtn').addEventListener('click', async function(
 });
 
 </script>
-<script src="{{ asset('js/main.js') }}"></script>
-<script src="{{ asset('js/theme.js') }}"></script>
 @endsection
 
 @section('scripts')

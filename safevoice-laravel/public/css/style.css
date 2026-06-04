@@ -516,3 +516,19 @@ a {
     border-color: #4f9eff;
     transform: scale(1.08);
 }
+
+/* Calendar icon — dark mode white, light mode dark */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+@media (prefers-color-scheme: light) {
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        filter: invert(0);
+    }
+}
+
+/* JS-toggled light mode */
+body.light-mode input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0);
+}
