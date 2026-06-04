@@ -1,5 +1,21 @@
 document.addEventListener('DOMContentLoaded', function () {
 
+    // ── LOGIN STATE — logo redirect ──────────────────────────────
+    (function applyLoginState() {
+        const token  = localStorage.getItem('sv_token');
+        const svUser = (() => { try { return JSON.parse(localStorage.getItem('sv_user') || '{}'); } catch(e) { return {}; } })();
+        const isLoggedIn = !!(token && svUser && (svUser.id || svUser.user_id));
+
+        // Logo → dashboard when logged in, home when guest
+        const logo = document.getElementById('sv-logo-link');
+        if (logo && isLoggedIn) logo.href = '/dashboard';
+
+        // Hide Login/Admin/Register buttons when logged in
+        if (isLoggedIn) {
+            document.querySelectorAll('.sv-guest-only').forEach(el => el.style.display = 'none');
+        }
+    })();
+
     // ── MOBILE NAVBAR HAMBURGER ──
     const hamburger  = document.getElementById('hamburger');
     const navLinks   = document.querySelector('.nav-links');

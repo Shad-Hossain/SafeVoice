@@ -13,6 +13,7 @@
     padding: 6px;
     z-index: 1100;
     flex-shrink: 0;
+    order: -1; /* hamburger সবার আগে */
 }
 
 .hamburger span {
@@ -79,6 +80,21 @@
 
     /* ── NAVBAR ───────────────────────────────────────────── */
     .hamburger { display: flex; }
+
+    .nav-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+    }
+
+    /* Logo centered — শুধু public pages এ (dashboard override করে) */
+    body:not(.page-dashboard) .logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
 
     .nav-links {
         position: fixed;

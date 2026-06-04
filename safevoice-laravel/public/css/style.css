@@ -1,4 +1,3 @@
-
 * {
     margin: 0;
     padding: 0;
@@ -460,31 +459,7 @@ a {
 }
 
 
-.nav-container{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-}
 
-.nav-left{
-    display:flex;
-    align-items:center;
-    gap:14px;
-}
-
-.logo{
-    display:flex;
-    align-items:center;
-    gap:8px;
-}
-
-.hamburger{
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    gap:4px;
-    cursor:pointer;
-}
 
 
 
@@ -519,4 +494,25 @@ a {
 .leaderboard-card span,
 .leaderboard-card small{
     opacity:1 !important;
+}
+/* ── NAV USER AVATAR ─────────────────────────────────────────── */
+.nav-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f9eff, #2d7dd2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    border: 2px solid #4f9eff44;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.nav-avatar:hover {
+    border-color: #4f9eff;
+    transform: scale(1.08);
 }

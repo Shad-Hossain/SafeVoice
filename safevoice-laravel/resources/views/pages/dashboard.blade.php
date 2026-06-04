@@ -9,6 +9,9 @@
     position: relative;
     display: inline-flex;
     align-items: center;
+    /* panel যেন clip না হয় */
+    overflow: visible;
+    z-index: 100;
 }
 .notif-bell-btn {
     position: relative;
@@ -67,8 +70,8 @@
     right: 0;
     width: 360px;
     max-height: 480px;
-    background: #111827;
-    border: 1px solid #1e2d4a;
+    background: var(--bg-secondary, #111827);
+    border: 1px solid var(--border-color, #1e2d4a);
     border-radius: 14px;
     box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(79,158,255,.08);
     z-index: 9999;
@@ -201,6 +204,33 @@
 .notif-loading { text-align: center; padding: 30px; color: #4f5e70; font-size: 13px; }
 @media (max-width: 500px) {
     .notif-panel { width: calc(100vw - 24px); right: -16px; }
+}
+
+/* ── DASHBOARD MOBILE FIXES ── */
+@media (max-width: 768px) {
+    /* Navbar hamburger লুকাও — dashboard এ sidebar Menu আছে */
+    .hamburger { display: none !important; }
+    /* Logo mobile center না করে left রাখো dashboard এ */
+    .logo { position: static; transform: none; }
+
+    /* Welcome bar — name উপরে, buttons নিচে */
+    .welcome-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .welcome-bar > div:last-child {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .btn-new-complaint {
+        flex: 1;
+        justify-content: center;
+        padding: 10px 16px;
+        font-size: 14px;
+    }
 }
 </style>
 @endsection
