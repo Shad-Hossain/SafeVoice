@@ -2442,13 +2442,15 @@ async function markAllRead() {
     const userId = getUserId();
     if (!userId) return;
     try {
-        await fetch('/api/notifications/mark-read', {
+        const res  = await fetch('/api/notifications/mark-read', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrf() },
             body: JSON.stringify({ all: true, user_id: userId })
         });
-    } catch(e) {}
+        const data = await res.json();
+        if (!data.success) { console.warn('mark-read failed:', data); return; }
+    } catch(e) { console.error('markAllRead error:', e); return; }
     document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
     updateBadge(0);
 }
