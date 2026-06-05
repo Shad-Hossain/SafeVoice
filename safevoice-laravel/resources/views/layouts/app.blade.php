@@ -15,6 +15,12 @@
 <nav class="navbar">
     <div class="nav-overlay" id="navOverlay"></div>
     <div class="nav-container">
+
+     <div class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
         <a href="{{ route('home') }}" class="logo" id="sv-logo-link">
             <i class="fas fa-shield-alt"></i>
             <span>SafeVoice</span>

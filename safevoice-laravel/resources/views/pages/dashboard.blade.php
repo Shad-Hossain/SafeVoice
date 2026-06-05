@@ -2336,16 +2336,29 @@ document.addEventListener('click', function(e) {
 // ─── Load Notifications ───────────────────────────────────────────────
 async function loadNotifications() {
     const userId = getUserId();
-    if (!userId) return;
+    const body = document.getElementById('notifPanelBody');
+    if (!userId) {
+        if (body) body.innerHTML = `<div class="notif-empty"><i class="fas fa-bell-slash"></i><p>লগইন করুন</p></div>`;
+        return;
+    }
     try {
         const res  = await fetch(`/api/notifications?user_id=${userId}`, { credentials: 'include' });
         const data = await res.json();
-        if (!data.success) return;
+        if (!data.success) {
+            _notifLoaded = false;
+            if (body) body.innerHTML = `<div class="notif-empty"><i class="fas fa-exclamation-circle"></i><p>Notification লোড হয়নি। আবার চেষ্টা করুন।</p></div>`;
+            return;
+        }
         _notifLoaded = true;
         renderNotifications(data.notifications);
         updateBadge(data.unread_count);
-    } catch(e) { console.error('Notification load error:', e); }
+    } catch(e) {
+        _notifLoaded = false;
+        console.error('Notification load error:', e);
+        if (body) body.innerHTML = `<div class="notif-empty"><i class="fas fa-exclamation-circle"></i><p>Notification লোড হয়নি।</p></div>`;
+    }
 }
+
 
 // ─── Render ───────────────────────────────────────────────────────────
 function renderNotifications(notifications) {
