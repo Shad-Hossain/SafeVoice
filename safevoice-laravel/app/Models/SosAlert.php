@@ -9,7 +9,10 @@ class SosAlert extends Model
         'crime_type','description','status','notification_sent','notified_count',
         'contact_phone','contact_name', // login ছাড়া SOS এর জন্য
     ];
-    protected $casts = ['notification_sent'=>'boolean'];
+    protected $casts = [
+        'notification_sent' => 'boolean',
+        'created_at'        => 'datetime',  // Carbon cast যোগ করা হলো
+    ];
     public $timestamps = false;
     const CREATED_AT = 'created_at';
 

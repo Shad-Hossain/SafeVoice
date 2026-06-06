@@ -799,7 +799,7 @@ class SosController extends Controller
                     'responder_count' => count($responderIds),
                     'i_responded'     => in_array((int)$userId, $responderIds),
                     'minutes_ago'     => $a->created_at
-                        ? (int) now()->diffInMinutes(Carbon::parse($a->created_at))
+                        ? (int) \Carbon\Carbon::now()->diffInMinutes(\Carbon\Carbon::parse($a->created_at))
                         : null,
                 ];
             });
