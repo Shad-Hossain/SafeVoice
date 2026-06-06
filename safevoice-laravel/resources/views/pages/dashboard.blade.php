@@ -813,6 +813,10 @@ async function loadAllSosRequests() {
 
         const statusColors = { active: '#e63946', cancelled: '#6b7280', resolved: '#2ecc71' };
         const statusLabels = { active: '🔴 Active', cancelled: '⚪ Cancelled', resolved: '✅ Resolved' };
+        // Filter: cancelled গুলো আলাদা section এ দেখাও
+        const activeAlerts    = data.alerts.filter(a => a.status === 'active');
+        const nonActiveAlerts = data.alerts.filter(a => a.status !== 'active');
+        const sortedAlerts    = [...activeAlerts, ...nonActiveAlerts];
 
         function timeAgo(dateStr) {
             const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
@@ -824,7 +828,7 @@ async function loadAllSosRequests() {
         }
 
         let rows = '';
-        data.alerts.forEach(function(a) {
+        sortedAlerts.forEach(function(a) {
             const statusColor = statusColors[a.status] || '#6b7280';
             const statusLabel = statusLabels[a.status] || a.status;
             const locationShort = a.location_text ? a.location_text.substring(0, 40) + (a.location_text.length > 40 ? '...' : '') : '-';
@@ -872,7 +876,12 @@ async function openActiveSosModal() {
         }
 
         body.innerHTML = data.alerts.map(function(a) {
-            const minsAgo = a.minutes_ago != null ? a.minutes_ago : '?';
+            // Server থেকে minutes_ago আসে; fallback: created_at থেকে calculate
+            let minsAgo = a.minutes_ago;
+            if (minsAgo == null && a.created_at) {
+                minsAgo = Math.floor((Date.now() - new Date(a.created_at)) / 60000);
+            }
+            if (minsAgo == null) minsAgo = '?';
             const loc = a.location_text || 'Location unavailable';
             return `<div style="background:#1a0a0a;border:1px solid #e6394633;border-radius:12px;padding:16px;margin-bottom:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
@@ -2336,29 +2345,28 @@ document.addEventListener('click', function(e) {
 // ─── Load Notifications ───────────────────────────────────────────────
 async function loadNotifications() {
     const userId = getUserId();
+    if (!userId) return;
     const body = document.getElementById('notifPanelBody');
-    if (!userId) {
-        if (body) body.innerHTML = `<div class="notif-empty"><i class="fas fa-bell-slash"></i><p>লগইন করুন</p></div>`;
-        return;
-    }
+    if (body) body.innerHTML = '<div class="notif-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
     try {
-        const res  = await fetch(`/api/notifications?user_id=${userId}`, { credentials: 'include' });
+        const token = localStorage.getItem('sv_token') || '';
+        const res  = await fetch(`/api/notifications?user_id=${userId}`, {
+            credentials: 'include',
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
         const data = await res.json();
         if (!data.success) {
-            _notifLoaded = false;
-            if (body) body.innerHTML = `<div class="notif-empty"><i class="fas fa-exclamation-circle"></i><p>Notification লোড হয়নি। আবার চেষ্টা করুন।</p></div>`;
+            if (body) body.innerHTML = '<div class="notif-empty"><i class="fas fa-exclamation-circle"></i><p>লোড করা যায়নি।</p></div>';
             return;
         }
         _notifLoaded = true;
         renderNotifications(data.notifications);
         updateBadge(data.unread_count);
     } catch(e) {
-        _notifLoaded = false;
         console.error('Notification load error:', e);
-        if (body) body.innerHTML = `<div class="notif-empty"><i class="fas fa-exclamation-circle"></i><p>Notification লোড হয়নি।</p></div>`;
+        if (body) body.innerHTML = '<div class="notif-empty"><i class="fas fa-wifi" style="color:#e63946"></i><p>Network error — retry করো।</p></div>';
     }
 }
-
 
 // ─── Render ───────────────────────────────────────────────────────────
 function renderNotifications(notifications) {
@@ -2442,15 +2450,13 @@ async function markAllRead() {
     const userId = getUserId();
     if (!userId) return;
     try {
-        const res  = await fetch('/api/notifications/mark-read', {
+        await fetch('/api/notifications/mark-read', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': getCsrf() },
             body: JSON.stringify({ all: true, user_id: userId })
         });
-        const data = await res.json();
-        if (!data.success) { console.warn('mark-read failed:', data); return; }
-    } catch(e) { console.error('markAllRead error:', e); return; }
+    } catch(e) {}
     document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
     updateBadge(0);
 }
@@ -2474,7 +2480,11 @@ async function refreshBadge() {
     const userId = getUserId();
     if (!userId) return;
     try {
-        const res  = await fetch(`/api/notifications/unread-count?user_id=${userId}`, { credentials: 'include' });
+        const tkn2 = localStorage.getItem('sv_token') || '';
+        const res  = await fetch(`/api/notifications/unread-count?user_id=${userId}`, {
+            credentials: 'include',
+            headers: tkn2 ? { 'Authorization': 'Bearer ' + tkn2 } : {}
+        });
         const data = await res.json();
         if (data.success !== undefined) updateBadge(data.count);
     } catch(e) {}
