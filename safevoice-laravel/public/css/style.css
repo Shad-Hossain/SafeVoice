@@ -137,7 +137,7 @@ a {
     border-radius: 8px;
     font-size: 16px;
     font-weight: 600;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     transition: background 0.3s;

@@ -204,6 +204,13 @@
                           style="display:none;background:#e63946;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;"></span>
                 </a>
             </li>
+            <li id="nav-lawyers">
+                <a href="#" onclick="showSection('lawyers')">
+                    <i class="fas fa-gavel"></i>
+                    Lawyers
+                    <span id="lawyerPendingBadge" style="display:none;background:#e63946;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;font-weight:700;"></span>
+                </a>
+            </li>
         </ul>
         <div style="padding:14px 16px;border-top:1px solid #1e2d4a;margin-top:20px">
             <a href="{{ route('super-admin.login') }}" style="display:flex;align-items:center;gap:8px;color:#fbbf24;font-size:12px;font-weight:600;text-decoration:none;background:#fbbf2410;border:1px solid #fbbf2430;border-radius:8px;padding:9px 12px">
@@ -449,7 +456,69 @@
             </div>
         </div>
 
+        <!-- ── LAWYERS SECTION ──────────────────────────────────── -->
+        <div id="view-lawyers" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-gavel" style="font-size:22px;margin-right:10px;color:#4f9eff"></i>Lawyer Management</h1>
+                <p>Approve, suspend, or review registered lawyers</p>
+            </div>
+
+            <!-- Filter bar -->
+            <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap;">
+                <select id="lawyerStatusFilter" onchange="loadLawyers()"
+                    style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:9px 14px;color:#fff;font-size:13px;outline:none;">
+                    <option value="">All Statuses</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Active">Active</option>
+                    <option value="Suspended">Suspended</option>
+                    <option value="Banned">Banned</option>
+                </select>
+                <input type="text" id="lawyerSearchInput" placeholder="Search name, email, BAR ID..."
+                    onkeyup="loadLawyers()"
+                    style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:9px 14px;color:#fff;font-size:13px;outline:none;width:240px;">
+                <button class="btn-refresh" onclick="loadLawyers()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <span id="lawyersCount" style="color:var(--text-secondary);font-size:13px;margin-left:auto;"></span>
+            </div>
+
+            <div class="complaints-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Lawyer</th>
+                            <th>BAR Council ID</th>
+                            <th>City</th>
+                            <th>Specializations</th>
+                            <th>Rating</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lawyers-tbody">
+                        <tr><td colspan="8" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
+</div>
+
+<!-- Lawyer Detail Modal -->
+<div id="lawyerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#0d1526;border-radius:16px;border:1px solid #1e2d4a;max-width:640px;width:100%;padding:28px;position:relative;max-height:88vh;overflow-y:auto;">
+        <button onclick="closeLawyerModal()"
+                style="position:absolute;top:14px;right:16px;background:none;border:none;color:#a0b4cc;font-size:20px;cursor:pointer;">
+            <i class="fas fa-times"></i>
+        </button>
+        <h3 style="color:#4f9eff;font-size:17px;margin:0 0 20px;">
+            <i class="fas fa-gavel" style="margin-right:8px;"></i>Lawyer Details
+        </h3>
+        <div id="lawyerModalContent"></div>
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;" id="lawyerModalActions"></div>
+    </div>
 </div>
 
 <!-- Birth Certificate Image Modal -->
@@ -629,6 +698,7 @@ function showSection(section, preFilter) {
     if (section === 'sos')              loadSosAlerts();
     if (section === 'sos-evidence')     loadSosEvidence();
     if (section === 'pending-accounts') loadPendingAccounts();
+    if (section === 'lawyers')          loadLawyers();
 }
 
 // ── Payments ─────────────────────────────────────────────────
@@ -1724,12 +1794,277 @@ function getCsrfToken() {
 document.addEventListener('DOMContentLoaded', function() {
     showSection('dashboard');
     document.getElementById('nav-dashboard').classList.add('active');
+    // Load pending lawyer badge silently
+    fetch('/api/admin/legal/lawyers/pending', { headers: adminHeaders() })
+        .then(r => r.json()).then(data => {
+            const count = data.count || 0;
+            if (count > 0) {
+                const b = document.getElementById('lawyerPendingBadge');
+                b.textContent = count; b.style.display = 'inline';
+            }
+        }).catch(() => {});
     loadSosEvidenceBadge();
     checkPendingBadgeOnLoad();
     document.getElementById('erRequestModal').addEventListener('click', function(e) {
         if (e.target === this) closeEvidenceRequestModal();
     });
 });
+
+// ── LAWYER MANAGEMENT ─────────────────────────────────────────────
+let lawyerSearchTimer = null;
+
+async function loadLawyers() {
+    clearTimeout(lawyerSearchTimer);
+    lawyerSearchTimer = setTimeout(async () => {
+        const tbody  = document.getElementById('lawyers-tbody');
+        const status = document.getElementById('lawyerStatusFilter').value;
+        const search = document.getElementById('lawyerSearchInput').value;
+        tbody.innerHTML = `<tr><td colspan="8" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>`;
+
+        try {
+            const params = new URLSearchParams();
+            if (status) params.set('status', status);
+            if (search) params.set('search', search);
+
+            const res  = await fetch(`/api/admin/legal/lawyers?${params}`, { headers: adminHeaders() });
+            const data = await res.json();
+            const lawyers = data.lawyers || [];
+
+            document.getElementById('lawyersCount').textContent = `${lawyers.length} lawyer(s)`;
+
+            // Update pending badge
+            const pendingCount = lawyers.filter(l => l.status === 'Pending').length;
+            const badge = document.getElementById('lawyerPendingBadge');
+            if (pendingCount > 0 && !status) {
+                badge.textContent   = pendingCount;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            if (!lawyers.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="table-state">No lawyers found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = lawyers.map(l => {
+                const statusColor = { Active:'#22c55e', Pending:'#fbbf24', Suspended:'#f87171', Banned:'#6b7280' }[l.status] || '#6b7280';
+                const specs = (l.specializations || []).slice(0,2).join(', ') || '—';
+                return `
+                <tr>
+                    <td style="font-size:11px;color:#6b7280;">${l.id}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="width:36px;height:36px;border-radius:50%;background:#0a1e40;border:1px solid #1e2d4a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden;flex-shrink:0;">
+                                ${l.profile_photo ? `<img src="/${l.profile_photo}" style="width:100%;height:100%;object-fit:cover;">` : '⚖️'}
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:13px;">${l.full_name}</div>
+                                <div style="font-size:11px;color:#6b7280;">${l.lawyer_code} · ${l.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="font-size:12px;font-family:monospace;color:#a0b4cc;">${l.bar_council_id || '—'}</td>
+                    <td style="font-size:13px;">${l.city || '—'}</td>
+                    <td style="font-size:12px;color:#a0b4cc;">${specs}</td>
+                    <td style="font-size:13px;">
+                        ${l.rating ? `<span style="color:#f59e0b;">★</span> ${parseFloat(l.rating).toFixed(1)}` : '—'}
+                    </td>
+                    <td><span style="background:${statusColor}20;color:${statusColor};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;">${l.status}</span></td>
+                    <td>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button onclick="viewLawyerDetail(${l.id})"
+                                style="background:#1e2d4a;color:#a0b4cc;border:none;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${l.status === 'Pending' ? `
+                                <button onclick="verifyLawyer(${l.id}, 'approve')"
+                                    style="background:#22c55e20;color:#22c55e;border:1px solid #22c55e40;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;">
+                                    ✓ Approve
+                                </button>
+                                <button onclick="verifyLawyer(${l.id}, 'reject')"
+                                    style="background:#ef444420;color:#ef4444;border:1px solid #ef444440;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;">
+                                    ✗ Reject
+                                </button>
+                            ` : ''}
+                            ${l.status === 'Active' ? `
+                                <button onclick="toggleSuspendLawyer(${l.id})"
+                                    style="background:#f87171;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;">
+                                    Suspend
+                                </button>
+                            ` : ''}
+                            ${l.status === 'Suspended' ? `
+                                <button onclick="toggleSuspendLawyer(${l.id})"
+                                    style="background:#22c55e;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;">
+                                    Unsuspend
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="8" class="table-state">Error loading lawyers.</td></tr>`;
+        }
+    }, 300);
+}
+
+async function verifyLawyer(lawyerId, action) {
+    if (!confirm(`Are you sure you want to ${action} this lawyer?`)) return;
+    try {
+        const res  = await fetch(`/api/admin/legal/lawyers/${lawyerId}/verify`, {
+            method: 'POST', headers: adminHeaders(),
+            body: JSON.stringify({ action }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showAdminToast(data.message, 'success');
+            loadLawyers();
+        } else {
+            showAdminToast(data.message || 'Failed.', 'error');
+        }
+    } catch(e) { showAdminToast('Network error.', 'error'); }
+}
+
+async function toggleSuspendLawyer(lawyerId) {
+    try {
+        const res  = await fetch(`/api/admin/legal/lawyers/${lawyerId}/toggle-suspend`, {
+            method: 'POST', headers: adminHeaders(),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showAdminToast(data.message, 'success');
+            loadLawyers();
+            closeLawyerModal();
+        } else {
+            showAdminToast(data.message || 'Failed.', 'error');
+        }
+    } catch(e) { showAdminToast('Network error.', 'error'); }
+}
+
+async function viewLawyerDetail(lawyerId) {
+    const modal   = document.getElementById('lawyerModal');
+    const content = document.getElementById('lawyerModalContent');
+    const actions = document.getElementById('lawyerModalActions');
+    content.innerHTML = `<div style="text-align:center;padding:20px;color:#6b7280;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
+    actions.innerHTML = '';
+    modal.style.display = 'flex';
+
+    try {
+        const res  = await fetch(`/api/admin/legal/lawyers/${lawyerId}`, { headers: adminHeaders() });
+        const data = await res.json();
+        const l    = data.lawyer;
+        if (!l) { content.innerHTML = '<p style="color:#ef4444">Lawyer not found.</p>'; return; }
+
+        const statusColor = { Active:'#22c55e', Pending:'#fbbf24', Suspended:'#f87171', Banned:'#6b7280' }[l.status] || '#6b7280';
+        const specs = (l.specializations || []).join(', ') || '—';
+
+        content.innerHTML = `
+            <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;">
+                <div style="width:72px;height:72px;border-radius:50%;background:#0a1e40;border:2px solid #1e2d4a;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;">
+                    ${l.profile_photo ? `<img src="/${l.profile_photo}" style="width:100%;height:100%;object-fit:cover;">` : '⚖️'}
+                </div>
+                <div>
+                    <div style="font-size:18px;font-weight:700;">${l.full_name}</div>
+                    <div style="font-size:12px;color:#4f9eff;font-family:monospace;margin-top:2px;">${l.lawyer_code}</div>
+                    <span style="background:${statusColor}20;color:${statusColor};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;margin-top:6px;display:inline-block;">${l.status}</span>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;">
+                    <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">EMAIL</div>
+                    <div>${l.email}</div>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;">
+                    <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">PHONE</div>
+                    <div>${l.phone || '—'}</div>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;">
+                    <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">BAR COUNCIL ID</div>
+                    <div style="font-family:monospace;color:#4f9eff;">${l.bar_council_id || '—'}</div>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;">
+                    <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">CITY</div>
+                    <div>${l.city || '—'}</div>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;">
+                    <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">EXPERIENCE</div>
+                    <div>${l.experience_years ? l.experience_years + ' years' : '—'}</div>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;">
+                    <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">MIN FEE</div>
+                    <div>৳${l.min_fee ? Number(l.min_fee).toLocaleString() : '—'}</div>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;">
+                    <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">RATING</div>
+                    <div>${l.rating ? '★ ' + parseFloat(l.rating).toFixed(1) + ' (' + l.rating_count + ' reviews)' : 'No rating yet'}</div>
+                </div>
+                <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;">
+                    <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">CASES</div>
+                    <div>${l.total_cases} total · ${l.completed_cases} completed</div>
+                </div>
+            </div>
+            ${specs !== '—' ? `
+            <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;margin-top:12px;font-size:13px;">
+                <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">SPECIALIZATIONS</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    ${(l.specializations||[]).map(s=>`<span style="background:#4f9eff15;color:#4f9eff;border:1px solid #4f9eff30;border-radius:20px;padding:3px 10px;font-size:12px;">${s}</span>`).join('')}
+                </div>
+            </div>` : ''}
+            ${l.bio ? `
+            <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:12px;margin-top:12px;font-size:13px;">
+                <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">BIO</div>
+                <div style="color:#a0b4cc;line-height:1.6;">${l.bio}</div>
+            </div>` : ''}
+            ${l.bar_council_photo ? `
+            <div style="margin-top:12px;">
+                <div style="color:#6b7280;font-size:11px;margin-bottom:6px;">BAR COUNCIL DOCUMENT</div>
+                <img src="/${l.bar_council_photo}" style="max-width:100%;border-radius:10px;border:1px solid #1e2d4a;" alt="Bar Council Photo">
+            </div>` : ''}
+        `;
+
+        // Action buttons
+        let btns = `<button onclick="closeLawyerModal()" style="background:#1e2d4a;color:#a0b4cc;border:none;border-radius:10px;padding:10px 18px;font-size:13px;cursor:pointer;">Close</button>`;
+        if (l.status === 'Pending') {
+            btns += `
+                <button onclick="verifyLawyer(${l.id},'approve');closeLawyerModal();" style="background:#22c55e;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;cursor:pointer;font-weight:600;"><i class="fas fa-check"></i> Approve</button>
+                <button onclick="verifyLawyer(${l.id},'reject');closeLawyerModal();" style="background:#ef4444;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;cursor:pointer;font-weight:600;"><i class="fas fa-times"></i> Reject</button>`;
+        }
+        if (l.status === 'Active') {
+            btns += `<button onclick="toggleSuspendLawyer(${l.id})" style="background:#f87171;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;cursor:pointer;font-weight:600;">Suspend</button>`;
+        }
+        if (l.status === 'Suspended') {
+            btns += `<button onclick="toggleSuspendLawyer(${l.id})" style="background:#22c55e;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;cursor:pointer;font-weight:600;">Unsuspend</button>`;
+        }
+        actions.innerHTML = btns;
+
+    } catch(e) { content.innerHTML = '<p style="color:#ef4444">Error loading lawyer.</p>'; }
+}
+
+function closeLawyerModal() {
+    document.getElementById('lawyerModal').style.display = 'none';
+}
+document.getElementById('lawyerModal').addEventListener('click', function(e) {
+    if (e.target === this) closeLawyerModal();
+});
+
+function adminHeaders() {
+    const token = document.cookie.split('; ').find(r => r.startsWith('XSRF-TOKEN='));
+    return {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+    };
+}
+
+function showAdminToast(msg, type = 'success') {
+    // reuse existing admin notification if available, else alert
+    if (typeof showNotification === 'function') {
+        showNotification(msg, type);
+    } else {
+        alert(msg);
+    }
+}
 
 </script>
 @endsection

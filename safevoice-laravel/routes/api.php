@@ -11,6 +11,9 @@ use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceRequestController;
 use App\Http\Controllers\UserNotificationController;
+use App\Http\Controllers\LawyerAuthController;
+use App\Http\Controllers\LawyerDashboardController;
+use App\Http\Controllers\LegalRequestController;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC ROUTES — login/register ছাড়া কিছু নেই এখানে
@@ -30,16 +33,11 @@ Route::get('/track_complaint', [ComplaintController::class, 'track']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // USER PROTECTED ROUTES — Sanctum token অথবা session লাগবে
-// ✅ auth:sanctum middleware user_id client থেকে নেওয়ার সুযোগ বন্ধ করে দেয়
 // ─────────────────────────────────────────────────────────────────────────────
 
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
-
-    // ── Complaints ───────────────────────────────────────────────
-
-    // ── Notifications ─────────────────────────────────────────────
 
     // ── Evidence ─────────────────────────────────────────────────
     Route::post('/upload_complaint_evidence', [EvidenceController::class, 'uploadComplaint']);
@@ -61,7 +59,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sos/my-responds',                [SosController::class, 'myResponds']);
     Route::post('/sos/submit-responder-evidence', [SosController::class, 'submitResponderEvidence']);
 
-
     // ── FCM ───────────────────────────────────────────────────────
     Route::post('/fcm/register-token',   [\App\Http\Controllers\FcmController::class, 'registerToken']);
     Route::post('/fcm/unregister-token', [\App\Http\Controllers\FcmController::class, 'unregisterToken']);
@@ -72,8 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SESSION-BASED ROUTES — controller নিজে session/token check করে
-// auth:sanctum বাদ দেওয়া হয়েছে কারণ frontend session cookie পাঠায়, Bearer নয়
+// SESSION-BASED ROUTES
 // ─────────────────────────────────────────────────────────────────────────────
 Route::get('/pi/user-notifications', [PrivateInvestigatorController::class, 'notifications']);
 Route::post('/pi/payment',           [PrivateInvestigatorController::class, 'payment']);
@@ -92,7 +88,7 @@ Route::post('/notifications/mark-read',   [UserNotificationController::class, 'm
 Route::delete('/notifications/{id}',      [UserNotificationController::class, 'destroy']);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PUBLIC SOS (login ছাড়া leaderboard দেখা যায়)
+// PUBLIC SOS
 // ─────────────────────────────────────────────────────────────────────────────
 Route::get('/sos/alerts',         [SosController::class, 'alerts']);
 Route::get('/get_sos_alert',      [SosController::class, 'alerts']); // legacy
@@ -103,14 +99,13 @@ Route::get('/sos/all-requests',   [SosController::class, 'allSosRequests']);
 Route::get('/sos/active-recent',  [SosController::class, 'activeRecentAlerts']);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ADMIN ROUTES — আলাদা admin auth session দরকার
+// ADMIN ROUTES
 // ─────────────────────────────────────────────────────────────────────────────
 
 Route::prefix('admin')->group(function () {
     Route::post('/login',  [AdminController::class, 'login']);
     Route::post('/logout', [AdminController::class, 'logout']);
 
-    // ✅ Admin complaint list — user_id, anonymous_user_id expose করে না (ComplaintController::index দেখো)
     Route::get('/complaints',                     [ComplaintController::class, 'index']);
     Route::get('/complaints/{id}',                [ComplaintController::class, 'show']);
     Route::post('/complaints/update-status',      [ComplaintController::class, 'updateStatus']);
@@ -128,17 +123,22 @@ Route::prefix('admin')->group(function () {
     Route::post('/sos-evidence-verify',           [SosController::class, 'adminVerifyEvidence']);
 
     Route::get('/payments',                       [PrivateInvestigatorController::class, 'pendingPayments']);
+
+    // ── Admin Lawyer Management ───────────────────────────────
+    Route::get('/legal/lawyers',                        [LawyerAuthController::class, 'allLawyers']);
+    Route::get('/legal/lawyers/pending',                [LawyerAuthController::class, 'pendingLawyers']);
+    Route::get('/legal/lawyers/{lawyerId}',             [LawyerAuthController::class, 'lawyerDetail']);
+    Route::post('/legal/lawyers/{lawyerId}/verify',     [LawyerAuthController::class, 'verifyLawyer']);
+    Route::post('/legal/lawyers/{lawyerId}/toggle-suspend', [LawyerAuthController::class, 'toggleSuspend']);
 });
 
-// legacy admin routes (backward compat)
+// legacy admin routes
 Route::get('/manage_user',                [AdminController::class, 'users']); // legacy
 Route::post('/admin_login',               [AdminController::class, 'login']);
-Route::post('/complaints/update-status',  [ComplaintController::class, 'updateStatus']); // legacy (no prefix)
+Route::post('/complaints/update-status',  [ComplaintController::class, 'updateStatus']); // legacy
 Route::post('/update_status',             [ComplaintController::class, 'updateStatus']); // legacy
 Route::get('/complaints',                 [ComplaintController::class, 'index']); // legacy
 Route::get('/complaints/{id}',            [ComplaintController::class, 'show']); // legacy
-Route::get('/complaints',      [ComplaintController::class, 'index']);
-Route::get('/complaints/{id}', [ComplaintController::class, 'show']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUPER ADMIN ROUTES
@@ -168,7 +168,7 @@ Route::prefix('super-admin')->group(function () {
 Route::post('/super_admin_auth', [SuperAdminController::class, 'login']); // legacy
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OFFICERS & PI (Admin managed)
+// OFFICERS & PI
 // ─────────────────────────────────────────────────────────────────────────────
 
 Route::get('/officers',         [OfficerController::class, 'index']);
@@ -197,48 +197,34 @@ Route::get('/evidence-request/expired-list',    [EvidenceRequestController::clas
 Route::post('/evidence-request/reject',         [EvidenceRequestController::class, 'reject']);
 Route::get('/evidence-request/expired',         [EvidenceRequestController::class, 'getExpired']);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LAWYER SYSTEM (Pathao-style legal marketplace)
+// ─────────────────────────────────────────────────────────────────────────────
 
-
-// ═══════════════════════════════════════════════
-// LEGAL HELP MODULE
-// ═══════════════════════════════════════════════
-
-use App\Http\Controllers\LawyerAuthController;
-use App\Http\Controllers\LegalCaseController;
-use App\Http\Controllers\LawyerCaseController;
-
-// ─── Lawyer Auth ────────────────────────────────
+// ── Lawyer Auth & Dashboard ───────────────────────────────────
 Route::prefix('lawyer')->group(function () {
-    Route::post('/register',  [LawyerAuthController::class, 'register']);
-    Route::post('/login',     [LawyerAuthController::class, 'login']);
-    Route::post('/logout',    [LawyerAuthController::class, 'logout']);
-    Route::get('/profile',    [LawyerAuthController::class, 'profile']);
+    Route::post('/register',      [LawyerAuthController::class, 'register']);
+    Route::post('/login',         [LawyerAuthController::class, 'login']);
+    Route::post('/logout',        [LawyerAuthController::class, 'logout']);
+    Route::get('/check-session',  [LawyerAuthController::class, 'checkSession']);
+    Route::get('/profile',        [LawyerAuthController::class, 'profile']);
+    Route::post('/profile/update',[LawyerAuthController::class, 'updateProfile']);
+    Route::post('/ocr-extract',   [\App\Http\Controllers\LawyerOcrController::class, 'extract']);
 
-    // Lawyer Dashboard
-    Route::get('/cases/available',          [LawyerCaseController::class, 'availableCases']);
-    Route::get('/cases/my',                 [LawyerCaseController::class, 'myCases']);
-    Route::post('/cases/{caseId}/offer',    [LawyerCaseController::class, 'makeOffer']);
-    Route::post('/cases/{caseId}/complete', [LawyerCaseController::class, 'markComplete']);
-    Route::post('/cases/{caseId}/message',  [LawyerCaseController::class, 'sendMessage']);
-    Route::get('/notifications',            [LawyerCaseController::class, 'myNotifications']);
+    Route::get('/dashboard',                  [LawyerDashboardController::class, 'dashboard']);
+    Route::get('/requests',                   [LawyerDashboardController::class, 'openRequests']);
+    Route::post('/bid',                       [LawyerDashboardController::class, 'placeBid']);
+    Route::put('/bid/{bidId}',                [LawyerDashboardController::class, 'updateBid']);
+    Route::get('/notifications',              [LawyerDashboardController::class, 'notifications']);
+    Route::get('/notifications/unread-count', [LawyerDashboardController::class, 'unreadCount']);
+    Route::post('/toggle-availability',       [LawyerDashboardController::class, 'toggleAvailability']);
 });
 
-// ─── User — Legal Cases ──────────────────────────
-Route::prefix('legal')->group(function () {
-    Route::post('/cases/submit',                    [LegalCaseController::class, 'submit']);
-    Route::get('/cases/my',                         [LegalCaseController::class, 'myCases']);
-    Route::post('/cases/offers/{offerId}/respond',  [LegalCaseController::class, 'respondToOffer']);
-    Route::post('/cases/{caseId}/pay-30',           [LegalCaseController::class, 'pay30Percent']);
-    Route::post('/cases/{caseId}/pay-70',           [LegalCaseController::class, 'pay70Percent']);
-    Route::post('/cases/{caseId}/dispute',          [LegalCaseController::class, 'disputeCase']);
-    Route::post('/cases/{caseId}/message',          [LegalCaseController::class, 'sendMessage']);
-    Route::get('/cases/{caseId}/messages',          [LegalCaseController::class, 'getMessages']);
-    Route::get('/notifications',                    [LegalCaseController::class, 'myNotifications']);
-});
-
-// ─── Admin — Legal Section ───────────────────────
-Route::prefix('admin/legal')->group(function () {
-    Route::get('/cases',                        [LegalCaseController::class, 'adminAllCases']??null);
-    Route::get('/lawyers/pending',              [LawyerAuthController::class, 'pendingLawyers']);
-    Route::post('/lawyers/{lawyerId}/verify',   [LawyerAuthController::class, 'verifyLawyer']);
+// ── User — Legal Request ──────────────────────────────────────
+Route::prefix('legal-request')->group(function () {
+    Route::post('/submit',                 [LegalRequestController::class, 'submit']);
+    Route::get('/my-requests',             [LegalRequestController::class, 'myRequests']);
+    Route::get('/{requestId}/bids',        [LegalRequestController::class, 'getBids']);
+    Route::post('/{requestId}/accept-bid', [LegalRequestController::class, 'acceptBid']);
+    Route::post('/{requestId}/cancel',     [LegalRequestController::class, 'cancel']);
 });
