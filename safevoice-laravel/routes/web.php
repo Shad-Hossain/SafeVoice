@@ -15,6 +15,7 @@ Route::get('/register',     fn() => view('pages.register'))->name('register');
 
 // ── User Dashboard (auth guard via JS/session check) ─────────
 Route::get('/dashboard',    fn() => view('pages.dashboard'))->name('dashboard');
+Route::get('/settings',     fn() => view('pages.settings'))->name('settings');
 Route::get('/complaint',    fn() => view('pages.complaint'))->name('complaint');
 
 // ── Admin Pages ──────────────────────────────────────────────

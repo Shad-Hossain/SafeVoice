@@ -249,7 +249,7 @@
             <li id="nav-sos-responds"><a href="#" onclick="showSection('sos-responds')"><i class="fas fa-hands-helping" style="color:#4f9eff"></i> SOS Responses</a></li>
             <li id="nav-all-sos"><a href="#" onclick="showSection('all-sos')"><i class="fas fa-bell" style="color:#e63946"></i> All SOS Requests</a></li>
             <li class="sidebar-divider"></li>
-            <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Settings</a></li>
+            <li><a href="/settings"><i class="fas fa-cog"></i> Settings</a></li>
             <li><a href="#" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
     </aside>
