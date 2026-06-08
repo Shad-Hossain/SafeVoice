@@ -20,8 +20,10 @@ class LegalRequestController extends Controller
             'location'        => 'nullable|string|max:255',
             'preferred_city'  => 'nullable|string|max:100',
             'is_urgent'       => 'nullable|boolean',
+            'is_instant'      => 'nullable|boolean',
             'budget_max'      => 'nullable|numeric|min:0',
             'user_phone'      => 'nullable|string|max:20',
+            'deadline'        => 'required|date|after:+2 hours',
         ]);
 
         // user identify
@@ -32,12 +34,14 @@ class LegalRequestController extends Controller
         try { $u = $request->user(); if ($u) { $userId = $u->id; $userName = $u->name; $userPhone = $u->phone; } } catch (\Exception) {}
         if (!$userId) { $userId = $request->session()->get('user_id'); $userName = $request->session()->get('user_name', 'Anonymous'); }
 
-        // request create
-        // user_phone: from auth user OR from request input
         if (!$userPhone && $request->filled('user_phone')) {
             $userPhone = preg_replace('/\D/', '', $request->user_phone);
             if (strlen($userPhone) === 13) $userPhone = substr($userPhone, 2);
         }
+
+        $isInstant = $request->boolean('is_instant');
+        // Instant হলে deadline এখন থেকে 2 ঘণ্টা, নাহলে user এর দেওয়া deadline
+        $deadline = $isInstant ? now()->addHours(2) : \Carbon\Carbon::parse($request->deadline);
 
         $legalRequest = LegalRequest::create([
             'request_id'     => LegalRequest::generateRequestId(),
@@ -49,21 +53,20 @@ class LegalRequestController extends Controller
             'location'       => $request->location,
             'preferred_city' => $request->preferred_city,
             'is_urgent'      => $request->boolean('is_urgent'),
+            'is_instant'     => $isInstant,
             'budget_max'     => $request->budget_max,
+            'deadline'       => $deadline,
             'status'         => 'open',
             'created_at'     => now(),
             'updated_at'     => now(),
         ]);
 
-        // ── Broadcast: সব Active + Available lawyer কে notification দাও ──
-        // preferred_city থাকলে শুধু ওই district এর lawyer দের notify করো
+        // ── Broadcast lawyers ──────────────────────────────────────────
         $lawyerQuery = Lawyer::where('status', 'Active')->where('is_available', true);
         if ($request->filled('preferred_city')) {
             $lawyerQuery->where('city', 'LIKE', '%' . $request->preferred_city . '%');
         }
         $lawyers = $lawyerQuery->get();
-
-        // কোনো lawyer না পেলে সব lawyer কে notify করো (fallback)
         if ($lawyers->isEmpty()) {
             $lawyers = Lawyer::where('status', 'Active')->where('is_available', true)->get();
         }
@@ -72,17 +75,20 @@ class LegalRequestController extends Controller
             'request_id'  => $legalRequest->request_id,
             'issue_type'  => $legalRequest->issue_type,
             'is_urgent'   => $legalRequest->is_urgent,
-            'location'    => $legalRequest->location,
+            'is_instant'  => $legalRequest->is_instant,
+            'deadline'    => $legalRequest->deadline->toIso8601String(),
             'budget_max'  => $legalRequest->budget_max,
             'created_at'  => $legalRequest->created_at->toIso8601String(),
         ];
+
+        $urgentPrefix = $isInstant ? '⚡ INSTANT: ' : ($legalRequest->is_urgent ? '🚨 URGENT: ' : '⚖️ New Legal Request: ');
 
         $notifs = [];
         foreach ($lawyers as $lawyer) {
             $notifs[] = [
                 'lawyer_id'  => $lawyer->id,
                 'type'       => 'new_request',
-                'title'      => ($legalRequest->is_urgent ? '🚨 URGENT: ' : '⚖️ New Legal Request: ') . ucfirst($legalRequest->issue_type),
+                'title'      => $urgentPrefix . ucfirst($legalRequest->issue_type),
                 'body'       => substr($legalRequest->description, 0, 120) . '...',
                 'data'       => json_encode($notifData),
                 'is_read'    => false,
@@ -94,14 +100,59 @@ class LegalRequestController extends Controller
             DB::table('lawyer_notifications')->insert($notifs);
         }
 
-        // FCM push (if tokens exist) — fire and forget
-        $this->sendFcmToLawyers($lawyers->pluck('id')->toArray(), $notifData['title'] ?? '⚖️ New Legal Request', substr($legalRequest->description, 0, 100));
+        $this->sendFcmToLawyers($lawyers->pluck('id')->toArray(), $urgentPrefix . ucfirst($legalRequest->issue_type), substr($legalRequest->description, 0, 100));
 
         return response()->json([
-            'success'    => true,
-            'message'    => 'Your request has been sent to ' . count($notifs) . ' available lawyers. You will be notified when they respond.',
-            'request_id' => $legalRequest->request_id,
+            'success'          => true,
+            'message'          => 'Your request has been sent to ' . count($notifs) . ' available lawyers.',
+            'request_id'       => $legalRequest->request_id,
+            'deadline'         => $legalRequest->deadline->toIso8601String(),
             'lawyers_notified' => count($notifs),
+        ]);
+    }
+
+    // ── GET /api/legal-request/track/{requestId} ─────────────────
+    // Public track — case ID দিয়ে status দেখবে
+    public function track(Request $request, string $requestId)
+    {
+        $r = LegalRequest::with(['bids.lawyer:id,full_name,city,rating,experience_years,specializations,profile_photo', 'assignedLawyer:id,full_name,city,rating,profile_photo'])
+            ->where('request_id', $requestId)
+            ->first();
+
+        if (!$r) return response()->json(['success' => false, 'message' => 'Case not found.'], 404);
+
+        // Auto-expire check
+        if ($r->isExpired() && in_array($r->status, ['open','bidding'])) {
+            $r->update(['status' => 'expired', 'updated_at' => now()]);
+            $r->refresh();
+        }
+
+        $bids = $r->bids->map(fn($b) => [
+            'id'           => $b->id,
+            'proposed_fee' => $b->proposed_fee,
+            'commission'   => $b->platform_commission ?? null,
+            'cover_note'   => $b->cover_note,
+            'estimated_days'    => $b->estimated_days,
+            'consultation_date' => $b->consultation_date?->toIso8601String(),
+            'office_address'    => $b->office_address,
+            'status'       => $b->status,
+            'bid_at'       => $b->bid_at,
+            'lawyer'       => $b->lawyer ? [
+                'name'             => $b->lawyer->full_name,
+                'city'             => $b->lawyer->city,
+                'rating'           => $b->lawyer->rating,
+                'experience_years' => $b->lawyer->experience_years,
+                'specializations'  => $b->lawyer->specializations ?? [],
+                'photo'            => $b->lawyer->profile_photo,
+            ] : null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'case'    => [
+                ...$this->requestData($r),
+                'bids' => $bids,
+            ],
         ]);
     }
 
@@ -189,8 +240,15 @@ class LegalRequestController extends Controller
         }
 
         DB::transaction(function () use ($bid, $legalRequest) {
-            // এই bid accept
-            $bid->update(['status' => 'accepted', 'responded_at' => now()]);
+            // 2% platform commission calculate
+            $commission = round($bid->proposed_fee * 0.02, 2);
+
+            // এই bid accept + commission store
+            $bid->update([
+                'status'              => 'accepted',
+                'platform_commission' => $commission,
+                'responded_at'        => now(),
+            ]);
 
             // বাকি সব bid reject
             LawyerBid::where('legal_request_id', $legalRequest->id)
@@ -269,8 +327,13 @@ class LegalRequestController extends Controller
             'issue_type'      => $r->issue_type,
             'description'     => $r->description,
             'location'        => $r->location,
+            'preferred_city'  => $r->preferred_city,
             'is_urgent'       => $r->is_urgent,
+            'is_instant'      => $r->is_instant,
             'budget_max'      => $r->budget_max,
+            'deadline'        => $r->deadline?->toIso8601String(),
+            'seconds_left'    => $r->secondsLeft(),
+            'is_expired'      => $r->isExpired(),
             'status'          => $r->status,
             'bid_count'       => $r->bids ? $r->bids->count() : 0,
             'assigned_lawyer' => $r->assignedLawyer ? [

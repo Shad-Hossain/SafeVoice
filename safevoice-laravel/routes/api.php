@@ -224,6 +224,7 @@ Route::prefix('lawyer')->group(function () {
 Route::prefix('legal-request')->group(function () {
     Route::post('/submit',                 [LegalRequestController::class, 'submit']);
     Route::get('/my-requests',             [LegalRequestController::class, 'myRequests']);
+    Route::get('/track/{requestId}',       [LegalRequestController::class, 'track']);
     Route::get('/{requestId}/bids',        [LegalRequestController::class, 'getBids']);
     Route::post('/{requestId}/accept-bid', [LegalRequestController::class, 'acceptBid']);
     Route::post('/{requestId}/cancel',     [LegalRequestController::class, 'cancel']);

@@ -10,20 +10,37 @@ class LegalRequest extends Model
 
     protected $fillable = [
         'request_id', 'user_id', 'user_name', 'user_phone',
-        'issue_type', 'description', 'location', 'is_urgent',
-        'budget_max', 'status', 'assigned_lawyer_id',
+        'issue_type', 'description', 'location', 'preferred_city',
+        'is_urgent', 'is_instant', 'budget_max', 'deadline', 'deadline_notified',
+        'status', 'assigned_lawyer_id',
         'accepted_at', 'completed_at',
         'created_at', 'updated_at',
     ];
 
     protected $casts = [
-        'is_urgent'    => 'boolean',
-        'budget_max'   => 'decimal:2',
-        'accepted_at'  => 'datetime',
-        'completed_at' => 'datetime',
-        'created_at'   => 'datetime',
-        'updated_at'   => 'datetime',
+        'is_urgent'         => 'boolean',
+        'is_instant'        => 'boolean',
+        'deadline_notified' => 'boolean',
+        'budget_max'        => 'decimal:2',
+        'deadline'          => 'datetime',
+        'accepted_at'       => 'datetime',
+        'completed_at'      => 'datetime',
+        'created_at'        => 'datetime',
+        'updated_at'        => 'datetime',
     ];
+
+    // deadline পার হয়েছে কিনা
+    public function isExpired(): bool
+    {
+        return $this->deadline && now()->isAfter($this->deadline) && in_array($this->status, ['open','bidding']);
+    }
+
+    // deadline পর্যন্ত কত সময় বাকি (seconds)
+    public function secondsLeft(): int
+    {
+        if (!$this->deadline) return 0;
+        return max(0, now()->diffInSeconds($this->deadline, false));
+    }
 
     public function user()
     {

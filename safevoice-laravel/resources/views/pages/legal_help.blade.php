@@ -72,10 +72,32 @@
                     <input type="tel" class="form-input" id="contactPhone" placeholder="+880 1700-000000" required />
                 </div>
 
-                {{-- Consultation time — min 5 hours from now --}}
+                {{-- Instant or Scheduled --}}
                 <div class="form-group">
-                    <label><i class="fas fa-calendar-alt"></i> Preferred Consultation Time <span class="optional-label">(Optional — min 5 hours from now)</span></label>
-                    <input type="datetime-local" class="form-input" id="consultTime" />
+                    <label><i class="fas fa-bolt"></i> Response Type <span style="color:#ef4444">*</span></label>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <div class="budget-btn" id="typeScheduled" onclick="selectType('scheduled')" style="flex:1;min-width:140px;">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Scheduled</span>
+                            <small style="display:block;font-size:11px;color:#a0b4cc;margin-top:4px;">Set your own deadline</small>
+                        </div>
+                        <div class="budget-btn" id="typeInstant" onclick="selectType('instant')" style="flex:1;min-width:140px;">
+                            <i class="fas fa-bolt" style="color:#fbbf24"></i>
+                            <span>⚡ Instant (2hr)</span>
+                            <small style="display:block;font-size:11px;color:#fbbf24;margin-top:4px;">Deadline auto-set to 2 hours</small>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Deadline — mandatory for Scheduled, hidden for Instant --}}
+                <div class="form-group" id="deadlineGroup">
+                    <label><i class="fas fa-hourglass-half"></i> Response Deadline <span style="color:#ef4444">*</span>
+                        <small style="color:#6b7280;font-weight:400;margin-left:6px;">(min 2 hours from now)</small>
+                    </label>
+                    <input type="datetime-local" class="form-input" id="deadline" />
+                    <p style="font-size:11px;color:#6b7280;margin-top:6px;">
+                        <i class="fas fa-info-circle"></i> If no lawyer accepts by this time, you'll be notified to increase your budget.
+                    </p>
                 </div>
 
                 <div class="form-group">
@@ -105,9 +127,15 @@
                 <div class="request-id-box">
                     <span>Request ID</span>
                     <h3 id="requestId">LR-2026-0000</h3>
-                    <p>Save this ID to track your request</p>
+                    <p>Use this ID to track your case</p>
+                </div>
+                <div id="deadlineInfo" style="background:#fbbf2415;border:1px solid #fbbf2440;border-radius:10px;padding:12px;margin:12px 0;font-size:13px;color:#fbbf24;display:none;">
+                    <i class="fas fa-hourglass-half"></i> Deadline: <strong id="deadlineDisplay"></strong>
                 </div>
                 <div class="success-actions">
+                    <a id="trackCaseBtn" href="#" class="btn-go-dash" style="background:#4f9eff20;color:#4f9eff;border:1px solid #4f9eff40;">
+                        <i class="fas fa-search"></i> Track My Case
+                    </a>
                     <a href="/dashboard" class="btn-go-dash"><i class="fas fa-home"></i> Go to Dashboard</a>
                     <button class="btn-close-modal" onclick="closeModal()">Close</button>
                 </div>

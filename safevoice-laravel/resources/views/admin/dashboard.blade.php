@@ -681,7 +681,7 @@
 
 // ── Section Navigation ────────────────────────────────────────
 function showSection(section, preFilter) {
-    ['dashboard','complaints','users','payments','sos','sos-evidence','pending-accounts'].forEach(s => {
+    ['dashboard','complaints','users','payments','sos','sos-evidence','pending-accounts','lawyers'].forEach(s => {
         document.getElementById('view-' + s).style.display = 'none';
         document.getElementById('nav-' + s)?.classList.remove('active');
     });

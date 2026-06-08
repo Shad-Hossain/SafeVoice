@@ -435,10 +435,25 @@ function renderRecentRequests(reqs) {
 
 function requestCard(r, compact = false, prefix = '') {
     const urgent    = r.is_urgent;
+    const instant   = r.is_instant;
     const typeCap   = (r.issue_type || '').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
     const budgetTxt = r.budget_max ? `৳${Number(r.budget_max).toLocaleString()}` : 'No budget set';
     const ago       = timeAgo(r.created_at);
     const rid       = (prefix ? prefix + '-' : '') + r.request_id;
+
+    // Deadline countdown
+    let deadlineHtml = '';
+    if (r.deadline) {
+        const diff = new Date(r.deadline) - new Date();
+        if (diff > 0) {
+            const h   = Math.floor(diff / 3600000);
+            const m   = Math.floor((diff % 3600000) / 60000);
+            const pad = n => String(n).padStart(2,'0');
+            const timeLeft = h > 0 ? `${h}h ${pad(m)}m` : `${pad(m)}m left`;
+            const urgentColor = diff < 3600000 ? '#ef4444' : (instant ? '#fbbf24' : '#a0b4cc');
+            deadlineHtml = `<span style="color:${urgentColor};font-size:11px;font-weight:600;"><i class="fas fa-hourglass-half"></i> ${timeLeft}</span>`;
+        }
+    }
 
     // consultation date min = now + 5 hours
     const minDate = new Date(Date.now() + 5*60*60*1000);
@@ -446,14 +461,15 @@ function requestCard(r, compact = false, prefix = '') {
     const minDT   = `${minDate.getFullYear()}-${pad(minDate.getMonth()+1)}-${pad(minDate.getDate())}T${pad(minDate.getHours())}:${pad(minDate.getMinutes())}`;
 
     return `
-    <div class="request-card ${urgent?'urgent':''}" id="rc-${rid}">
+    <div class="request-card ${urgent?'urgent':''}" id="rc-${rid}" ${instant ? 'style="border-color:#fbbf2460;background:linear-gradient(135deg,#0d1526,#1a1200);"' : ''}>
         <div class="req-top">
             <div>
                 <div class="req-type">${typeCap}</div>
-                <div class="req-id">${rid}</div>
+                <div class="req-id">${r.request_id}</div>
             </div>
-            <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
-                ${urgent ? '<span class="req-badge badge-urgent">🚨 URGENT</span>' : ''}
+            <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;align-items:center;">
+                ${instant ? '<span class="req-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440;">⚡ INSTANT</span>' : ''}
+                ${urgent && !instant ? '<span class="req-badge badge-urgent">🚨 URGENT</span>' : ''}
                 <span class="req-badge badge-open">Open</span>
             </div>
         </div>
@@ -463,6 +479,7 @@ function requestCard(r, compact = false, prefix = '') {
             <span><i class="fas fa-wallet"></i>Budget: ${budgetTxt}</span>
             <span><i class="fas fa-users"></i>${r.bid_count || 0} bid(s) so far</span>
             <span><i class="fas fa-clock"></i>${ago}</span>
+            ${deadlineHtml}
         </div>
         <div class="req-actions">
             <button class="btn btn-primary btn-sm" onclick="toggleBidForm('${rid}')">
@@ -518,7 +535,19 @@ async function loadOpenRequests() {
     try {
         const res  = await fetch(`${API}/requests`, { headers: headers() });
         const data = await res.json();
-        const reqs = data.data || data.requests?.data || [];
+        let reqs   = data.data || data.requests?.data || [];
+
+        // Priority sort: instant first → urgent → oldest deadline first
+        reqs.sort((a, b) => {
+            if (a.is_instant && !b.is_instant) return -1;
+            if (!a.is_instant && b.is_instant) return 1;
+            if (a.is_urgent && !b.is_urgent) return -1;
+            if (!a.is_urgent && b.is_urgent) return 1;
+            // deadline সবচেয়ে কম বাকি সেটা আগে
+            if (a.deadline && b.deadline) return new Date(a.deadline) - new Date(b.deadline);
+            return 0;
+        });
+
         el.innerHTML = reqs.length
             ? reqs.map(r => requestCard(r)).join('')
             : `<div class="empty"><div class="e-icon">✅</div><p>No open requests right now.</p></div>`;
