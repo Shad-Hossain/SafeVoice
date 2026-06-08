@@ -5,8 +5,10 @@ use Illuminate\Support\Facades\Route;
 // ── Public Pages ─────────────────────────────────────────────
 Route::get('/',             fn() => view('home'))->name('home');
 Route::get('/leaderboard',  fn() => view('pages.leaderboard'))->name('leaderboard');
-Route::get('/legal',        fn() => view('pages.legal_help'))->name('legal');
-Route::get('/track',        fn() => view('pages.complaint_track'))->name('track');
+Route::get('/legal',          fn() => view('pages.legal_help'))->name('legal');
+Route::get('/legal/track',    fn() => view('pages.legal_track'))->name('legal.track');
+Route::get('/legal-cases',    fn() => view('pages.legal_case_dashboard'))->name('legal.cases');
+Route::get('/track',          fn() => view('pages.complaint_track'))->name('track');
 Route::get('/sos',          fn() => view('pages.sos'))->name('sos');
 
 // ── Auth Pages ───────────────────────────────────────────────

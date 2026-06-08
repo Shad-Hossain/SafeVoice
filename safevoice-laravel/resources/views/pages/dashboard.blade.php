@@ -244,6 +244,7 @@
             <li id="nav-mycomplaints"><a href="#" onclick="showSection('mycomplaints')"><i class="fas fa-list"></i> My Complaints</a></li>
             <li><a href="/track"><i class="fas fa-search"></i> Track Complaint</a></li>
             <li><a href="/legal"><i class="fas fa-gavel"></i> Legal Help</a></li>
+            <li><a href="/legal-cases"><i class="fas fa-balance-scale" style="color:#4f9eff"></i> My Legal Cases</a></li>
             <li><a href="/leaderboard"><i class="fas fa-trophy"></i> Leaderboard</a></li>
             <li><a href="/sos"><i class="fas fa-exclamation-triangle" style="color:#e63946"></i> Emergency SOS</a></li>
             <li id="nav-sos-responds"><a href="#" onclick="showSection('sos-responds')"><i class="fas fa-hands-helping" style="color:#4f9eff"></i> SOS Responses</a></li>
