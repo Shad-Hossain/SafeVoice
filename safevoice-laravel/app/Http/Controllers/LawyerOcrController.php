@@ -76,10 +76,10 @@ class LawyerOcrController extends Controller
             }
             // Fallback: longest capitalized word sequence
             if (!$name) {
-                preg_match_all('/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b/', $text, $m);
-                if (!empty($m[1])) {
-                    usort($m[1], fn($a,$b) => strlen($b) - strlen($a));
-                    $name = $m[1][0];
+                preg_match_all('/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b/', $text, $matches);
+                if (!empty($matches[1]) && is_array($matches[1])) {
+                    usort($matches[1], fn(string $a, string $b): int => strlen($b) - strlen($a));
+                    $name = $matches[1][0];
                 }
             }
 

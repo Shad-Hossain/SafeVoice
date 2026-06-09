@@ -10,7 +10,8 @@ class LegalRequest extends Model
 
     protected $fillable = [
         'request_id', 'user_id', 'user_name', 'user_phone',
-        'issue_type', 'description', 'location', 'preferred_city',
+        'issue_type', 'description', 'document_paths', 'location', 'preferred_city',
+        'preferred_division', 'preferred_district',
         'is_urgent', 'is_instant', 'budget_max', 'deadline', 'deadline_notified',
         'status', 'assigned_lawyer_id',
         'accepted_at', 'completed_at',
@@ -60,6 +61,11 @@ class LegalRequest extends Model
     public function acceptedBid()
     {
         return $this->hasOne(LawyerBid::class)->where('status', 'accepted');
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(\App\Models\CasePayment::class, 'legal_request_id');
     }
 
     public static function generateRequestId(): string

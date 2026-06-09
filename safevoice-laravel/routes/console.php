@@ -18,3 +18,6 @@ Schedule::command('safevoice:process-evidence-deadlines')->dailyAt('00:00');
 use App\Console\Commands\ExpireLegalCaseOffers;
 
 Schedule::command('legal:expire-offers')->hourly();
+
+// Expire instant legal requests past 30-min deadline — runs every minute
+Schedule::command('legal:expire-instant')->everyMinute();

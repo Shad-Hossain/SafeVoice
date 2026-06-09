@@ -211,6 +211,13 @@
                     <span id="lawyerPendingBadge" style="display:none;background:#e63946;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;font-weight:700;"></span>
                 </a>
             </li>
+            <li id="nav-commission">
+                <a href="#" onclick="showSection('commission')">
+                    <i class="fas fa-money-bill-wave"></i>
+                    Commission Payments
+                    <span id="commissionPendingBadge" style="display:none;background:#f59e0b;color:#000;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;font-weight:700;"></span>
+                </a>
+            </li>
         </ul>
         <div style="padding:14px 16px;border-top:1px solid #1e2d4a;margin-top:20px">
             <a href="{{ route('super-admin.login') }}" style="display:flex;align-items:center;gap:8px;color:#fbbf24;font-size:12px;font-weight:600;text-decoration:none;background:#fbbf2410;border:1px solid #fbbf2430;border-radius:8px;padding:9px 12px">
@@ -503,7 +510,73 @@
             </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════ -->
+        <!-- Commission Payments Section                           -->
+        <!-- ══════════════════════════════════════════════════════ -->
+        <div id="view-commission" style="display:none">
+            <div class="welcome-bar">
+                <h1><i class="fas fa-money-bill-wave" style="font-size:22px;margin-right:10px;color:#f59e0b"></i>Commission Payments</h1>
+                <p>Verify and approve lawyer commission payments to the platform</p>
+            </div>
+
+            <!-- Filter + Refresh bar -->
+            <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap;">
+                <select id="commStatusFilter" onchange="loadCommissionSection()"
+                    style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:10px;padding:9px 14px;color:#fff;font-size:13px;outline:none;">
+                    <option value="pending">⏳ Pending</option>
+                    <option value="approved">✅ Approved</option>
+                    <option value="rejected">❌ Rejected</option>
+                    <option value="all">All</option>
+                </select>
+                <button class="btn-refresh" onclick="loadCommissionSection()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <span id="commSectionCount" style="color:#a0b4cc;font-size:13px;margin-left:auto;"></span>
+            </div>
+
+            <div style="background:#0a0f1e;border:1px solid #1e2d4a;border-radius:14px;overflow:hidden;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="background:#0d1526;border-bottom:1px solid #1e2d4a;">
+                            <th style="padding:13px 16px;text-align:left;color:#a0b4cc;font-weight:600;">Ref Code</th>
+                            <th style="padding:13px 16px;text-align:left;color:#a0b4cc;font-weight:600;">Lawyer</th>
+                            <th style="padding:13px 16px;text-align:left;color:#a0b4cc;font-weight:600;">Amount</th>
+                            <th style="padding:13px 16px;text-align:left;color:#a0b4cc;font-weight:600;">Method</th>
+                            <th style="padding:13px 16px;text-align:left;color:#a0b4cc;font-weight:600;">Transaction Ref</th>
+                            <th style="padding:13px 16px;text-align:left;color:#a0b4cc;font-weight:600;">Submitted</th>
+                            <th style="padding:13px 16px;text-align:left;color:#a0b4cc;font-weight:600;">Status</th>
+                            <th style="padding:13px 16px;text-align:left;color:#a0b4cc;font-weight:600;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commissionTableBody">
+                        <tr><td colspan="8" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
+</div>
+
+<!-- Commission Reject Modal -->
+<div id="commRejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#0d1526;border-radius:16px;border:1px solid #e6394630;max-width:440px;width:100%;padding:28px;">
+        <h3 style="color:#ef4444;font-size:15px;font-weight:700;margin-bottom:16px;">❌ Reject Commission Payment</h3>
+        <input type="hidden" id="commRejectRef">
+        <label style="color:#a0b4cc;font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Reason (shown to lawyer)</label>
+        <textarea id="commRejectNote" rows="3" placeholder="e.g. Transaction ID not found in bKash records..."
+            style="width:100%;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:8px;color:#fff;padding:10px;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+            <button onclick="confirmRejectCommission()"
+                style="flex:1;background:#ef4444;color:#fff;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;">
+                ❌ Confirm Reject
+            </button>
+            <button onclick="document.getElementById('commRejectModal').style.display='none'"
+                style="background:transparent;border:1px solid #1e2d4a;color:#a0b4cc;border-radius:8px;padding:11px 18px;font-size:13px;cursor:pointer;">
+                Cancel
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Lawyer Detail Modal -->
@@ -681,7 +754,7 @@
 
 // ── Section Navigation ────────────────────────────────────────
 function showSection(section, preFilter) {
-    ['dashboard','complaints','users','payments','sos','sos-evidence','pending-accounts','lawyers'].forEach(s => {
+    ['dashboard','complaints','users','payments','sos','sos-evidence','pending-accounts','lawyers','commission'].forEach(s => {
         document.getElementById('view-' + s).style.display = 'none';
         document.getElementById('nav-' + s)?.classList.remove('active');
     });
@@ -699,6 +772,7 @@ function showSection(section, preFilter) {
     if (section === 'sos-evidence')     loadSosEvidence();
     if (section === 'pending-accounts') loadPendingAccounts();
     if (section === 'lawyers')          loadLawyers();
+    if (section === 'commission')       loadCommissionSection();
 }
 
 // ── Payments ─────────────────────────────────────────────────
@@ -2065,6 +2139,131 @@ function showAdminToast(msg, type = 'success') {
         alert(msg);
     }
 }
+
+// ══════════════════════════════════════════════════════════════
+// COMMISSION PAYMENTS — Admin verify & approve
+// ══════════════════════════════════════════════════════════════
+async function loadCommissionSection() {
+    const status = document.getElementById('commStatusFilter')?.value || 'pending';
+    const tbody  = document.getElementById('commissionTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="8" class="table-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const headers   = { 'X-CSRF-TOKEN': csrfToken };
+
+    try {
+        const res  = await fetch(`/api/admin/commission/all?status=${status}`, { credentials: 'include', headers });
+        const data = await res.json();
+        if (!data.success) { tbody.innerHTML = '<tr><td colspan="8" class="table-state">Failed to load.</td></tr>'; return; }
+
+        const payments = data.payments || [];
+        const countEl  = document.getElementById('commSectionCount');
+        if (countEl) countEl.textContent = `${payments.length} record(s)`;
+
+        if (payments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="table-state"><i class="fas fa-check-circle" style="color:#22c55e"></i><br>No commission payments found.</td></tr>';
+            return;
+        }
+
+        const statusBadge = { pending: '<span style="background:#f59e0b20;color:#f59e0b;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;">⏳ Pending</span>', approved: '<span style="background:#22c55e20;color:#22c55e;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;">✅ Approved</span>', rejected: '<span style="background:#ef444420;color:#ef4444;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;">❌ Rejected</span>' };
+
+        tbody.innerHTML = payments.map(p => `
+            <tr style="border-bottom:1px solid #1e2d4a;transition:background .15s;" onmouseover="this.style.background='#0d1526'" onmouseout="this.style.background='transparent'">
+                <td style="padding:12px 16px;color:#4f9eff;font-weight:600;">${p.ref_code}</td>
+                <td style="padding:12px 16px;">
+                    <div style="color:#e2e8f0;font-weight:600;">${p.full_name}</div>
+                    <div style="color:#6b7fa3;font-size:11px;">${p.lawyer_code}</div>
+                </td>
+                <td style="padding:12px 16px;color:#22c55e;font-weight:700;">৳${parseFloat(p.amount).toLocaleString('en-BD', {minimumFractionDigits:2})}</td>
+                <td style="padding:12px 16px;color:#e2e8f0;text-transform:uppercase;">${p.method}</td>
+                <td style="padding:12px 16px;color:#a0b4cc;font-family:monospace;">${p.transaction_ref}</td>
+                <td style="padding:12px 16px;color:#6b7fa3;font-size:12px;">${p.submitted_at ? new Date(p.submitted_at).toLocaleString('en-BD') : '—'}</td>
+                <td style="padding:12px 16px;">${statusBadge[p.status] || p.status}</td>
+                <td style="padding:12px 16px;">
+                    ${p.status === 'pending' ? `
+                        <button onclick="approveCommissionAdmin('${p.ref_code}')"
+                            style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;margin-right:6px;">
+                            ✓ Approve
+                        </button>
+                        <button onclick="openCommRejectModal('${p.ref_code}')"
+                            style="background:#ef4444;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;">
+                            ✗ Reject
+                        </button>
+                    ` : `<span style="color:#4b5563;font-size:12px;">${p.admin_note ? '📝 ' + p.admin_note : '—'}</span>`}
+                </td>
+            </tr>`).join('');
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="8" class="table-state">Error loading payments.</td></tr>';
+        console.error('Commission section error:', e);
+    }
+}
+
+async function approveCommissionAdmin(refCode) {
+    if (!confirm(`Approve commission payment ${refCode}?\n\nThis will update the lawyer's balance.`)) return;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    try {
+        const res  = await fetch(`/api/admin/commission/${refCode}/approve`, { method: 'POST', credentials: 'include', headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const data = await res.json();
+        if (data.success) {
+            showAdminToast(`✅ ${refCode} approved!`);
+            loadCommissionSection();
+            refreshCommissionBadge();
+        } else {
+            showAdminToast(data.message || 'Failed to approve.', 'error');
+        }
+    } catch(e) { showAdminToast('Network error.', 'error'); }
+}
+
+function openCommRejectModal(refCode) {
+    document.getElementById('commRejectRef').value = refCode;
+    document.getElementById('commRejectNote').value = '';
+    const modal = document.getElementById('commRejectModal');
+    modal.style.display = 'flex';
+}
+
+async function confirmRejectCommission() {
+    const refCode = document.getElementById('commRejectRef').value;
+    const note    = document.getElementById('commRejectNote').value.trim() || 'Transaction could not be verified.';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    try {
+        const res  = await fetch(`/api/admin/commission/${refCode}/reject`, {
+            method: 'POST', credentials: 'include',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('commRejectModal').style.display = 'none';
+            showAdminToast(`❌ ${refCode} rejected.`);
+            loadCommissionSection();
+            refreshCommissionBadge();
+        } else {
+            showAdminToast(data.message || 'Failed to reject.', 'error');
+        }
+    } catch(e) { showAdminToast('Network error.', 'error'); }
+}
+
+async function refreshCommissionBadge() {
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const res  = await fetch('/api/admin/commission/pending', { credentials: 'include', headers: { 'X-CSRF-TOKEN': csrfToken } });
+        const data = await res.json();
+        const badge = document.getElementById('commissionPendingBadge');
+        if (!badge) return;
+        if (data.count && data.count > 0) {
+            badge.textContent   = data.count;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch(e) {}
+}
+
+// Auto-refresh commission badge on page load and every 60s
+document.addEventListener('DOMContentLoaded', () => {
+    refreshCommissionBadge();
+    setInterval(refreshCommissionBadge, 60000);
+});
 
 </script>
 @endsection

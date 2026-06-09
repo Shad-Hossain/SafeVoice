@@ -10,6 +10,7 @@ class LawyerBid extends Model
 
     protected $fillable = [
         'legal_request_id', 'lawyer_id', 'proposed_fee',
+        'platform_commission',
         'cover_note', 'estimated_days', 'status',
         'consultation_date', 'office_address',
         'bid_at', 'responded_at',

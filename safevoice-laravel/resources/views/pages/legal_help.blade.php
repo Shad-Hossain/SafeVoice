@@ -144,6 +144,14 @@
     </div>
 
     <script src="{{ asset('js/main.js') }}"></script>
+    <?php
+        $svUserId    = session('user_id')    ? (int) session('user_id')    : 0;
+        $svUserName  = session('user_name')  ? session('user_name')        : '';
+        $svUserPhone = session('user_phone') ? session('user_phone')       : '';
+    ?>
+    <script>
+        window.SAFEVOICE_USER = <?php echo json_encode(['id' => $svUserId, 'name' => $svUserName, 'phone' => $svUserPhone]); ?>;
+    </script>
     <script src="{{ asset('js/legal.js') }}"></script>
     <script src="{{ asset('js/theme.js') }}"></script>
 @endsection

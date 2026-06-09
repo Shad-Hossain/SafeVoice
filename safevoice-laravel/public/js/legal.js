@@ -61,9 +61,9 @@ function selectType(type) {
     }
 }
 
-// ── BUDGET SELECTION ──────────────────────────────────────
+// ── BUDGET SELECTION (single only) ───────────────────────
 function selectBudget(el, value) {
-    document.querySelectorAll('.budget-btn[data-budget]').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('#budgetOptions .budget-btn').forEach(b => b.classList.remove('selected'));
     el.classList.add('selected');
     selectedBudget = value;
 }
@@ -90,6 +90,10 @@ async function submitLegalRequest() {
         if (selected < minTime) { alert('Deadline must be at least 2 hours from now.'); return; }
     }
 
+    // ── Payment Agreement Modal ────────────────────────────
+    const agreed = await showPaymentAgreementModal();
+    if (!agreed) return; // User disagreed — don't submit
+
     const budgetMap = { '1000-5000': 5000, '5000-15000': 15000, '15000+': null };
 
     const btn = document.querySelector('.btn-submit-legal');
@@ -97,29 +101,50 @@ async function submitLegalRequest() {
 
     try {
         const csrfMeta = document.querySelector('meta[name=csrf-token]');
-        const headers  = { 'Content-Type': 'application/json' };
-        if (csrfMeta) headers['X-CSRF-TOKEN'] = csrfMeta.content;
-        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('token');
-        if (token) headers['Authorization'] = 'Bearer ' + token;
+        const csrfToken = csrfMeta ? csrfMeta.content : '';
+
+        // Bug fix: mobile token অথবা web session inject করা user info — দুটোই support
+        const token = localStorage.getItem('sv_token') || localStorage.getItem('auth_token') || sessionStorage.getItem('token');
+
+        // Web session থেকে inject করা user info (Blade এ set করা)
+        const svUser   = window.SAFEVOICE_USER || {};
+        const userId   = svUser.id   || null;
+        const userName = svUser.name || null;
 
         const isInstant = selectedType === 'instant';
+
+        // FormData দিয়ে file upload support করো
+        const formData = new FormData();
+        formData.append('issue_type',         issueType);
+        formData.append('description',        issueDesc);
+        formData.append('budget_max',         budgetMap[selectedBudget] ?? '');
+        formData.append('user_phone',         contactPhone);
+        formData.append('preferred_city',     selectedDistrict);
+        formData.append('preferred_district', selectedDistrict);
+        formData.append('is_instant',         isInstant ? '1' : '0');
+        formData.append('is_urgent',          '0');
+        formData.append('deadline',           isInstant
+            ? new Date(Date.now() + 2*60*60*1000).toISOString()
+            : new Date(deadline).toISOString());
+        if (userId)   formData.append('user_id',   userId);
+        if (userName) formData.append('user_name', userName);
+
+        // File upload যোগ করো
+        const fileInput = document.querySelector('.upload-box input[type="file"]');
+        if (fileInput && fileInput.files.length > 0) {
+            Array.from(fileInput.files).forEach((file, i) => {
+                formData.append(`documents[${i}]`, file);
+            });
+        }
+
+        const headers = { 'X-CSRF-TOKEN': csrfToken };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
 
         const res  = await fetch('/api/legal-request/submit', {
             method:  'POST',
             headers,
-            body: JSON.stringify({
-                issue_type:     issueType,
-                description:    issueDesc,
-                budget_max:     budgetMap[selectedBudget] ?? null,
-                user_phone:     contactPhone,
-                preferred_city: selectedDistrict,
-                is_instant:     isInstant,
-                is_urgent:      false,
-                // Instant হলে dummy future deadline পাঠাই — backend override করবে
-                deadline:       isInstant
-                    ? new Date(Date.now() + 3*60*60*1000).toISOString()
-                    : new Date(deadline).toISOString(),
-            }),
+            credentials: 'include',
+            body: formData,
         });
 
         const data = await res.json();
@@ -153,4 +178,96 @@ async function submitLegalRequest() {
 
 function closeModal() {
     document.getElementById('successModal').classList.remove('active');
+}
+
+// ── Payment Agreement Modal ────────────────────────────────
+function showPaymentAgreementModal() {
+    return new Promise((resolve) => {
+        // Create modal if not exists
+        let modal = document.getElementById('paymentAgreementModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'paymentAgreementModal';
+            modal.style.cssText = `
+                position:fixed;inset:0;z-index:9999;
+                background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);
+                display:flex;align-items:center;justify-content:center;padding:20px;
+            `;
+            modal.innerHTML = `
+                <div style="
+                    background:#0d1526;border:1px solid #1e2d4a;border-radius:20px;
+                    padding:32px 28px;max-width:480px;width:100%;
+                    box-shadow:0 24px 60px rgba(0,0,0,0.6);
+                    animation:slideUp .25s ease;
+                ">
+                    <style>@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}</style>
+                    <div style="text-align:center;margin-bottom:24px;">
+                        <div style="font-size:40px;margin-bottom:12px;">⚖️</div>
+                        <h2 style="font-size:18px;font-weight:800;color:#fff;margin-bottom:8px;">Payment Agreement</h2>
+                        <p style="color:#6b7fa3;font-size:13px;line-height:1.5;">
+                            Please read and agree before submitting your case
+                        </p>
+                    </div>
+
+                    <div style="
+                        background:#070d1a;border:1px solid #1e3a5f;border-radius:12px;
+                        padding:18px 20px;margin-bottom:24px;
+                    ">
+                        <div style="display:flex;flex-direction:column;gap:12px;">
+                            <div style="display:flex;gap:12px;align-items:flex-start;">
+                                <span style="font-size:18px;flex-shrink:0;">💳</span>
+                                <div>
+                                    <div style="font-weight:700;color:#fff;font-size:13px;margin-bottom:3px;">Payment Obligation</div>
+                                    <div style="color:#8899b8;font-size:12px;line-height:1.5;">After your case is resolved by the lawyer, you must pay the agreed fee <strong style="color:#f59e0b;">within 3 days</strong>.</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:12px;align-items:flex-start;">
+                                <span style="font-size:18px;flex-shrink:0;">⏰</span>
+                                <div>
+                                    <div style="font-weight:700;color:#fff;font-size:13px;margin-bottom:3px;">Deadline Enforcement</div>
+                                    <div style="color:#8899b8;font-size:12px;line-height:1.5;">If payment is not made within 3 days of case resolution, the payment option will be <strong style="color:#ef4444;">permanently closed</strong> and your account will be flagged.</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:12px;align-items:flex-start;">
+                                <span style="font-size:18px;flex-shrink:0;">⚠️</span>
+                                <div>
+                                    <div style="font-weight:700;color:#ef4444;font-size:13px;margin-bottom:3px;">Legal Action</div>
+                                    <div style="color:#8899b8;font-size:12px;line-height:1.5;">Failure to pay may result in <strong style="color:#ef4444;">legal action taken against you</strong> under the terms of SafeVoice's service agreement.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:10px;">
+                        <button id="payAgreeBtn" style="
+                            flex:1;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;
+                            border:none;border-radius:10px;padding:13px;font-size:14px;
+                            font-weight:700;cursor:pointer;
+                        ">
+                            ✅ I Agree — Submit Case
+                        </button>
+                        <button id="payDisagreeBtn" style="
+                            background:transparent;color:#6b7fa3;border:1px solid #1e2d4a;
+                            border-radius:10px;padding:13px 18px;font-size:14px;
+                            font-weight:600;cursor:pointer;
+                        ">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        } else {
+            modal.style.display = 'flex';
+        }
+
+        document.getElementById('payAgreeBtn').onclick = () => {
+            modal.style.display = 'none';
+            resolve(true);
+        };
+        document.getElementById('payDisagreeBtn').onclick = () => {
+            modal.style.display = 'none';
+            resolve(false);
+        };
+    });
 }
