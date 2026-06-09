@@ -13,9 +13,10 @@ class Lawyer extends Authenticatable
     protected $fillable = [
         'lawyer_code', 'full_name', 'email', 'email_hash', 'phone',
         'password_hash', 'bar_council_id', 'bar_council_photo',
-        'profile_photo', 'address', 'city', 'specializations',
-        'experience_years', 'min_fee', 'bio', 'status',
+        'profile_photo', 'address', 'city', 'division', 'serving_areas',
+        'specializations', 'experience_years', 'min_fee', 'bio', 'status',
         'is_available', 'total_cases', 'completed_cases',
+        'total_earned', 'total_commission_paid',
         'rating', 'rating_count',
     ];
 
@@ -23,6 +24,7 @@ class Lawyer extends Authenticatable
 
     protected $casts = [
         'specializations' => 'array',
+        'serving_areas'   => 'array',
         'is_available'    => 'boolean',
         'min_fee'         => 'decimal:2',
         'rating'          => 'decimal:2',

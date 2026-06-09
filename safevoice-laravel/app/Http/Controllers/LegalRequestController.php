@@ -7,6 +7,7 @@ use App\Models\Lawyer;
 use App\Models\LegalRequest;
 use App\Models\LawyerBid;
 use App\Models\LawyerNotification;
+use App\Helpers\BangladeshAreas;
 
 class LegalRequestController extends Controller
 {
@@ -14,71 +15,172 @@ class LegalRequestController extends Controller
     // User একটা legal help request করে → সব active lawyer কে notification যায়
     public function submit(Request $request)
     {
+        $isInstantRequest = $request->boolean('is_instant');
+
         $request->validate([
-            'issue_type'      => 'required|string|max:100',
-            'description'     => 'required|string|min:20|max:2000',
-            'location'        => 'nullable|string|max:255',
-            'preferred_city'  => 'nullable|string|max:100',
-            'is_urgent'       => 'nullable|boolean',
-            'is_instant'      => 'nullable|boolean',
-            'budget_max'      => 'nullable|numeric|min:0',
-            'user_phone'      => 'nullable|string|max:20',
-            'deadline'        => 'required|date|after:+2 hours',
+            'issue_type'          => 'required|string|max:100',
+            'description'         => 'required|string|min:20|max:2000',
+            'location'            => 'nullable|string|max:255',
+            'preferred_city'      => 'nullable|string|max:100',
+            'preferred_division'  => 'nullable|string|max:100',
+            'preferred_district'  => 'nullable|string|max:100',
+            'is_urgent'           => 'nullable|boolean',
+            'is_instant'          => 'nullable|boolean',
+            'budget_max'          => 'nullable|numeric|min:0',
+            'user_phone'          => 'nullable|string|max:20',
+            // Instant request এ deadline দরকার নেই — auto 30min set হয়
+            'deadline'            => $isInstantRequest
+                                     ? 'nullable'
+                                     : 'required|date|after:+2 hours',
         ]);
 
-        // user identify
-        $userId   = null;
-        $userName = 'Anonymous';
-        $userPhone= null;
+        // Bug fix: sanctum auth থেকে প্রথমে try করো — middleware থাকলে এটাই কাজ করবে
+        $userId    = null;
+        $userName  = 'Anonymous';
+        $userPhone = null;
 
-        try { $u = $request->user(); if ($u) { $userId = $u->id; $userName = $u->name; $userPhone = $u->phone; } } catch (\Exception) {}
-        if (!$userId) { $userId = $request->session()->get('user_id'); $userName = $request->session()->get('user_name', 'Anonymous'); }
+        try {
+            $u = $request->user();
+            if ($u && isset($u->id)) {
+                $userId    = (int) $u->id;
+                $userName  = $u->name ?? 'Anonymous';
+                $userPhone = $u->phone ?? null;
+            }
+        } catch (\Exception) {}
+
+        // Fallback legacy: session বা query param
+        if (!$userId) {
+            $userId   = $request->session()->get('user_id');
+            $userName = $request->session()->get('user_name', 'Anonymous');
+        }
+
+        // Web form fallback: Blade inject করা user_id (body তে আসে)
+        if (!$userId && $request->filled('user_id')) {
+            $userId   = (int) $request->input('user_id');
+            $userName = $request->input('user_name', 'Anonymous');
+        }
+
+        if (!$userId) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Please log in first.'], 401);
+        }
 
         if (!$userPhone && $request->filled('user_phone')) {
             $userPhone = preg_replace('/\D/', '', $request->user_phone);
             if (strlen($userPhone) === 13) $userPhone = substr($userPhone, 2);
         }
 
-        $isInstant = $request->boolean('is_instant');
-        // Instant হলে deadline এখন থেকে 2 ঘণ্টা, নাহলে user এর দেওয়া deadline
+        $isInstant = $isInstantRequest;
+        // Instant হলে deadline এখন থেকে ৩০ মিনিট (Emergency SOS), নাহলে user এর দেওয়া deadline
         $deadline = $isInstant ? now()->addHours(2) : \Carbon\Carbon::parse($request->deadline);
 
+        // ── Document upload handle করো ─────────────────────────────
+        $documentPaths = [];
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $file) {
+                if ($file->isValid()) {
+                    $path = $file->store('legal_documents', 'public');
+                    $documentPaths[] = $path;
+                }
+            }
+        }
+
         $legalRequest = LegalRequest::create([
-            'request_id'     => LegalRequest::generateRequestId(),
-            'user_id'        => $userId,
-            'user_name'      => $userName,
-            'user_phone'     => $userPhone,
-            'issue_type'     => $request->issue_type,
-            'description'    => $request->description,
-            'location'       => $request->location,
-            'preferred_city' => $request->preferred_city,
-            'is_urgent'      => $request->boolean('is_urgent'),
-            'is_instant'     => $isInstant,
-            'budget_max'     => $request->budget_max,
-            'deadline'       => $deadline,
-            'status'         => 'open',
-            'created_at'     => now(),
-            'updated_at'     => now(),
+            'request_id'          => LegalRequest::generateRequestId(),
+            'user_id'             => $userId,
+            'user_name'           => $userName,
+            'user_phone'          => $userPhone,
+            'issue_type'          => $request->issue_type,
+            'description'         => $request->description,
+            'location'            => $request->location,
+            'preferred_city'      => $request->preferred_city,
+            'preferred_division'  => $request->preferred_division,
+            // preferred_district না আসলে preferred_city থেকে নাও
+            'preferred_district'  => $request->preferred_district ?? $request->preferred_city,
+            'is_urgent'           => $request->boolean('is_urgent'),
+            'is_instant'          => $isInstant,
+            'budget_max'          => $request->budget_max,
+            'deadline'            => $deadline,
+            'document_paths'      => !empty($documentPaths) ? json_encode($documentPaths) : null,
+            'status'              => 'open',
+            'created_at'          => now(),
+            'updated_at'          => now(),
         ]);
 
-        // ── Broadcast lawyers ──────────────────────────────────────────
-        $lawyerQuery = Lawyer::where('status', 'Active')->where('is_available', true);
-        if ($request->filled('preferred_city')) {
-            $lawyerQuery->where('city', 'LIKE', '%' . $request->preferred_city . '%');
+        // ── Location-based lawyer routing ──────────────────────────────
+        // User preferred_district বা preferred_division দিলে শুধু সেই area র lawyers পাবে।
+        // কোনো preference না থাকলেই শুধু সবাইকে notify করা হবে।
+        $preferredDistrict = $request->preferred_district ?? $request->preferred_city;
+        $preferredDivision = $request->preferred_division;
+
+        // Auto-detect division from district if not provided
+        if ($preferredDistrict && !$preferredDivision) {
+            $preferredDivision = BangladeshAreas::divisionOfDistrict($preferredDistrict);
         }
-        $lawyers = $lawyerQuery->get();
-        if ($lawyers->isEmpty()) {
-            $lawyers = Lawyer::where('status', 'Active')->where('is_available', true)->get();
+
+        $baseQuery = fn() => Lawyer::where('status', 'Active')->where('is_available', true);
+
+        $lawyers = collect();
+
+        if ($preferredDistrict) {
+            // Tier 1: serving_areas এ preferred district explicitly আছে
+            $lawyers = $baseQuery()
+                ->whereRaw("JSON_CONTAINS(serving_areas, JSON_QUOTE(?))", [$preferredDistrict])
+                ->get();
+
+            // Tier 2: serving_areas match নেই কিন্তু lawyer এর city বা division match করে
+            if ($lawyers->isEmpty() && $preferredDivision) {
+                $lawyers = $baseQuery()
+                    ->where(function ($q) use ($preferredDistrict, $preferredDivision) {
+                        $q->where('city', $preferredDistrict)
+                          ->orWhere('division', $preferredDivision);
+                    })->get();
+            }
+
+            // District দেওয়া হয়েছে কিন্তু কোনো lawyer নেই — fallback নেই
+            if ($lawyers->isEmpty()) {
+                return response()->json([
+                    'success'    => true,
+                    'request_id' => $legalRequest->request_id,
+                    'message'    => 'Request submitted! No lawyers currently available in ' . $preferredDistrict . '. You will be notified when one becomes available.',
+                    'no_lawyers' => true,
+                ]);
+            }
+
+        } elseif ($preferredDivision) {
+            // Division দিয়েছে — ওই division এর সব district এর lawyers
+            $divisionDistricts = BangladeshAreas::districtsOf($preferredDivision);
+            $lawyers = $baseQuery()
+                ->where(function ($q) use ($divisionDistricts, $preferredDivision) {
+                    foreach ($divisionDistricts as $district) {
+                        $q->orWhereRaw("JSON_CONTAINS(serving_areas, JSON_QUOTE(?))", [$district]);
+                    }
+                    $q->orWhere('division', $preferredDivision);
+                })->get();
+
+            if ($lawyers->isEmpty()) {
+                return response()->json([
+                    'success'    => true,
+                    'request_id' => $legalRequest->request_id,
+                    'message'    => 'Request submitted! No lawyers currently available in ' . $preferredDivision . ' division.',
+                    'no_lawyers' => true,
+                ]);
+            }
+
+        } else {
+            // কোনো area preference নেই — সব active lawyer কে notify করো
+            $lawyers = $baseQuery()->get();
         }
 
         $notifData = [
-            'request_id'  => $legalRequest->request_id,
-            'issue_type'  => $legalRequest->issue_type,
-            'is_urgent'   => $legalRequest->is_urgent,
-            'is_instant'  => $legalRequest->is_instant,
-            'deadline'    => $legalRequest->deadline->toIso8601String(),
-            'budget_max'  => $legalRequest->budget_max,
-            'created_at'  => $legalRequest->created_at->toIso8601String(),
+            'request_id'         => $legalRequest->request_id,
+            'issue_type'         => $legalRequest->issue_type,
+            'is_urgent'          => $legalRequest->is_urgent,
+            'is_instant'         => $legalRequest->is_instant,
+            'deadline'           => $legalRequest->deadline->toIso8601String(),
+            'budget_max'         => $legalRequest->budget_max,
+            'preferred_district' => $legalRequest->preferred_district,
+            'preferred_division' => $legalRequest->preferred_division,
+            'created_at'         => $legalRequest->created_at->toIso8601String(),
         ];
 
         $urgentPrefix = $isInstant ? '⚡ INSTANT: ' : ($legalRequest->is_urgent ? '🚨 URGENT: ' : '⚖️ New Legal Request: ');
@@ -102,12 +204,16 @@ class LegalRequestController extends Controller
 
         $this->sendFcmToLawyers($lawyers->pluck('id')->toArray(), $urgentPrefix . ucfirst($legalRequest->issue_type), substr($legalRequest->description, 0, 100));
 
+        $locationHint = $preferredDistrict ? " in {$preferredDistrict}" : ($preferredDivision ? " in {$preferredDivision} division" : '');
+
         return response()->json([
-            'success'          => true,
-            'message'          => 'Your request has been sent to ' . count($notifs) . ' available lawyers.',
-            'request_id'       => $legalRequest->request_id,
-            'deadline'         => $legalRequest->deadline->toIso8601String(),
-            'lawyers_notified' => count($notifs),
+            'success'            => true,
+            'message'            => 'Your request has been sent to ' . count($notifs) . " available lawyers{$locationHint}.",
+            'request_id'         => $legalRequest->request_id,
+            'deadline'           => $legalRequest->deadline->toIso8601String(),
+            'lawyers_notified'   => count($notifs),
+            'preferred_district' => $preferredDistrict,
+            'preferred_division' => $preferredDivision,
         ]);
     }
 
@@ -164,7 +270,11 @@ class LegalRequestController extends Controller
         if (!$userId) return response()->json(['success' => false], 401);
 
         $requests = LegalRequest::where('user_id', $userId)
-            ->with(['bids.lawyer:id,full_name,profile_photo,city,rating,experience_years,specializations', 'assignedLawyer:id,full_name,profile_photo,city,rating'])
+            ->with([
+                'bids.lawyer:id,full_name,profile_photo,city,rating,rating_count,experience_years,specializations,completed_cases',
+                'assignedLawyer:id,full_name,profile_photo,city,phone,email',
+                'acceptedBid:id,legal_request_id,office_address',
+            ])
             ->orderByDesc('created_at')
             ->get()
             ->map(fn($r) => $this->requestData($r));
@@ -190,6 +300,7 @@ class LegalRequestController extends Controller
                  ->update(['status' => 'seen']);
 
         $bids = LawyerBid::where('legal_request_id', $legalRequest->id)
+            ->whereNotIn('status', ['rejected']) // Bug fix: rejected bids লুকাও — refresh করলে আর দেখা যাবে না
             ->with('lawyer:id,full_name,profile_photo,city,rating,rating_count,experience_years,specializations,bar_council_id,completed_cases')
             ->orderBy('proposed_fee')
             ->get()
@@ -312,11 +423,127 @@ class LegalRequestController extends Controller
         return response()->json(['success' => true, 'message' => 'Request cancelled.']);
     }
 
+    // ── POST /api/legal-request/{requestId}/reject-bid ────────────
+    // Pathao-style: user একটা bid reject করে → case open থাকে, পরের lawyer bid করতে পারে
+    // সব bid reject হয়ে গেলে → user কে suggest করে budget বাড়িয়ে retry করতে
+    public function rejectBid(Request $request, string $requestId)
+    {
+        $request->validate([
+            'bid_id' => 'required|integer',
+            'reason' => 'nullable|string|max:200',
+        ]);
+
+        $userId       = $this->getUserId($request);
+        $legalRequest = LegalRequest::where('request_id', $requestId)->first();
+
+        if (!$legalRequest)                        return response()->json(['success' => false, 'message' => 'Request not found.'], 404);
+        if ($legalRequest->user_id !== $userId)    return response()->json(['success' => false], 403);
+        if ($legalRequest->status === 'accepted')  return response()->json(['success' => false, 'message' => 'Already accepted a lawyer.'], 422);
+        if ($legalRequest->status === 'cancelled') return response()->json(['success' => false, 'message' => 'Request is cancelled.'], 422);
+
+        $bid = LawyerBid::find($request->bid_id);
+        if (!$bid || $bid->legal_request_id !== $legalRequest->id) {
+            return response()->json(['success' => false, 'message' => 'Bid not found.'], 404);
+        }
+        if ($bid->status === 'accepted') {
+            return response()->json(['success' => false, 'message' => 'Cannot reject an already accepted bid.'], 422);
+        }
+
+        // Soft-reject এই bid টা — case cancel হয় না
+        $bid->update([
+            'status'       => 'rejected',
+            'responded_at' => now(),
+        ]);
+
+        // Notify the lawyer
+        LawyerNotification::create([
+            'lawyer_id'  => $bid->lawyer_id,
+            'type'       => 'bid_rejected',
+            'title'      => 'Client declined your offer',
+            'body'       => "Your bid for the {$legalRequest->issue_type} case was declined. The case is still open for other lawyers.",
+            'data'       => ['request_id' => $legalRequest->request_id],
+            'created_at' => now(),
+        ]);
+
+        // Check: are there any remaining non-rejected bids?
+        $remainingBids = LawyerBid::where('legal_request_id', $legalRequest->id)
+            ->whereNotIn('status', ['rejected'])
+            ->count();
+
+        // Case status back to 'open' so more lawyers can still bid
+        if (in_array($legalRequest->status, ['bidding', 'open'])) {
+            $legalRequest->update(['status' => 'open', 'updated_at' => now()]);
+        }
+
+        // Check: total lawyers available in this area who haven't bid yet
+        $alreadyBidLawyerIds = LawyerBid::where('legal_request_id', $legalRequest->id)
+            ->pluck('lawyer_id')->toArray();
+
+        $preferredDistrict = $legalRequest->preferred_district;
+        $preferredDivision = $legalRequest->preferred_division;
+
+        $availableQuery = Lawyer::where('status', 'Active')->where('is_available', true)
+            ->whereNotIn('id', $alreadyBidLawyerIds);
+
+        if ($preferredDistrict) {
+            $availableQuery->whereRaw("JSON_CONTAINS(serving_areas, JSON_QUOTE(?))", [$preferredDistrict]);
+        } elseif ($preferredDivision) {
+            $divDistricts = \App\Helpers\BangladeshAreas::districtsOf($preferredDivision);
+            $availableQuery->where(function ($q) use ($divDistricts, $preferredDivision) {
+                foreach ($divDistricts as $d) {
+                    $q->orWhereRaw("JSON_CONTAINS(serving_areas, JSON_QUOTE(?))", [$d]);
+                }
+                $q->orWhere('division', $preferredDivision);
+            });
+        }
+
+        $stillAvailable = $availableQuery->count();
+
+        // All bids rejected AND no more lawyers available → suggest budget increase
+        $allBidsRejected = LawyerBid::where('legal_request_id', $legalRequest->id)
+            ->whereNotIn('status', ['rejected'])
+            ->count() === 0;
+
+        if ($allBidsRejected && $stillAvailable === 0) {
+            $legalRequest->update(['status' => 'exhausted', 'updated_at' => now()]);
+            return response()->json([
+                'success'          => true,
+                'bid_rejected'     => true,
+                'all_rejected'     => true,
+                'remaining_bids'   => 0,
+                'lawyers_available'=> 0,
+                'message'          => 'All lawyers have been reviewed. No more lawyers available in your area right now.',
+                'suggestion'       => 'Try increasing your budget or expanding your area to attract more lawyers.',
+            ]);
+        }
+
+        return response()->json([
+            'success'           => true,
+            'bid_rejected'      => true,
+            'all_rejected'      => false,
+            'remaining_bids'    => $remainingBids,
+            'lawyers_available' => $stillAvailable,
+            'message'           => 'Bid declined. The case remains open for other lawyers.',
+        ]);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────
     private function getUserId(Request $request): ?int
     {
-        try { $u = $request->user(); if ($u) return $u->id; } catch (\Exception) {}
-        return $request->session()->get('user_id') ?? $request->query('user_id');
+        // 1. Bearer token — manually check PAT table (middleware ছাড়াও কাজ করে)
+        $bearerToken = $request->bearerToken();
+        if ($bearerToken) {
+            try {
+                $pat = \Laravel\Sanctum\PersonalAccessToken::findToken($bearerToken);
+                if ($pat && $pat->tokenable_type === \App\Models\User::class) {
+                    return (int) $pat->tokenable_id;
+                }
+            } catch (\Exception) {}
+        }
+
+        // 2. Session fallback (web dashboard)
+        $id = $request->session()->get('user_id') ?? $request->query('user_id');
+        return $id ? (int) $id : null;
     }
 
     private function requestData(LegalRequest $r): array
@@ -337,9 +564,13 @@ class LegalRequestController extends Controller
             'status'          => $r->status,
             'bid_count'       => $r->bids ? $r->bids->count() : 0,
             'assigned_lawyer' => $r->assignedLawyer ? [
-                'name'  => $r->assignedLawyer->full_name,
-                'photo' => $r->assignedLawyer->profile_photo,
-                'city'  => $r->assignedLawyer->city,
+                'name'           => $r->assignedLawyer->full_name,
+                'photo'          => $r->assignedLawyer->profile_photo,
+                'city'           => $r->assignedLawyer->city,
+                // Contact details — only meaningful after acceptance
+                'phone'          => $r->status === 'accepted' ? $r->assignedLawyer->phone   : null,
+                'email'          => $r->status === 'accepted' ? $r->assignedLawyer->email   : null,
+                'office_address' => $r->status === 'accepted' ? ($r->acceptedBid?->office_address ?? null) : null,
             ] : null,
             'created_at'      => $r->created_at,
         ];

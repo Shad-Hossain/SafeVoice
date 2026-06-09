@@ -70,6 +70,44 @@
 <script>
 let countdownInterval = null;
 
+async function acceptBid(requestId, bidId) {
+    if (!confirm('Accept this lawyer? Their contact info will be revealed to you.')) return;
+    try {
+        const res  = await fetch(`/api/legal-request/${requestId}/accept-bid`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            body: JSON.stringify({ bid_id: bidId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            searchCase(); // reload to show contact info
+        } else {
+            alert(data.message || 'Failed to accept bid.');
+        }
+    } catch(e) { alert('Network error.'); }
+}
+
+async function rejectBid(requestId, bidId) {
+    try {
+        const res  = await fetch(`/api/legal-request/${requestId}/reject-bid`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            body: JSON.stringify({ bid_id: bidId }),
+        });
+        const data = await res.json();
+
+        // Remove this bid card from UI immediately
+        document.getElementById('bid-card-' + bidId)?.remove();
+
+        if (data.all_rejected) {
+            // সব lawyer reject হয়ে গেছে
+            alert(`😔 ${data.message}\n\n💡 ${data.suggestion}`);
+            searchCase();
+        }
+        // Otherwise silently removed — case stays open
+    } catch(e) { alert('Network error.'); }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -181,31 +219,82 @@ function renderCase(data) {
             </a>
         </div>` : ''}
 
-        ${bids.length > 0 ? `
+        ${bids.length > 0 && !['accepted','completed','cancelled'].includes(r.status) ? `
         <div style="margin-top:20px;">
-            <div class="section-label">⚖️ ${bids.length} Lawyer Offer${bids.length!==1?'s':''} Received</div>
-            ${bids.map(b => {
+            <div class="section-label">⚖️ ${bids.filter(b=>b.status!=='rejected').length} Active Offer${bids.filter(b=>b.status!=='rejected').length!==1?'s':''} — Choose One</div>
+            ${bids.filter(b => b.status !== 'rejected').map(b => {
                 const lawyer = b.lawyer || {};
                 return `
-                <div class="bid-card">
+                <div class="bid-card" id="bid-card-${b.id}">
                     <div class="bid-avatar">${lawyer.photo ? `<img src="/${lawyer.photo}">` : '⚖️'}</div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-weight:700;font-size:14px;">${lawyer.name || lawyer.full_name || 'Lawyer'}</div>
-                        <div style="font-size:12px;color:#a0b4cc;margin-top:2px;">${lawyer.city || ''} · ${lawyer.experience_years || 0} yrs · ★ ${lawyer.rating || 'New'}</div>
+                        <div style="font-weight:700;font-size:15px;">${lawyer.name || 'Lawyer'}</div>
+                        <div style="font-size:12px;color:#a0b4cc;margin-top:2px;">${lawyer.city||''} · ${lawyer.experience_years||0} yrs exp · ★ ${lawyer.rating||'New'}</div>
                         <div class="info-row">
                             <span class="info-chip" style="color:#22c55e;background:#22c55e15;">৳${Number(b.proposed_fee).toLocaleString()} fee</span>
                             ${b.estimated_days ? `<span class="info-chip">${b.estimated_days} day${b.estimated_days>1?'s':''}</span>` : ''}
+                            ${b.consultation_date ? `<span class="info-chip">📅 ${new Date(b.consultation_date).toLocaleDateString('en-BD')}</span>` : ''}
                         </div>
-                        ${b.cover_note ? `<div style="font-size:12px;color:#a0b4cc;margin-top:8px;font-style:italic;">"${b.cover_note}"</div>` : ''}
+                        ${b.office_address ? `<div style="font-size:12px;color:#a0b4cc;margin-top:6px;">📍 ${b.office_address}</div>` : ''}
+                        ${b.cover_note ? `<div style="font-size:12px;color:#a0b4cc;margin-top:6px;font-style:italic;">"${b.cover_note}"</div>` : ''}
+                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                            <button onclick="acceptBid('${r.request_id}', ${b.id})"
+                                style="background:#22c55e;color:#000;border:none;border-radius:8px;padding:9px 20px;font-weight:700;font-size:13px;cursor:pointer;">
+                                ✅ Accept this Lawyer
+                            </button>
+                            <button onclick="rejectBid('${r.request_id}', ${b.id})"
+                                style="background:transparent;color:#ef4444;border:1px solid #ef444440;border-radius:8px;padding:9px 16px;font-weight:600;font-size:13px;cursor:pointer;">
+                                ✕ Decline
+                            </button>
+                        </div>
                     </div>
                 </div>`;
             }).join('')}
-            <p style="font-size:12px;color:#6b7280;margin-top:8px;"><i class="fas fa-lock"></i> Log in to accept a bid and proceed.</p>
-        </div>` : (!isExpired && ['open','bidding'].includes(r.status) ? `
+            ${bids.filter(b=>b.status!=='rejected').length===0 ? `
+            <div style="text-align:center;padding:24px;background:#0a0f1e;border:1px solid #ef444430;border-radius:14px;">
+                <div style="font-size:30px;margin-bottom:8px;">😔</div>
+                <div style="color:#ef4444;font-weight:700;margin-bottom:4px;">All offers declined</div>
+                <div style="color:#a0b4cc;font-size:13px;margin-bottom:16px;">No lawyers are available in your area at this price. Try increasing your budget.</div>
+                <a href="/legal" style="background:#4f9eff;color:#000;border-radius:10px;padding:10px 22px;font-weight:700;text-decoration:none;font-size:13px;">🔄 Submit New Request</a>
+            </div>` : ''}
+        </div>` : ''}
+
+        ${r.status === 'accepted' && r.assigned_lawyer ? `
+        <div style="margin-top:20px;background:linear-gradient(135deg,#001a0d,#002817);border:1px solid #22c55e50;border-radius:16px;padding:22px;">
+            <div style="color:#22c55e;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;">✅ Your Assigned Lawyer</div>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+                <div style="width:56px;height:56px;border-radius:50%;background:#0d1f3c;border:2px solid #22c55e50;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0;">
+                    ${r.assigned_lawyer.photo ? `<img src="/${r.assigned_lawyer.photo}" style="width:100%;height:100%;object-fit:cover;">` : '⚖️'}
+                </div>
+                <div>
+                    <div style="font-size:17px;font-weight:800;">${r.assigned_lawyer.name||''}</div>
+                    <div style="font-size:12px;color:#a0b4cc;">${r.assigned_lawyer.city||''} · ★ ${r.assigned_lawyer.rating||'New'}</div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                ${r.assigned_lawyer.phone ? `
+                <a href="tel:+88${r.assigned_lawyer.phone}" style="background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:13px;text-decoration:none;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:20px;">📞</span>
+                    <div><div style="font-size:10px;color:#6b7280;margin-bottom:2px;">PHONE</div><div style="font-size:13px;font-weight:700;color:#4f9eff;">${r.assigned_lawyer.phone}</div></div>
+                </a>` : ''}
+                ${r.assigned_lawyer.email ? `
+                <a href="mailto:${r.assigned_lawyer.email}" style="background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:13px;text-decoration:none;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:20px;">✉️</span>
+                    <div><div style="font-size:10px;color:#6b7280;margin-bottom:2px;">EMAIL</div><div style="font-size:13px;font-weight:700;color:#4f9eff;">${r.assigned_lawyer.email}</div></div>
+                </a>` : ''}
+                ${r.assigned_lawyer.office_address ? `
+                <div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:13px;display:flex;align-items:center;gap:10px;grid-column:1/-1;">
+                    <span style="font-size:20px;">📍</span>
+                    <div><div style="font-size:10px;color:#6b7280;margin-bottom:2px;">OFFICE</div><div style="font-size:13px;color:#e8f0fe;">${r.assigned_lawyer.office_address}</div></div>
+                </div>` : ''}
+            </div>
+        </div>` : ''}
+
+        ${!isExpired && ['open','bidding'].includes(r.status) && bids.filter(b=>b.status!=='rejected').length===0 && bids.length===0 ? `
         <div style="text-align:center;padding:20px;color:#6b7280;font-size:13px;">
             <i class="fas fa-hourglass-half" style="font-size:24px;margin-bottom:8px;display:block;color:#4f9eff;"></i>
             Waiting for lawyers to respond...
-        </div>` : '')}
+        </div>` : ''}
     </div>`;
 
     if (deadline && !isExpired) {

@@ -25,6 +25,7 @@ Route::prefix('admin')->group(function () {
     Route::get('/login',       fn() => view('admin.login'))->name('admin.login');
     Route::get('/dashboard',   fn() => view('admin.dashboard'))->name('admin.dashboard');
     Route::get('/complaints',  fn() => view('admin.complaints'))->name('admin.complaints');
+    Route::get('/lawyers',     fn() => view('admin.lawyers'))->name('admin.lawyers');
 });
 
 // ── Super Admin Pages ────────────────────────────────────────

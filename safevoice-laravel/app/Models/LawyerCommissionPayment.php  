@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class LawyerCommissionPayment extends Model
+{
+    protected $table = 'lawyer_commission_payments';
+    public $timestamps = false;
+
+    protected $fillable = [
+        'ref_code', 'lawyer_id', 'amount', 'method',
+        'transaction_ref', 'screenshot_path', 'status',
+        'admin_note', 'submitted_at', 'reviewed_at',
+    ];
+
+    protected $casts = [
+        'amount'       => 'decimal:2',
+        'submitted_at' => 'datetime',
+        'reviewed_at'  => 'datetime',
+    ];
+
+    public function lawyer()
+    {
+        return $this->belongsTo(Lawyer::class);
+    }
+
+    public static function generateCode(): string
+    {
+        $date  = now()->format('Ymd');
+        $last  = static::where('ref_code', 'like', "COMM-{$date}-%")->count();
+        return 'COMM-' . $date . '-' . str_pad($last + 1, 4, '0', STR_PAD_LEFT);
+    }
+}
